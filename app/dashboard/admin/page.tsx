@@ -4,14 +4,15 @@ import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/app/firebase/config';
+import { db } from '../../firebase/config';
 import UserManagement from './components/UserManagement';
 import ClassManagement from './components/ClassManagement';
 import SystemStats from './components/SystemStats';
+import StudentSubmissions from './components/StudentSubmissions';
 
 const AdminPanel = () => {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'classes' | 'stats' | 'submissions'>('users');
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ const AdminPanel = () => {
       <h1 className="text-2xl font-bold mb-6 text-[#fc5d01]">Quản trị hệ thống</h1>
       
       {/* Tab Navigation */}
-      <div className="flex space-x-4 mb-6">
+      <div className="flex flex-wrap gap-4 mb-6">
         <button
           onClick={() => setActiveTab('users')}
           className={`px-4 py-2 rounded-lg ${
@@ -76,6 +77,16 @@ const AdminPanel = () => {
         >
           Thống kê tổng quan
         </button>
+        <button
+          onClick={() => setActiveTab('submissions')}
+          className={`px-4 py-2 rounded-lg ${
+            activeTab === 'submissions'
+              ? 'bg-[#fc5d01] text-white'
+              : 'bg-[#fedac2] text-[#fc5d01]'
+          }`}
+        >
+          Bài tập học viên
+        </button>
       </div>
 
       {/* Content Area */}
@@ -83,6 +94,7 @@ const AdminPanel = () => {
         {activeTab === 'users' && <UserManagement />}
         {activeTab === 'classes' && <ClassManagement />}
         {activeTab === 'stats' && <SystemStats />}
+        {activeTab === 'submissions' && <StudentSubmissions />}
       </div>
     </div>
   );

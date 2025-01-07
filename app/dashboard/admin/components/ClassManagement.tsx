@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Class } from '@/types/admin';
-import { db } from '@/app/firebase/config';
+import { Class } from '../../../../types/admin';
+import { db } from '../../../firebase/config';
 import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
 
 const ClassManagement = () => {

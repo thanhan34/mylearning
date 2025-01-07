@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User } from '@/types/admin';
-import { db } from '@/app/firebase/config';
+import { User } from '../../../../types/admin';
+import { db } from '../../../firebase/config';
 import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 const UserManagement = () => {

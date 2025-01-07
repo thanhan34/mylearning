@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SystemStats } from '@/types/admin';
-import { db } from '@/app/firebase/config';
+import { SystemStats } from '../../../../types/admin';
+import { db } from '../../../firebase/config';
 import { collection, getDocs } from 'firebase/firestore';
 
 const SystemStatsComponent = () => {
