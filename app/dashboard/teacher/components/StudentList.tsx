@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { User } from '../../../../types/admin';
 import { AssignmentSubmission } from '../../../../types/submission';
 import { db } from '../../../../app/firebase/config';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, CollectionReference, DocumentData } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, arrayUnion, CollectionReference, DocumentData } from 'firebase/firestore';
 import { useSession } from 'next-auth/react';
 
 interface SubmissionWithId extends AssignmentSubmission {
@@ -30,11 +30,11 @@ const StudentList = () => {
 
   useEffect(() => {
     if (session?.user?.email) {
-      fetchTeacherAndStudents();
+      fetchAssignedStudents();
     }
   }, [session]);
 
-  const fetchTeacherAndStudents = async () => {
+  const fetchAssignedStudents = async () => {
     try {
       // First get the teacher's document
       const teachersQuery = query(
@@ -44,21 +44,18 @@ const StudentList = () => {
       const teacherSnapshot = await getDocs(teachersQuery);
       if (!teacherSnapshot.empty) {
         const teacherDoc = teacherSnapshot.docs[0];
-        const teacherData = teacherDoc.data() as User;
 
-        // Then get all students assigned to this teacher
-        if (teacherData.assignedStudents?.length) {
-          const studentsQuery = query(
-            collection(db, 'users'),
-            where('teacherId', '==', teacherDoc.id)
-          );
-          const studentsSnapshot = await getDocs(studentsQuery);
-          const studentsData = studentsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as User));
-          setStudents(studentsData);
-        }
+        // Get assigned students
+        const assignedStudentsQuery = query(
+          collection(db, 'users'),
+          where('teacherId', '==', teacherDoc.id)
+        );
+        const assignedStudentsSnapshot = await getDocs(assignedStudentsQuery);
+        const assignedStudentsData = assignedStudentsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as User));
+        setStudents(assignedStudentsData);
       }
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -127,7 +124,7 @@ const StudentList = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Students List */}
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-medium text-[#fc5d01] mb-4">Học viên</h3>
+          <h3 className="text-lg font-medium text-[#fc5d01] mb-4">Học viên của bạn</h3>
           <div className="space-y-2">
             {students.map((student) => (
               <div
