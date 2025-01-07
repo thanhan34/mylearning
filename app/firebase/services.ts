@@ -1,4 +1,4 @@
-import { db } from './config';
+import { db } from '../firebase/config';
 import { 
   collection, 
   doc, 
@@ -12,10 +12,85 @@ import {
   Timestamp,
   arrayUnion,
   arrayRemove,
-  orderBy
+  orderBy,
+  getDoc,
+  Firestore
 } from 'firebase/firestore';
+
+const getFirestoreInstance = (): Firestore => {
+  if (!db) {
+    throw new Error('Firestore instance not initialized');
+  }
+  return db;
+};
 import { Assignment } from '../../types/assignment';
 import { AssignmentSubmission, SubmissionFormData } from '../../types/submission';
+
+// User Management
+export const createUser = async (userData: {
+  email: string;
+  name: string;
+  role?: "admin" | "teacher" | "student";
+}) => {
+  try {
+    console.log('Creating user with data:', userData);
+    
+    // Check if user already exists
+    const existingUser = await getUserRole(userData.email);
+    if (existingUser) {
+      console.log('User already exists with role:', existingUser);
+      return null;
+    }
+
+    const firestore = getFirestoreInstance();
+    // Create new user
+    const usersRef = collection(firestore, 'users');
+    const newUser = {
+      ...userData,
+      role: userData.role || 'student',
+      createdAt: new Date().toISOString()
+    };
+    
+    console.log('Creating new user document:', newUser);
+    const docRef = await addDoc(usersRef, newUser);
+    console.log('User created successfully with ID:', docRef.id);
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating user:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+    }
+    return null;
+  }
+};
+
+export const getUserRole = async (email: string): Promise<"admin" | "teacher" | "student" | null> => {
+  try {
+    console.log('Querying Firebase for user:', email);
+    const firestore = getFirestoreInstance();
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const userData = querySnapshot.docs[0].data();
+      console.log('Found user data:', userData);
+      const role = userData.role as "admin" | "teacher" | "student";
+      return role;
+    }
+    
+    console.log('User not found in Firebase');
+    return null;
+  } catch (error) {
+    console.error('Error getting user role:', error);
+    return null;
+  }
+};
 
 // Class Management Types
 export interface ClassStudent {
@@ -68,7 +143,8 @@ export const createSubmission = async (
   data: SubmissionFormData
 ): Promise<string | null> => {
   try {
-    const submissionsRef = collection(db, 'submissions');
+    const firestore = getFirestoreInstance();
+    const submissionsRef = collection(firestore, 'submissions');
     const submission: Omit<AssignmentSubmission, 'id'> = {
       assignmentId,
       studentId,
@@ -88,7 +164,8 @@ export const createSubmission = async (
 
 export const getStudentSubmissions = async (studentId: string): Promise<AssignmentSubmission[]> => {
   try {
-    const submissionsRef = collection(db, 'submissions');
+    const firestore = getFirestoreInstance();
+    const submissionsRef = collection(firestore, 'submissions');
     const q = query(
       submissionsRef,
       where('studentId', '==', studentId),
@@ -111,7 +188,8 @@ export const getAssignmentSubmission = async (
   studentId: string
 ): Promise<AssignmentSubmission | null> => {
   try {
-    const submissionsRef = collection(db, 'submissions');
+    const firestore = getFirestoreInstance();
+    const submissionsRef = collection(firestore, 'submissions');
     const q = query(
       submissionsRef,
       where('assignmentId', '==', assignmentId),
@@ -141,7 +219,8 @@ export const getDailySubmissionCount = async (studentId: string): Promise<number
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const submissionsRef = collection(db, 'submissions');
+    const firestore = getFirestoreInstance();
+    const submissionsRef = collection(firestore, 'submissions');
     const q = query(
       submissionsRef,
       where('studentId', '==', studentId),
@@ -160,7 +239,8 @@ export const getDailySubmissionCount = async (studentId: string): Promise<number
 // Assignment Management Functions
 export const createAssignment = async (assignment: Omit<Assignment, 'id'>): Promise<string | null> => {
   try {
-    const assignmentsRef = collection(db, 'assignments');
+    const firestore = getFirestoreInstance();
+    const assignmentsRef = collection(firestore, 'assignments');
     const docRef = await addDoc(assignmentsRef, assignment);
     return docRef.id;
   } catch (error) {
@@ -171,7 +251,8 @@ export const createAssignment = async (assignment: Omit<Assignment, 'id'>): Prom
 
 export const getTeacherAssignments = async (teacherId: string): Promise<Assignment[]> => {
   try {
-    const assignmentsRef = collection(db, 'assignments');
+    const firestore = getFirestoreInstance();
+    const assignmentsRef = collection(firestore, 'assignments');
     const q = query(
       assignmentsRef, 
       where('teacherId', '==', teacherId),
@@ -194,7 +275,8 @@ export const getTargetAssignments = async (
   targetId: string
 ): Promise<Assignment[]> => {
   try {
-    const assignmentsRef = collection(db, 'assignments');
+    const firestore = getFirestoreInstance();
+    const assignmentsRef = collection(firestore, 'assignments');
     const q = query(
       assignmentsRef,
       where('targetType', '==', targetType),
@@ -219,7 +301,8 @@ export const updateAssignmentStatus = async (
   status: Assignment['status']
 ): Promise<boolean> => {
   try {
-    const assignmentRef = doc(db, 'assignments', assignmentId);
+    const firestore = getFirestoreInstance();
+    const assignmentRef = doc(firestore, 'assignments', assignmentId);
     await updateDoc(assignmentRef, { status });
     return true;
   } catch (error) {
@@ -230,7 +313,8 @@ export const updateAssignmentStatus = async (
 
 export const markNotificationSent = async (assignmentId: string): Promise<boolean> => {
   try {
-    const assignmentRef = doc(db, 'assignments', assignmentId);
+    const firestore = getFirestoreInstance();
+    const assignmentRef = doc(firestore, 'assignments', assignmentId);
     await updateDoc(assignmentRef, { notificationSent: true });
     return true;
   } catch (error) {
@@ -245,7 +329,8 @@ export const saveDailyProgress = async (userId: string, targets: DailyTarget[]) 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    await setDoc(doc(db, 'dailyProgress', `${userId}_${today.toISOString().split('T')[0]}`), {
+    const firestore = getFirestoreInstance();
+    await setDoc(doc(firestore, 'dailyProgress', `${userId}_${today.toISOString().split('T')[0]}`), {
       userId,
       date: Timestamp.fromDate(today),
       targets,
@@ -264,7 +349,8 @@ export const saveHomeworkSubmission = async (userId: string, submissions: Homewo
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    await setDoc(doc(db, 'homeworkSubmissions', `${userId}_${today.toISOString().split('T')[0]}`), {
+    const firestore = getFirestoreInstance();
+    await setDoc(doc(firestore, 'homeworkSubmissions', `${userId}_${today.toISOString().split('T')[0]}`), {
       userId,
       date: Timestamp.fromDate(today),
       submissions,
@@ -284,7 +370,7 @@ export const getDailyProgress = async (userId: string): Promise<DailyTarget[] | 
     today.setHours(0, 0, 0, 0);
 
     const progressQuery = query(
-      collection(db, 'dailyProgress'),
+      collection(getFirestoreInstance(), 'dailyProgress'),
       where('userId', '==', userId),
       where('date', '==', Timestamp.fromDate(today))
     );
@@ -308,7 +394,7 @@ export const getHomeworkSubmissions = async (userId: string): Promise<HomeworkSu
     today.setHours(0, 0, 0, 0);
 
     const submissionsQuery = query(
-      collection(db, 'homeworkSubmissions'),
+      collection(getFirestoreInstance(), 'homeworkSubmissions'),
       where('userId', '==', userId),
       where('date', '==', Timestamp.fromDate(today))
     );
@@ -329,7 +415,8 @@ export const getHomeworkSubmissions = async (userId: string): Promise<HomeworkSu
 // Class Management Functions
 export const getTeacherClasses = async (teacherId: string): Promise<Class[]> => {
   try {
-    const classesRef = collection(db, 'classes');
+    const firestore = getFirestoreInstance();
+    const classesRef = collection(firestore, 'classes');
     const q = query(classesRef, where('teacherId', '==', teacherId));
     const querySnapshot = await getDocs(q);
     
@@ -345,7 +432,8 @@ export const getTeacherClasses = async (teacherId: string): Promise<Class[]> => 
 
 export const createClass = async (classData: Omit<Class, 'id'>): Promise<string | null> => {
   try {
-    const classesRef = collection(db, 'classes');
+    const firestore = getFirestoreInstance();
+    const classesRef = collection(firestore, 'classes');
     const docRef = await addDoc(classesRef, {
       ...classData,
       announcements: [],
@@ -363,7 +451,8 @@ export const addStudentToClass = async (
   student: Omit<ClassStudent, 'progress'>
 ): Promise<boolean> => {
   try {
-    const classRef = doc(db, 'classes', classId);
+    const firestore = getFirestoreInstance();
+    const classRef = doc(firestore, 'classes', classId);
     await updateDoc(classRef, {
       students: arrayUnion({
         ...student,
@@ -382,8 +471,9 @@ export const removeStudentFromClass = async (
   studentId: string
 ): Promise<boolean> => {
   try {
-    const classRef = doc(db, 'classes', classId);
-    const classDoc = await getDocs(query(collection(db, 'classes'), where('id', '==', classId)));
+    const firestore = getFirestoreInstance();
+    const classRef = doc(firestore, 'classes', classId);
+    const classDoc = await getDocs(query(collection(firestore, 'classes'), where('id', '==', classId)));
     const currentClass = classDoc.docs[0].data() as Class;
     
     const studentToRemove = currentClass.students.find(s => s.id === studentId);
@@ -405,8 +495,9 @@ export const updateStudentRole = async (
   newRole: 'leader' | 'regular'
 ): Promise<boolean> => {
   try {
-    const classRef = doc(db, 'classes', classId);
-    const classDoc = await getDocs(query(collection(db, 'classes'), where('id', '==', classId)));
+    const firestore = getFirestoreInstance();
+    const classRef = doc(firestore, 'classes', classId);
+    const classDoc = await getDocs(query(collection(firestore, 'classes'), where('id', '==', classId)));
     const currentClass = classDoc.docs[0].data() as Class;
     
     const updatedStudents = currentClass.students.map(student => 
@@ -427,8 +518,9 @@ export const updateStudentProgress = async (
   progress: number
 ): Promise<boolean> => {
   try {
-    const classRef = doc(db, 'classes', classId);
-    const classDoc = await getDocs(query(collection(db, 'classes'), where('id', '==', classId)));
+    const firestore = getFirestoreInstance();
+    const classRef = doc(firestore, 'classes', classId);
+    const classDoc = await getDocs(query(collection(firestore, 'classes'), where('id', '==', classId)));
     const currentClass = classDoc.docs[0].data() as Class;
     
     const updatedStudents = currentClass.students.map(student => 
@@ -448,7 +540,8 @@ export const addClassAnnouncement = async (
   message: string
 ): Promise<boolean> => {
   try {
-    const classRef = doc(db, 'classes', classId);
+    const firestore = getFirestoreInstance();
+    const classRef = doc(firestore, 'classes', classId);
     const announcement: ClassAnnouncement = {
       id: Date.now().toString(),
       message,
@@ -472,7 +565,7 @@ export const getWeeklyProgress = async (userId: string): Promise<{ date: Date; c
     startDate.setDate(endDate.getDate() - 7);
 
     const progressQuery = query(
-      collection(db, 'dailyProgress'),
+      collection(getFirestoreInstance(), 'dailyProgress'),
       where('userId', '==', userId),
       where('date', '>=', Timestamp.fromDate(startDate)),
       where('date', '<=', Timestamp.fromDate(endDate))

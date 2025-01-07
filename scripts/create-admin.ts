@@ -1,5 +1,5 @@
 const { initializeApp, getApps } = require('firebase/app');
-const { getFirestore, collection, addDoc } = require('firebase/firestore');
+const { getFirestore, collection, addDoc, query, where, getDocs } = require('firebase/firestore');
 const dotenv = require('dotenv');
 
 // Load environment variables
@@ -20,6 +20,16 @@ const db = getFirestore(app);
 
 const createAdminUser = async () => {
   try {
+    // Check if admin user already exists
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', 'dtan42@gmail.com'));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      console.log('Admin user already exists');
+      process.exit(0);
+    }
+
     const adminUser = {
       email: 'dtan42@gmail.com',
       name: 'Admin User',
