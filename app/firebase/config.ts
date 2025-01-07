@@ -15,8 +15,28 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore and Storage
+// Initialize Firestore with persistence
 const db = getFirestore(app);
 const storage = getStorage(app);
+
+// Enable offline persistence
+import { enableIndexedDbPersistence } from 'firebase/firestore';
+
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db)
+    .catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.error('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+      } else if (err.code === 'unimplemented') {
+        console.error('The current browser does not support persistence.');
+      }
+    });
+}
+
+// Log initialization
+console.log('Firebase initialized with config:', {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain
+});
 
 export { db, storage };

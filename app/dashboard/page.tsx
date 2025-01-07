@@ -62,22 +62,22 @@ const defaultDailyTargets = [
 ];
 
 // Default homework submissions template
-const defaultHomeworkSubmissions = [
-  ...Array(20).fill(null).map((_, i) => ({ id: 1, type: 'Read aloud', questionNumber: i + 1, link: '' })),
-  ...Array(20).fill(null).map((_, i) => ({ id: 2, type: 'Repeat sentence', questionNumber: i + 1, link: '' })),
-  ...Array(5).fill(null).map((_, i) => ({ id: 3, type: 'Describe image', questionNumber: i + 1, link: '' })),
-  ...Array(5).fill(null).map((_, i) => ({ id: 4, type: 'Retell lecture', questionNumber: i + 1, link: '' })),
-  ...Array(20).fill(null).map((_, i) => ({ id: 5, type: 'R&W: Fill in the blanks', questionNumber: i + 1, link: '' })),
-  ...Array(20).fill(null).map((_, i) => ({ id: 6, type: 'Reoder paragraphs', questionNumber: i + 1, link: '' })),
-  ...Array(20).fill(null).map((_, i) => ({ id: 7, type: 'Fill in the blanks', questionNumber: i + 1, link: '' })),
-  ...Array(5).fill(null).map((_, i) => ({ id: 8, type: 'Highlight incorrect words', questionNumber: i + 1, link: '' })),
-  ...Array(20).fill(null).map((_, i) => ({ id: 9, type: 'Write from dictation', questionNumber: i + 1, link: '' }))
+const getDefaultHomeworkSubmissions = (date: string) => [
+  // Read aloud: 20 questions
+  ...Array(20).fill(null).map((_, i) => ({ id: 1, type: 'Read aloud', questionNumber: i + 1, link: '', date })),
+  // Repeat sentence: 20 questions
+  ...Array(20).fill(null).map((_, i) => ({ id: 2, type: 'Repeat sentence', questionNumber: i + 1, link: '', date })),
+  // Describe image: 5 questions
+  ...Array(5).fill(null).map((_, i) => ({ id: 3, type: 'Describe image', questionNumber: i + 1, link: '', date })),
+  // Retell lecture: 5 questions
+  ...Array(5).fill(null).map((_, i) => ({ id: 4, type: 'Retell lecture', questionNumber: i + 1, link: '', date }))
 ];
 
 export default function DashboardPage() {
   const [dailyTargets, setDailyTargets] = useState<DailyTarget[]>(defaultDailyTargets);
-  const [homeworkSubmissions, setHomeworkSubmissions] = useState<HomeworkSubmission[]>(defaultHomeworkSubmissions);
+  const [homeworkSubmissions, setHomeworkSubmissions] = useState<HomeworkSubmission[]>([]);
   const [selectedHomeworkType, setSelectedHomeworkType] = useState<string>('Read aloud');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [studentProgressData, setStudentProgressData] = useState<{
     labels: string[];
     datasets: {
@@ -101,7 +101,8 @@ export default function DashboardPage() {
 
   const loadDailyProgress = useCallback(async () => {
     if (session?.user?.email) {
-      const progress = await getDailyProgress(session.user.email);
+      const userId = session.user.email.replace(/[.#$[\]]/g, '_');
+      const progress = await getDailyProgress(userId);
       if (progress) {
         setDailyTargets(progress);
       }
@@ -111,7 +112,8 @@ export default function DashboardPage() {
 
   const loadWeeklyProgress = useCallback(async () => {
     if (session?.user?.email) {
-      const weeklyData = await getWeeklyProgress(session.user.email);
+      const userId = session.user.email.replace(/[.#$[\]]/g, '_');
+      const weeklyData = await getWeeklyProgress(userId);
       const labels = weeklyData.map(d => d.date.toLocaleDateString());
       const data = weeklyData.map(d => d.completed);
       
@@ -138,40 +140,86 @@ export default function DashboardPage() {
   }, [status, router, session, loadDailyProgress, loadWeeklyProgress]);
 
   const handleSaveProgress = async () => {
-    if (!session?.user?.email) return;
+    if (!session?.user?.email) {
+      console.error('No user email found in session');
+      return;
+    }
     
     setSaveStatus('saving');
     try {
+      console.log('Starting save operation:', {
+        email: session.user.email,
+        targetsCount: dailyTargets.length,
+        submissionsCount: homeworkSubmissions.length,
+        selectedDate
+      });
+
+      // Filter out submissions with empty links
+      const submissionsToSave = homeworkSubmissions.filter(s => s.link.trim() !== '');
+      console.log('Filtered submissions to save:', submissionsToSave.length);
+
+      // Ensure all submissions have the correct date
+      const updatedSubmissions = submissionsToSave.map(submission => ({
+        ...submission,
+        date: selectedDate
+      }));
+
+      const userId = session.user.email.replace(/[.#$[\]]/g, '_');
       const [progressSuccess, submissionsSuccess] = await Promise.all([
-        saveDailyProgress(session.user.email, dailyTargets),
-        saveHomeworkSubmission(session.user.email, homeworkSubmissions)
+        saveDailyProgress(userId, dailyTargets),
+        saveHomeworkSubmission(userId, updatedSubmissions)
       ]);
+
+      console.log('Save operation results:', { progressSuccess, submissionsSuccess });
 
       if (progressSuccess && submissionsSuccess) {
         setSaveStatus('saved');
-        loadWeeklyProgress(); // Refresh the progress chart
+        console.log('Save successful, refreshing progress...');
+        await loadWeeklyProgress(); // Refresh the progress chart
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
+        console.error('Save operation failed:', { progressSuccess, submissionsSuccess });
         setSaveStatus('error');
       }
     } catch (error) {
-      console.error('Error saving progress:', error);
+      console.error('Error in handleSaveProgress:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
       setSaveStatus('error');
     }
   };
 
-  const loadHomeworkSubmissions = useCallback(async () => {
+  const loadHomeworkSubmissions = useCallback(async (date: string) => {
     if (session?.user?.email) {
-      const submissions = await getHomeworkSubmissions(session.user.email);
-      if (submissions) {
-        setHomeworkSubmissions(submissions);
+      try {
+      const userId = session.user.email.replace(/[.#$[\]]/g, '_');
+      const submissions = await getHomeworkSubmissions(userId, date);
+        if (submissions) {
+          setHomeworkSubmissions(submissions);
+        } else {
+          // If no submissions exist for the date, create default submissions
+          setHomeworkSubmissions(getDefaultHomeworkSubmissions(date));
+        }
+      } catch (error) {
+        console.error('Error loading homework submissions:', error);
+        // Set default submissions on error
+        setHomeworkSubmissions(getDefaultHomeworkSubmissions(date));
       }
     }
   }, [session?.user?.email]);
 
   useEffect(() => {
-    loadHomeworkSubmissions();
-  }, [loadHomeworkSubmissions]);
+    if (selectedDate) {
+      const date = new Date(selectedDate);
+      const dateStr = date.toISOString().split('T')[0];
+      loadHomeworkSubmissions(dateStr);
+    }
+  }, [loadHomeworkSubmissions, selectedDate]);
 
   if (status === 'loading' || isLoading) {
     return (
@@ -265,17 +313,17 @@ export default function DashboardPage() {
         <h3 className="text-[#fc5d01] text-lg font-medium mb-4">Daily Targets</h3>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-[#fedac2]">
-            <thead>
-              <tr>
-                <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">NO</th>
-                <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">TYPE</th>
-                <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Target</th>
-                <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Completed</th>
-                <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">Source</th>
-                <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#fedac2]">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">NO</th>
+                  <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">TYPE</th>
+                  <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Target</th>
+                  <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Completed</th>
+                  <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">Source</th>
+                  <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#fedac2]">
               {dailyTargets.map((task) => {
                 const isCompleted = task.completed >= task.target;
                 const progress = (task.completed / task.target) * 100;
@@ -326,7 +374,7 @@ export default function DashboardPage() {
                   </tr>
                 );
               })}
-            </tbody>
+              </tbody>
           </table>
         </div>
       </div>
@@ -334,16 +382,31 @@ export default function DashboardPage() {
       {/* Homework Submissions */}
       <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
         <h3 className="text-[#fc5d01] text-lg font-medium mb-4">Homework Submissions</h3>
-        <div className="mb-4">
-          <select
-            value={selectedHomeworkType}
-            onChange={(e) => setSelectedHomeworkType(e.target.value)}
-            className="border border-[#fedac2] rounded px-3 py-2 text-[#fc5d01]"
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-4">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="border border-[#fedac2] rounded px-3 py-2 text-[#fc5d01]"
+            />
+            <select
+              value={selectedHomeworkType}
+              onChange={(e) => setSelectedHomeworkType(e.target.value)}
+              className="border border-[#fedac2] rounded px-3 py-2 text-[#fc5d01]"
+            >
+              <option value="Read aloud">Read aloud</option>
+              <option value="Repeat sentence">Repeat sentence</option>
+              <option value="Describe image">Describe image</option>
+              <option value="Retell lecture">Retell lecture</option>
+            </select>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/submit')}
+            className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33] transition-colors"
           >
-            {Array.from(new Set(homeworkSubmissions.map(s => s.type))).map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
+            Submit New
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-[#fedac2]">
@@ -356,6 +419,8 @@ export default function DashboardPage() {
             <tbody className="divide-y divide-[#fedac2]">
               {homeworkSubmissions
                 .filter(submission => submission.type === selectedHomeworkType)
+                .sort((a, b) => a.questionNumber - b.questionNumber)
+                .slice(0, selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5)
                 .map((submission) => (
                   <tr key={`${submission.id}_${submission.questionNumber}`} 
                       className={submission.questionNumber % 2 === 0 ? 'bg-[#fedac2] bg-opacity-10' : ''}>
@@ -363,21 +428,18 @@ export default function DashboardPage() {
                       Question {submission.questionNumber}
                     </td>
                     <td className="px-4 py-3">
-                      <input
-                        type="text"
-                        value={submission.link}
-                        onChange={(e) => {
-                          setHomeworkSubmissions(submissions => 
-                            submissions.map(s => 
-                              s.id === submission.id && s.questionNumber === submission.questionNumber
-                                ? { ...s, link: e.target.value }
-                                : s
-                            )
-                          );
-                        }}
-                        placeholder="Enter submission link"
-                        className="w-full border border-[#fedac2] rounded px-2 py-1 text-[#fc5d01] text-sm"
-                      />
+                      {submission.link ? (
+                        <a 
+                          href={submission.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#fc5d01] hover:text-[#fd7f33] underline"
+                        >
+                          View Submission
+                        </a>
+                      ) : (
+                        <span className="text-[#fdbc94] text-sm">No submission yet</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -386,27 +448,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Save Button */}
-      <div className="mt-4 flex justify-end space-x-2 items-center">
-        {saveStatus === 'saving' && (
-          <span className="text-[#fd7f33]">Saving...</span>
-        )}
-        {saveStatus === 'saved' && (
-          <span className="text-[#fc5d01]">✓ Saved</span>
-        )}
-        {saveStatus === 'error' && (
-          <span className="text-red-500">Error saving</span>
-        )}
-        <button 
-          onClick={handleSaveProgress}
-          disabled={saveStatus === 'saving'}
-          className={`bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33] transition-colors ${
-            saveStatus === 'saving' ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          Save Progress
-        </button>
-      </div>
 
       {/* Notifications */}
       <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
@@ -426,21 +467,22 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#ffffff]">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-[#fc5d01]">
-              Welcome, {session?.user?.name}
-            </h1>
-            <p className="text-[#fd7f33]">
-              {userRole === 'teacher' ? 'Teacher Dashboard' : 'Student Dashboard'}
-            </p>
+    <form onSubmit={(e) => e.preventDefault()}>
+      <div className="min-h-screen bg-[#ffffff]">
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-[#fc5d01]">
+                Welcome, {session?.user?.name}
+              </h1>
+              <p className="text-[#fd7f33]">
+                {userRole === 'teacher' ? 'Teacher Dashboard' : 'Student Dashboard'}
+              </p>
+            </div>
+            {userRole === 'teacher' ? <TeacherDashboard /> : <StudentDashboard />}
           </div>
-          
-          {userRole === 'teacher' ? <TeacherDashboard /> : <StudentDashboard />}
         </div>
       </div>
-    </div>
+    </form>
   );
 }

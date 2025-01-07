@@ -15,6 +15,16 @@ export default function SubmissionList({ assignments, studentId }: SubmissionLis
   const [submissions, setSubmissions] = useState<Record<string, AssignmentSubmission | null>>({});
   const [dailyCount, setDailyCount] = useState(0);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  const assignmentTypes = [
+    "Bài tập về nhà",
+    "Bài tập trên lớp",
+    "Bài tập thực hành",
+    "Dự án",
+    "Khác"
+  ];
 
   useEffect(() => {
     const loadSubmissions = async () => {
@@ -41,14 +51,120 @@ export default function SubmissionList({ assignments, studentId }: SubmissionLis
     setDailyCount(await getDailySubmissionCount(studentId));
   };
 
+  const filteredSubmissions = Object.values(submissions)
+    .filter((submission): submission is AssignmentSubmission => 
+      submission !== null &&
+      (selectedType === "" || submission.type === selectedType) &&
+      (selectedDate === "" || submission.date === selectedDate)
+    );
+
+  const groupedSubmissions = filteredSubmissions.reduce((groups, submission) => {
+    const date = submission.date;
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(submission);
+    return groups;
+  }, {} as Record<string, AssignmentSubmission[]>);
+
   return (
     <div>
-      <div className="mb-4 p-4 bg-[#fedac2] rounded-lg">
-        <p className="text-[#fc5d01]">Số bài tập đã nộp hôm nay: {dailyCount}</p>
+      <div className="mb-6 space-y-4">
+        <div className="p-4 bg-[#fedac2] rounded-lg">
+          <p className="text-[#fc5d01]">Số bài tập đã nộp hôm nay: {dailyCount}</p>
+        </div>
+
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label htmlFor="type-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Loại bài tập
+            </label>
+            <select
+              id="type-filter"
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#fc5d01] focus:border-[#fc5d01]"
+            >
+              <option value="">Tất cả</option>
+              {assignmentTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex-1">
+            <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Ngày nộp
+            </label>
+            <input
+              type="date"
+              id="date-filter"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#fc5d01] focus:border-[#fc5d01]"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        {assignments.map(assignment => (
+      <div className="space-y-6">
+        {Object.entries(groupedSubmissions).map(([date, dateSubmissions]) => (
+          <div key={date} className="space-y-4">
+            <h3 className="text-lg font-semibold text-[#fc5d01]">
+              {new Date(date).toLocaleDateString("vi-VN")}
+            </h3>
+            {dateSubmissions.map(submission => {
+              const assignment = assignments.find(a => a.id === submission.assignmentId);
+              if (!assignment) return null;
+              return (
+              <div 
+                key={submission.id} 
+                className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="text-lg font-semibold text-[#fc5d01]">{assignment.title}</h4>
+                    <p className="text-gray-600 mt-1">{assignment.instructions}</p>
+                    <div className="flex gap-4 mt-2">
+                      <p className="text-sm text-gray-500">
+                        Loại: <span className="font-medium">{submission.type}</span>
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Hạn nộp: {new Date(assignment.dueDate).toLocaleDateString("vi-VN")}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                    Đã nộp
+                  </span>
+                </div>
+
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    Link bài nộp: <a href={submission.link} target="_blank" rel="noopener noreferrer" className="text-[#fc5d01] hover:text-[#fd7f33]">{submission.link}</a>
+                  </p>
+                  {submission.notes && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Ghi chú: {submission.notes}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">
+                    Đã nộp lúc: {new Date(submission.submittedAt).toLocaleString("vi-VN")}
+                  </p>
+                </div>
+              </div>
+            );
+            })}
+          </div>
+        ))}
+
+        {Object.keys(groupedSubmissions).length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            Không có bài nộp nào {selectedType && `loại "${selectedType}"`} {selectedDate && `vào ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}`}
+          </div>
+        )}
+
+        {assignments.filter(assignment => !submissions[assignment.id]).map(assignment => (
           <div 
             key={assignment.id} 
             className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
@@ -62,39 +178,17 @@ export default function SubmissionList({ assignments, studentId }: SubmissionLis
                 </p>
               </div>
               <div className="flex flex-col items-end">
-                <span className={`px-3 py-1 rounded-full text-sm ${
-                  submissions[assignment.id] 
-                    ? "bg-green-100 text-green-800" 
-                    : "bg-yellow-100 text-yellow-800"
-                }`}>
-                  {submissions[assignment.id] ? "Đã nộp" : "Chưa nộp"}
+                <span className="px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                  Chưa nộp
                 </span>
-                {!submissions[assignment.id] && (
-                  <button
-                    onClick={() => setSelectedAssignment(assignment)}
-                    className="mt-2 text-[#fc5d01] hover:text-[#fd7f33]"
-                  >
-                    Nộp bài
-                  </button>
-                )}
+                <button
+                  onClick={() => setSelectedAssignment(assignment)}
+                  className="mt-2 text-[#fc5d01] hover:text-[#fd7f33]"
+                >
+                  Nộp bài
+                </button>
               </div>
             </div>
-
-            {submissions[assignment.id] && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  Link bài nộp: <a href={submissions[assignment.id]?.link} target="_blank" rel="noopener noreferrer" className="text-[#fc5d01] hover:text-[#fd7f33]">{submissions[assignment.id]?.link}</a>
-                </p>
-                {submissions[assignment.id]?.notes && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    Ghi chú: {submissions[assignment.id]?.notes}
-                  </p>
-                )}
-                <p className="text-xs text-gray-500 mt-2">
-                  Đã nộp lúc: {new Date(submissions[assignment.id]?.submittedAt || "").toLocaleString("vi-VN")}
-                </p>
-              </div>
-            )}
           </div>
         ))}
       </div>

@@ -5,12 +5,16 @@ export interface AssignmentSubmission {
   assignmentId: string;
   studentId: string;
   submittedAt: string;
+  type: string;
+  date: string;
   link: string;
   notes?: string;
   status: 'submitted' | 'pending';
 }
 
 export interface SubmissionFormData {
+  type: string;
+  date: string;
   link: string;
   notes?: string;
 }

@@ -6,11 +6,31 @@ import SubmissionList from "./components/SubmissionList";
 
 export default async function AssignmentsPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !session?.user?.role) {
+    console.log("No session or missing user data:", session);
     redirect("/login");
   }
 
-  const assignments = await getTargetAssignments("individual", session.user.id);
+  // Only allow students, teachers, and admins to access this page
+  if (!["student", "teacher", "admin"].includes(session.user.role)) {
+    console.log("Invalid role:", session.user.role);
+    redirect("/dashboard");
+  }
+
+  console.log("User accessing assignments:", {
+    id: session.user.id,
+    role: session.user.role,
+    email: session.user.email
+  });
+
+  // Get individual assignments
+  const individualAssignments = await getTargetAssignments("individual", session.user.id);
+  
+  // Get class assignments
+  const classAssignments = await getTargetAssignments("class", session.user.id);
+
+  // Combine both types of assignments
+  const assignments = [...individualAssignments, ...classAssignments];
 
   return (
     <main className="p-8">

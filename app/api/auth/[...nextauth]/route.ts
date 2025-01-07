@@ -1,6 +1,8 @@
 import NextAuth, { AuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { getUserRole, createUser } from "../../../firebase/services";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "../../../firebase/config";
 
 export const authOptions: AuthOptions = {
   debug: true, // Enable debug mode for troubleshooting
@@ -61,6 +63,7 @@ export const authOptions: AuthOptions = {
           }
           
           console.log('Successfully created user with ID:', userId);
+          user.id = userId; // Set the user ID from Firebase
         }
         
         return true;
@@ -80,15 +83,28 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user, account }) {
       if (account && user && user.email) {
         token.accessToken = account.access_token;
+        token.email = user.email;
         // Get role from Firebase
         const role = await getUserRole(user.email);
         token.role = role || 'student';
+        // For existing users, get their Firebase ID
+        if (!user.id) {
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('email', '==', user.email));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            user.id = querySnapshot.docs[0].id;
+          }
+        }
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
+        session.user.id = token.id as string;
         session.user.role = token.role as "admin" | "teacher" | "student";
+        session.user.email = token.email as string;
         (session as any).accessToken = token.accessToken;
       }
       return session;

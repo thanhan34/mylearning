@@ -128,7 +128,20 @@ export interface HomeworkSubmission {
   type: string;
   questionNumber: number;
   link: string;
+  date: string;
 }
+
+// Default homework submissions template
+const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
+  // Read aloud: 20 questions
+  ...Array(20).fill(null).map((_, i) => ({ id: 1, type: 'Read aloud', questionNumber: i + 1, link: '', date })),
+  // Repeat sentence: 20 questions
+  ...Array(20).fill(null).map((_, i) => ({ id: 2, type: 'Repeat sentence', questionNumber: i + 1, link: '', date })),
+  // Describe image: 5 questions
+  ...Array(5).fill(null).map((_, i) => ({ id: 3, type: 'Describe image', questionNumber: i + 1, link: '', date })),
+  // Retell lecture: 5 questions
+  ...Array(5).fill(null).map((_, i) => ({ id: 4, type: 'Retell lecture', questionNumber: i + 1, link: '', date }))
+];
 
 export interface DailyProgress {
   userId: string;
@@ -149,6 +162,8 @@ export const createSubmission = async (
       assignmentId,
       studentId,
       submittedAt: new Date().toISOString(),
+      type: data.type,
+      date: data.date,
       link: data.link,
       notes: data.notes,
       status: 'submitted'
@@ -277,19 +292,51 @@ export const getTargetAssignments = async (
   try {
     const firestore = getFirestoreInstance();
     const assignmentsRef = collection(firestore, 'assignments');
-    const q = query(
-      assignmentsRef,
-      where('targetType', '==', targetType),
-      where('targetId', '==', targetId),
-      where('status', '==', 'active'),
-      orderBy('dueDate', 'asc')
-    );
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Assignment[];
+
+    if (targetType === 'class') {
+      // Get all classes where the student is a member
+      const classesRef = collection(firestore, 'classes');
+      const classesQuery = query(classesRef);
+      const classesSnapshot = await getDocs(classesQuery);
+      const studentClasses = classesSnapshot.docs
+        .filter(doc => {
+          const classData = doc.data() as Class;
+          return classData.students.some(student => student.id === targetId);
+        })
+        .map(doc => doc.id);
+
+      if (studentClasses.length === 0) return [];
+
+      // Get assignments for these classes
+      const q = query(
+        assignmentsRef,
+        where('targetType', '==', 'class'),
+        where('targetId', 'in', studentClasses),
+        where('status', '==', 'active'),
+        orderBy('dueDate', 'asc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Assignment[];
+    } else {
+      // For individual assignments
+      const q = query(
+        assignmentsRef,
+        where('targetType', '==', targetType),
+        where('targetId', '==', targetId),
+        where('status', '==', 'active'),
+        orderBy('dueDate', 'asc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Assignment[];
+    }
   } catch (error) {
     console.error('Error getting target assignments:', error);
     return [];
@@ -346,20 +393,79 @@ export const saveDailyProgress = async (userId: string, targets: DailyTarget[]) 
 
 export const saveHomeworkSubmission = async (userId: string, submissions: HomeworkSubmission[]) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
+    console.log('Starting saveHomeworkSubmission with:', { userId, submissionsCount: submissions.length });
+    
     const firestore = getFirestoreInstance();
-    await setDoc(doc(firestore, 'homeworkSubmissions', `${userId}_${today.toISOString().split('T')[0]}`), {
-      userId,
-      date: Timestamp.fromDate(today),
-      submissions,
-      lastUpdated: Timestamp.now()
-    });
+    const date = submissions[0]?.date;
+    if (!date) {
+      console.error('No date found in submissions');
+      return false;
+    }
 
+    // Filter out submissions with empty links
+    const submissionsToSave = submissions.filter(s => s.link.trim() !== '');
+    console.log('Filtered submissions to save:', submissionsToSave.length);
+
+    // Create a document reference with userId and date
+    const docRef = doc(collection(firestore, 'users'), userId, 'homework', date);
+    
+    // Check if document exists
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      // Update existing document
+      console.log('Updating existing document for date:', date);
+      const existingData = docSnap.data();
+      const existingSubmissions = existingData.submissions || [];
+      
+      // Merge existing and new submissions
+      const mergedSubmissions = [...existingSubmissions];
+      submissionsToSave.forEach(newSubmission => {
+        const index = mergedSubmissions.findIndex(s => 
+          s.id === newSubmission.id && s.questionNumber === newSubmission.questionNumber
+        );
+        if (index !== -1) {
+          mergedSubmissions[index] = newSubmission;
+        } else {
+          mergedSubmissions.push(newSubmission);
+        }
+      });
+
+      await updateDoc(docRef, {
+        submissions: mergedSubmissions,
+        lastUpdated: new Date().toISOString()
+      });
+    } else {
+    // Create new document
+    console.log('Creating new document for date:', date);
+    // Add empty submissions for all types if not present
+    const defaultSubmissions = getDefaultHomeworkSubmissions(date);
+    const mergedSubmissions = defaultSubmissions.map(defaultSub => {
+      const matchingSub = submissionsToSave.find(
+        s => s.type === defaultSub.type && s.questionNumber === defaultSub.questionNumber
+      );
+      return matchingSub || defaultSub;
+    });
+    
+    await setDoc(docRef, {
+      userId,
+      date,
+      submissions: mergedSubmissions,
+      lastUpdated: new Date().toISOString()
+    });
+    }
+
+    console.log('Successfully saved submissions for date:', date);
     return true;
   } catch (error) {
-    console.error('Error saving homework submissions:', error);
+    console.error('Error in saveHomeworkSubmission:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+    }
     return false;
   }
 };
@@ -388,23 +494,21 @@ export const getDailyProgress = async (userId: string): Promise<DailyTarget[] | 
   }
 };
 
-export const getHomeworkSubmissions = async (userId: string): Promise<HomeworkSubmission[] | null> => {
+export const getHomeworkSubmissions = async (userId: string, date: string): Promise<HomeworkSubmission[] | null> => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    console.log('Getting homework submissions for:', { userId, date });
+    
+    const firestore = getFirestoreInstance();
+    const docRef = doc(collection(firestore, 'users'), userId, 'homework', date);
+    const docSnap = await getDoc(docRef);
 
-    const submissionsQuery = query(
-      collection(getFirestoreInstance(), 'homeworkSubmissions'),
-      where('userId', '==', userId),
-      where('date', '==', Timestamp.fromDate(today))
-    );
-
-    const querySnapshot = await getDocs(submissionsQuery);
-    if (!querySnapshot.empty) {
-      const data = querySnapshot.docs[0].data();
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      console.log('Found submissions:', data.submissions);
       return data.submissions as HomeworkSubmission[];
     }
 
+    console.log('No submissions found for date:', date);
     return null;
   } catch (error) {
     console.error('Error getting homework submissions:', error);
