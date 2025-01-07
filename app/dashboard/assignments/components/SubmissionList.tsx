@@ -117,43 +117,55 @@ export default function SubmissionList({ assignments, studentId }: SubmissionLis
               const assignment = assignments.find(a => a.id === submission.assignmentId);
               if (!assignment) return null;
               return (
-              <div 
-                key={submission.id} 
-                className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="text-lg font-semibold text-[#fc5d01]">{assignment.title}</h4>
-                    <p className="text-gray-600 mt-1">{assignment.instructions}</p>
-                    <div className="flex gap-4 mt-2">
-                      <p className="text-sm text-gray-500">
-                        Loại: <span className="font-medium">{submission.type}</span>
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Hạn nộp: {new Date(assignment.dueDate).toLocaleDateString("vi-VN")}
-                      </p>
+                <div 
+                  key={submission.id} 
+                  className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-lg font-semibold text-[#fc5d01]">{assignment.title}</h4>
+                      <p className="text-gray-600 mt-1">{assignment.instructions}</p>
+                      <div className="flex gap-4 mt-2">
+                        <p className="text-sm text-gray-500">
+                          Loại: <span className="font-medium">{submission.type}</span>
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Hạn nộp: {new Date(assignment.dueDate).toLocaleDateString("vi-VN")}
+                        </p>
+                      </div>
                     </div>
+                    <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                      Đã nộp
+                    </span>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                    Đã nộp
-                  </span>
-                </div>
 
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    Link bài nộp: <a href={submission.link} target="_blank" rel="noopener noreferrer" className="text-[#fc5d01] hover:text-[#fd7f33]">{submission.link}</a>
-                  </p>
-                  {submission.notes && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Ghi chú: {submission.notes}
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      Link bài nộp: <a href={submission.link} target="_blank" rel="noopener noreferrer" className="text-[#fc5d01] hover:text-[#fd7f33]">{submission.link}</a>
                     </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-2">
-                    Đã nộp lúc: {new Date(submission.submittedAt).toLocaleString("vi-VN")}
-                  </p>
+                    {submission.notes && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        Ghi chú: {submission.notes}
+                      </p>
+                    )}
+                    {submission.feedback ? (
+                      <div className="mt-4 p-3 bg-[#fedac2] rounded">
+                        <p className="text-sm">
+                          <span className="font-medium text-[#fc5d01]">Feedback từ giáo viên:</span>{' '}
+                          <span className="text-gray-700">{submission.feedback}</span>
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 mt-4 italic">
+                        Chưa có feedback từ giáo viên
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-4">
+                      Đã nộp lúc: {new Date(submission.submittedAt).toLocaleString("vi-VN")}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            );
+              );
             })}
           </div>
         ))}

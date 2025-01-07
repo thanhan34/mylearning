@@ -4,6 +4,8 @@ export interface User {
   name: string;
   role: 'teacher' | 'student';
   createdAt: string;
+  teacherId?: string; // ID of assigned teacher (for students)
+  assignedStudents?: string[]; // Array of student IDs (for teachers)
 }
 
 export interface Class {

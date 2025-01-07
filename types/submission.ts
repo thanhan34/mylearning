@@ -10,6 +10,8 @@ export interface AssignmentSubmission {
   link: string;
   notes?: string;
   status: 'submitted' | 'pending';
+  feedback?: string;
+  questionNumber?: number;
 }
 
 export interface SubmissionFormData {

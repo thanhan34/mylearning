@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { User } from '@/types/admin';
 import { db } from '@/app/firebase/config';
-import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -12,6 +12,7 @@ const UserManagement = () => {
     email: '',
     name: '',
     role: 'student' as 'teacher' | 'student',
+    teacherId: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -47,7 +48,7 @@ const UserManagement = () => {
         });
       }
       setShowForm(false);
-      setFormData({ email: '', name: '', role: 'student' });
+      setFormData({ email: '', name: '', role: 'student', teacherId: '' });
       setEditingId(null);
       fetchUsers();
     } catch (error) {
@@ -70,7 +71,8 @@ const UserManagement = () => {
     setFormData({
       email: user.email,
       name: user.name,
-      role: user.role
+      role: user.role,
+      teacherId: user.teacherId || ''
     });
     setEditingId(user.id);
     setShowForm(true);
@@ -131,7 +133,7 @@ const UserManagement = () => {
                   type="button"
                   onClick={() => {
                     setShowForm(false);
-                    setFormData({ email: '', name: '', role: 'student' });
+                    setFormData({ email: '', name: '', role: 'student', teacherId: '' });
                     setEditingId(null);
                   }}
                   className="px-4 py-2 bg-gray-200 rounded-lg"
@@ -158,6 +160,7 @@ const UserManagement = () => {
               <th className="px-6 py-3 text-left text-sm font-semibold">Tên</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Vai trò</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Ngày tạo</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Giáo viên phụ trách</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Thao tác</th>
             </tr>
           </thead>
@@ -171,6 +174,52 @@ const UserManagement = () => {
                 </td>
                 <td className="px-6 py-4">
                   {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                </td>
+                <td className="px-6 py-4">
+                  {user.role === 'student' && (
+                    <select
+                      value={user.teacherId || ''}
+                      onChange={async (e) => {
+                        const teacherId = e.target.value;
+                        try {
+                          // Update student's teacherId
+                          await updateDoc(doc(db, 'users', user.id), {
+                            teacherId: teacherId || null
+                          });
+                          
+                          // Update teacher's assignedStudents
+                          if (teacherId) {
+                            const teacherRef = doc(db, 'users', teacherId);
+                            await updateDoc(teacherRef, {
+                              assignedStudents: arrayUnion(user.id)
+                            });
+                          }
+                          
+                          if (user.teacherId && user.teacherId !== teacherId) {
+                            // Remove student from previous teacher's assignedStudents
+                            const prevTeacherRef = doc(db, 'users', user.teacherId);
+                            await updateDoc(prevTeacherRef, {
+                              assignedStudents: arrayRemove(user.id)
+                            });
+                          }
+                          
+                          fetchUsers();
+                        } catch (error) {
+                          console.error('Error updating teacher assignment:', error);
+                        }
+                      }}
+                      className="w-full p-2 border rounded-lg"
+                    >
+                      <option value="">Chọn giáo viên</option>
+                      {users
+                        .filter((u) => u.role === 'teacher')
+                        .map((teacher) => (
+                          <option key={teacher.id} value={teacher.id}>
+                            {teacher.name}
+                          </option>
+                        ))}
+                    </select>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <button

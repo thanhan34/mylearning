@@ -414,6 +414,7 @@ export default function DashboardPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">Question</th>
                 <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">Link</th>
+                <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">Feedback</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#fedac2]">
@@ -439,6 +440,13 @@ export default function DashboardPage() {
                         </a>
                       ) : (
                         <span className="text-[#fdbc94] text-sm">No submission yet</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {submission.feedback ? (
+                        <div className="text-[#fc5d01]">{submission.feedback}</div>
+                      ) : (
+                        <span className="text-[#fdbc94] text-sm">No feedback yet</span>
                       )}
                     </td>
                   </tr>

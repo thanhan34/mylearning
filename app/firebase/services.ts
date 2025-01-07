@@ -129,18 +129,19 @@ export interface HomeworkSubmission {
   questionNumber: number;
   link: string;
   date: string;
+  feedback?: string;
 }
 
 // Default homework submissions template
 const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
   // Read aloud: 20 questions
-  ...Array(20).fill(null).map((_, i) => ({ id: 1, type: 'Read aloud', questionNumber: i + 1, link: '', date })),
+  ...Array(20).fill(null).map((_, i) => ({ id: 1, type: 'Read aloud', questionNumber: i + 1, link: '', date, feedback: '' })),
   // Repeat sentence: 20 questions
-  ...Array(20).fill(null).map((_, i) => ({ id: 2, type: 'Repeat sentence', questionNumber: i + 1, link: '', date })),
+  ...Array(20).fill(null).map((_, i) => ({ id: 2, type: 'Repeat sentence', questionNumber: i + 1, link: '', date, feedback: '' })),
   // Describe image: 5 questions
-  ...Array(5).fill(null).map((_, i) => ({ id: 3, type: 'Describe image', questionNumber: i + 1, link: '', date })),
+  ...Array(5).fill(null).map((_, i) => ({ id: 3, type: 'Describe image', questionNumber: i + 1, link: '', date, feedback: '' })),
   // Retell lecture: 5 questions
-  ...Array(5).fill(null).map((_, i) => ({ id: 4, type: 'Retell lecture', questionNumber: i + 1, link: '', date }))
+  ...Array(5).fill(null).map((_, i) => ({ id: 4, type: 'Retell lecture', questionNumber: i + 1, link: '', date, feedback: '' }))
 ];
 
 export interface DailyProgress {
