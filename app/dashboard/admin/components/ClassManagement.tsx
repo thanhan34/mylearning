@@ -104,8 +104,8 @@ const ClassManagement = () => {
             <h3 className="text-lg font-semibold mb-4 text-[#fc5d01]">
               {editingId ? 'Chỉnh sửa lớp học' : 'Thêm lớp học mới'}
             </h3>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
+            <form onSubmit={handleSubmit} className="text-black">
+              <div className="mb-4 ">
                 <label className="block text-sm font-medium mb-1">Tên lớp</label>
                 <input
                   type="text"
@@ -188,9 +188,9 @@ const ClassManagement = () => {
       )}
 
       <div className="bg-white rounded-lg shadow">
-        <table className="min-w-full">
-          <thead className="bg-[#fedac2]">
-            <tr>
+        <table className="min-w-full text-black">
+          <thead className="bg-[#fc5d01]">
+            <tr className="text-white">
               <th className="px-6 py-3 text-left text-sm font-semibold">Tên lớp</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Giáo viên</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Lịch học</th>

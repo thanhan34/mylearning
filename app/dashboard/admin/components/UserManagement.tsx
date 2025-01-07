@@ -96,31 +96,31 @@ const UserManagement = () => {
             </h3>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Email</label>
+                <label className="block text-sm font-medium mb-1 text-black">Email</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg text-black"
                   required
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Tên</label>
+                <label className="block text-sm font-medium mb-1 text-black">Tên</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg text-black"
                   required
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Vai trò</label>
+                <label className="block text-sm font-medium mb-1 text-black">Vai trò</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as 'teacher' | 'student' })}
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg text-black"
                 >
                   <option value="student">Học viên</option>
                   <option value="teacher">Giáo viên</option>
@@ -150,10 +150,10 @@ const UserManagement = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow text-black">
         <table className="min-w-full">
-          <thead className="bg-[#fedac2]">
-            <tr>
+          <thead className="bg-[#fc5d01]">
+            <tr className="text-white">
               <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Tên</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Vai trò</th>
