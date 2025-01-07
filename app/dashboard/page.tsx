@@ -423,7 +423,7 @@ export default function DashboardPage() {
                 .sort((a, b) => a.questionNumber - b.questionNumber)
                 .slice(0, selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5)
                 .map((submission) => (
-                  <tr key={`${submission.id}_${submission.questionNumber}`} 
+                  <tr key={`${submission.type}_${submission.questionNumber}_${submission.date}`} 
                       className={submission.questionNumber % 2 === 0 ? 'bg-[#fedac2] bg-opacity-10' : ''}>
                     <td className="px-4 py-3 text-[#fc5d01]">
                       Question {submission.questionNumber}
@@ -431,12 +431,13 @@ export default function DashboardPage() {
                     <td className="px-4 py-3">
                       {submission.link ? (
                         <a 
-                          href={submission.link}
+                          href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#fc5d01] hover:text-[#fd7f33] underline"
+                          className="text-[#fc5d01] hover:text-[#fd7f33] underline break-all"
+                          title="Click để mở link gốc"
                         >
-                          View Submission
+                          {submission.link.split('https://')[0].trim()}
                         </a>
                       ) : (
                         <span className="text-[#fdbc94] text-sm">No submission yet</span>

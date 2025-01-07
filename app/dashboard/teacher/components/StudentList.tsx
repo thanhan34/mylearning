@@ -86,7 +86,7 @@ const StudentList = () => {
             .filter((submission: AssignmentSubmission) => submission.link && submission.link.trim() !== '')
             .map((submission: AssignmentSubmission) => ({
               ...submission,
-              uniqueId: submission.link // Using link as unique ID since each submission has a unique link
+              uniqueId: `${submission.type}_${submission.questionNumber}_${submission.date}` // Create unique ID from type, question number and date
             }));
           console.log('Found valid submissions:', submissionsData);
           
@@ -191,12 +191,13 @@ const StudentList = () => {
                       <p className="text-sm mb-2">
                         <span className="font-medium text-black">Link:</span>{' '}
                         <a
-                          href={submission.link}
+                          href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[#fc5d01] hover:text-[#fd7f33]"
+                          title="Click để mở link gốc"
                         >
-                          {submission.link}
+                          {submission.link.split('https://')[0].trim()}
                         </a>
                       </p>
                       {submission.notes && (
@@ -235,7 +236,9 @@ const StudentList = () => {
                                     if (docSnapshot.exists()) {
                                       const data = docSnapshot.data();
                                       const updatedSubmissions = data.submissions.map((s: AssignmentSubmission) => {
-                                        if (s.link === submission.link) {
+                                        if (s.type === submission.type && 
+                                            s.questionNumber === submission.questionNumber && 
+                                            s.date === submission.date) {
                                           return { ...s, feedback: feedbackText };
                                         }
                                         return s;

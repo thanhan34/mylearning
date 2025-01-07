@@ -55,7 +55,7 @@ export default function SubmitPage() {
     loadExisting();
   }, [session?.user?.email, selectedDate, selectedHomeworkType]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!session?.user?.email) {
       console.error('No user email found in session');
@@ -63,7 +63,20 @@ export default function SubmitPage() {
     }
 
     setSaveStatus('saving');
+    const validateLink = (link: string) => {
+      const linkPattern = /^RA#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/;
+      return linkPattern.test(link);
+    };
+
     const links = existingLinks.split('\n').filter(link => link.trim());
+    
+    // Validate link format
+    const invalidLinks = links.filter(link => !validateLink(link));
+    if (invalidLinks.length > 0) {
+      alert(`Some links are not in the correct format:\n${invalidLinks.join('\n')}\n\nFormat should be: RA#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...`);
+      setSaveStatus('error');
+      return;
+    }
     const userId = session.user.email.replace(/[.#$[\]]/g, '_');
     
     const maxQuestions = selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5;
@@ -172,10 +185,13 @@ export default function SubmitPage() {
                 <label className="block text-[#fc5d01] text-sm font-medium mb-2">
                   Paste your {selectedHomeworkType} links (One link per line)
                 </label>
+                <p className="text-[#fd7f33] text-sm mb-2">
+                  Format: RA#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...
+                </p>
                 <textarea
                   name="links"
                   className="w-full h-64 border border-[#fedac2] rounded px-3 py-2 text-[#fc5d01]"
-                  placeholder={`Maximum ${selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5} links`}
+                  placeholder={`Example:\nRA#1445 APEUni RA EN V2e AI Score 47/90 https://www.apeuni.com/practice/answer_item?model=read_alouds&answer_id=2937397445\n\nMaximum ${selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5} links`}
                   value={existingLinks}
                   onChange={(e) => setExistingLinks(e.target.value)}
                 />

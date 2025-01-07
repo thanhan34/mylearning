@@ -118,7 +118,7 @@ export default function SubmissionList({ assignments, studentId }: SubmissionLis
               if (!assignment) return null;
               return (
                 <div 
-                  key={submission.id} 
+                  key={`${submission.type}_${submission.questionNumber}_${submission.date}`} 
                   className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
                 >
                   <div className="flex justify-between items-start">
@@ -141,7 +141,15 @@ export default function SubmissionList({ assignments, studentId }: SubmissionLis
 
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-600">
-                      Link bài nộp: <a href={submission.link} target="_blank" rel="noopener noreferrer" className="text-[#fc5d01] hover:text-[#fd7f33]">{submission.link}</a>
+                      Link bài nộp: <a 
+                        href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-[#fc5d01] hover:text-[#fd7f33] break-all"
+                        title="Click để mở link gốc"
+                      >
+                        {submission.link.split('https://')[0].trim()}
+                      </a>
                     </p>
                     {submission.notes && (
                       <p className="text-sm text-gray-600 mt-2">
