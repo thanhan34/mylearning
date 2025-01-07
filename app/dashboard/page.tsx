@@ -210,12 +210,22 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Access */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <button className="bg-[#fc5d01] text-white p-4 rounded-lg hover:bg-[#fd7f33] transition-colors">
-          Assign New Task
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button
+          onClick={() => router.push('/dashboard/class')}
+          className="bg-[#fc5d01] text-white p-4 rounded-lg hover:bg-[#fd7f33] transition-colors flex items-center justify-center gap-2"
+        >
+          <span>Manage Classes</span>
         </button>
-        <button className="bg-[#fc5d01] text-white p-4 rounded-lg hover:bg-[#fd7f33] transition-colors">
-          View Learning Reports
+        <button 
+          className="bg-[#fc5d01] text-white p-4 rounded-lg hover:bg-[#fd7f33] transition-colors flex items-center justify-center gap-2"
+        >
+          <span>Assign New Task</span>
+        </button>
+        <button 
+          className="bg-[#fc5d01] text-white p-4 rounded-lg hover:bg-[#fd7f33] transition-colors flex items-center justify-center gap-2"
+        >
+          <span>View Reports</span>
         </button>
       </div>
     </div>
