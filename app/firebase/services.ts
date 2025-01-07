@@ -14,7 +14,8 @@ import {
   arrayRemove,
   orderBy
 } from 'firebase/firestore';
-import { Assignment } from '@/types/assignment';
+import { Assignment } from '../../types/assignment';
+import { AssignmentSubmission, SubmissionFormData } from '../../types/submission';
 
 // Class Management Types
 export interface ClassStudent {
@@ -59,6 +60,102 @@ export interface DailyProgress {
   date: Date;
   targets: DailyTarget[];
 }
+
+// Assignment Submission Functions
+export const createSubmission = async (
+  assignmentId: string,
+  studentId: string,
+  data: SubmissionFormData
+): Promise<string | null> => {
+  try {
+    const submissionsRef = collection(db, 'submissions');
+    const submission: Omit<AssignmentSubmission, 'id'> = {
+      assignmentId,
+      studentId,
+      submittedAt: new Date().toISOString(),
+      link: data.link,
+      notes: data.notes,
+      status: 'submitted'
+    };
+    
+    const docRef = await addDoc(submissionsRef, submission);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating submission:', error);
+    return null;
+  }
+};
+
+export const getStudentSubmissions = async (studentId: string): Promise<AssignmentSubmission[]> => {
+  try {
+    const submissionsRef = collection(db, 'submissions');
+    const q = query(
+      submissionsRef,
+      where('studentId', '==', studentId),
+      orderBy('submittedAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as AssignmentSubmission[];
+  } catch (error) {
+    console.error('Error getting student submissions:', error);
+    return [];
+  }
+};
+
+export const getAssignmentSubmission = async (
+  assignmentId: string,
+  studentId: string
+): Promise<AssignmentSubmission | null> => {
+  try {
+    const submissionsRef = collection(db, 'submissions');
+    const q = query(
+      submissionsRef,
+      where('assignmentId', '==', assignmentId),
+      where('studentId', '==', studentId)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return {
+        id: doc.id,
+        ...doc.data()
+      } as AssignmentSubmission;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting assignment submission:', error);
+    return null;
+  }
+};
+
+export const getDailySubmissionCount = async (studentId: string): Promise<number> => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const submissionsRef = collection(db, 'submissions');
+    const q = query(
+      submissionsRef,
+      where('studentId', '==', studentId),
+      where('submittedAt', '>=', today.toISOString()),
+      where('submittedAt', '<', tomorrow.toISOString())
+    );
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.size;
+  } catch (error) {
+    console.error('Error getting daily submission count:', error);
+    return 0;
+  }
+};
 
 // Assignment Management Functions
 export const createAssignment = async (assignment: Omit<Assignment, 'id'>): Promise<string | null> => {
