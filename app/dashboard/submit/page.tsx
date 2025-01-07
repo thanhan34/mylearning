@@ -168,12 +168,12 @@ export default function SubmitPage() {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="border border-[#fedac2] rounded px-3 py-2 text-[#fc5d01]"
+                  className="border border-[#fedac2] rounded px-3 py-2 text-black"
                 />
                 <select
                   value={selectedHomeworkType}
                   onChange={(e) => setSelectedHomeworkType(e.target.value)}
-                  className="border border-[#fedac2] rounded px-3 py-2 text-[#fc5d01]"
+                  className="border border-[#fedac2] rounded px-3 py-2 text-black"
                 >
                   <option value="Read aloud">Read aloud</option>
                   <option value="Repeat sentence">Repeat sentence</option>
@@ -182,15 +182,15 @@ export default function SubmitPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-[#fc5d01] text-sm font-medium mb-2">
+                <label className="block text-black text-sm font-medium mb-2">
                   Paste your {selectedHomeworkType} links (One link per line)
                 </label>
-                <p className="text-[#fd7f33] text-sm mb-2">
+                <p className="text-gray-400 text-sm mb-2">
                   Format: RA#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...
                 </p>
                 <textarea
                   name="links"
-                  className="w-full h-64 border border-[#fedac2] rounded px-3 py-2 text-[#fc5d01]"
+                  className="w-full h-64 border border-[#fedac2] rounded px-3 py-2 text-black"
                   placeholder={`Example:\nRA#1445 APEUni RA EN V2e AI Score 47/90 https://www.apeuni.com/practice/answer_item?model=read_alouds&answer_id=2937397445\n\nMaximum ${selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5} links`}
                   value={existingLinks}
                   onChange={(e) => setExistingLinks(e.target.value)}

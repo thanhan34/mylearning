@@ -184,7 +184,7 @@ export default function ClassManagement() {
             className={`p-4 rounded-lg cursor-pointer transition-all ${
               selectedClass?.id === cls.id 
                 ? 'bg-[#fc5d01] text-white' 
-                : 'bg-[#fedac2] hover:bg-[#fdbc94]'
+                : 'bg-[#6D6875] hover:bg-[#fdbc94]'
             }`}
           >
             <h3 className="font-semibold">{cls.name}</h3>
@@ -228,7 +228,7 @@ export default function ClassManagement() {
 
           {/* Assignments List */}
           <div className="mb-6">
-            <h3 className="font-semibold mb-2">Assignments</h3>
+            <h3 className="font-semibold mb-2 text-black">Assignments</h3>
             <div className="space-y-2">
               {assignments.map(assignment => (
                 <div key={assignment.id} className="p-4 bg-[#fedac2] rounded-lg">
@@ -312,10 +312,10 @@ export default function ClassManagement() {
 
           {/* Student List */}
           <div className="mb-6">
-            <h3 className="font-semibold mb-2">Students</h3>
+            <h3 className="font-semibold mb-2 text-black">Students</h3>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-[#fedac2]">
+                <thead className="bg-[#fc5d01] text-white">
                   <tr>
                     <th className="p-2 text-left">Name</th>
                     <th className="p-2 text-left">Role</th>
@@ -325,7 +325,7 @@ export default function ClassManagement() {
                 </thead>
                 <tbody>
                   {selectedClass.students.map(student => (
-                    <tr key={student.id} className="border-b">
+                    <tr key={student.id} className="border-b text-black">
                       <td className="p-2">{student.name}</td>
                       <td className="p-2">
                         <select
@@ -362,14 +362,14 @@ export default function ClassManagement() {
 
           {/* Announcement Section */}
           <div className="mt-6">
-            <h3 className="font-semibold mb-2">Send Announcement</h3>
+            <h3 className="font-semibold mb-2 text-black">Send Announcement</h3>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={announcement}
                 onChange={(e) => setAnnouncement(e.target.value)}
                 placeholder="Type your announcement here..."
-                className="flex-1 p-2 border rounded"
+                className="flex-1 p-2 border rounded text-black"
               />
               <button
                 onClick={handleAnnouncement}

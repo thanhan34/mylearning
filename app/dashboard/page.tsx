@@ -330,9 +330,9 @@ export default function DashboardPage() {
                 
                 return (
                   <tr key={task.id} className={task.id % 2 === 0 ? 'bg-[#fedac2] bg-opacity-10' : ''}>
-                    <td className="px-4 py-3 text-[#fc5d01]">{task.id}</td>
-                    <td className="px-4 py-3 text-[#fc5d01]">{task.type}</td>
-                    <td className="px-4 py-3 text-center text-[#fc5d01]">{task.target}</td>
+                    <td className="px-4 py-3 text-black">{task.id}</td>
+                    <td className="px-4 py-3 text-black">{task.type}</td>
+                    <td className="px-4 py-3 text-center text-black">{task.target}</td>
                     <td className="px-4 py-3 text-center">
                       <input
                         type="number"
@@ -343,13 +343,13 @@ export default function DashboardPage() {
                             t.id === task.id ? { ...t, completed: newValue } : t
                           ));
                         }}
-                        className="w-16 text-center border border-[#fedac2] rounded px-2 py-1 text-[#fc5d01]"
+                        className="w-16 text-center border border-[#fedac2] rounded px-2 py-1 text-black"
                         min="0"
                       />
                     </td>
                     <td className="px-4 py-3 text-[#fc5d01]">
                       {task.source && (
-                        <a href="#" className="text-[#fd7f33] hover:text-[#fc5d01] underline">
+                        <a href="#" className="text-black hover:text-[#fc5d01] underline">
                           {task.source}
                         </a>
                       )}
@@ -388,12 +388,12 @@ export default function DashboardPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-[#fedac2] rounded px-3 py-2 text-[#fc5d01]"
+              className="border border-[#fedac2] rounded px-3 py-2 text-black"
             />
             <select
               value={selectedHomeworkType}
               onChange={(e) => setSelectedHomeworkType(e.target.value)}
-              className="border border-[#fedac2] rounded px-3 py-2 text-[#fc5d01]"
+              className="border border-[#fedac2] rounded px-3 py-2 text-black"
             >
               <option value="Read aloud">Read aloud</option>
               <option value="Repeat sentence">Repeat sentence</option>
@@ -425,7 +425,7 @@ export default function DashboardPage() {
                 .map((submission) => (
                   <tr key={`${submission.type}_${submission.questionNumber}_${submission.date}`} 
                       className={submission.questionNumber % 2 === 0 ? 'bg-[#fedac2] bg-opacity-10' : ''}>
-                    <td className="px-4 py-3 text-[#fc5d01]">
+                    <td className="px-4 py-3 text-black">
                       Question {submission.questionNumber}
                     </td>
                     <td className="px-4 py-3">
@@ -434,18 +434,18 @@ export default function DashboardPage() {
                           href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#fc5d01] hover:text-[#fd7f33] underline break-all"
+                          className="text-black hover:text-[#fc5d01] underline break-all"
                           title="Click để mở link gốc"
                         >
                           {submission.link.split('https://')[0].trim()}
                         </a>
                       ) : (
-                        <span className="text-[#fdbc94] text-sm">No submission yet</span>
+                        <span className="text-gray-400 text-sm">No submission yet</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {submission.feedback ? (
-                        <div className="text-[#fc5d01]">{submission.feedback}</div>
+                        <div className="text-black">{submission.feedback}</div>
                       ) : (
                         <span className="text-[#fdbc94] text-sm">No feedback yet</span>
                       )}
