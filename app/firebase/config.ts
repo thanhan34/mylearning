@@ -1,6 +1,7 @@
 import { initializeApp, getApps, FirebaseApp, getApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 
 // Initialize Firebase configuration
 const firebaseConfig = {
@@ -39,4 +40,5 @@ console.log('Firebase initialized with config:', {
   authDomain: firebaseConfig.authDomain
 });
 
-export { db, storage };
+const auth = getAuth(app);
+export { db, storage, auth };

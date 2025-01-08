@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import { getAuth, updatePassword } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { db, storage } from '../../firebase/config';
+import { updatePassword } from 'firebase/auth';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { db, auth } from '../../firebase/config';
 import { ClassInfo, UserProfile } from '../../../types/profile';
 
 export default function ProfilePage() {
@@ -19,7 +18,13 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -42,6 +47,16 @@ export default function ProfilePage() {
                 setClasses([classSnap.data() as ClassInfo]);
               }
             }
+          } else {
+            // Create user document if it doesn't exist
+            await setDoc(userRef, {
+              email: session.user.email,
+              name: session.user.name || '',
+              role: (session.user as any)?.role || 'student',
+              createdAt: new Date().toISOString()
+            });
+            setName(session.user.name || '');
+            setEmail(session.user.email || '');
           }
           setLoading(false);
         } catch (error) {
@@ -52,28 +67,78 @@ export default function ProfilePage() {
       }
     };
 
-    fetchUserData();
-  }, [session]);
+    if (mounted) {
+      fetchUserData();
+    }
+  }, [session, mounted]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
     const file = e.target.files?.[0];
-    if (file && session?.user?.email) {
-      try {
-        const storageRef = ref(storage, `avatars/${session.user.email}`);
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        
-        const userRef = doc(db, 'users', session.user.email);
-        await updateDoc(userRef, {
-          avatar: downloadURL
-        });
-        
-        setAvatar(downloadURL);
-        setMessage({ type: 'success', content: 'Avatar updated successfully' });
-      } catch (error) {
-        console.error('Error uploading avatar:', error);
-        setMessage({ type: 'error', content: 'Error updating avatar' });
+    if (!file || !session?.user?.email) return;
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ type: 'error', content: 'Image size must be less than 2MB' });
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setMessage({ type: 'info', content: 'Uploading image...' });
+
+      // Upload to Cloudinary first
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'mylearning');
+      
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
       }
+
+      const data = await response.json();
+
+      // Then handle Firestore update
+      const userRef = doc(db, 'users', session.user.email);
+      const userSnap = await getDoc(userRef);
+
+      if (data.secure_url) {
+        if (!userSnap.exists()) {
+          // Create user document if it doesn't exist
+          await setDoc(userRef, {
+            email: session.user.email,
+            name: session.user.name || '',
+            role: (session.user as any)?.role || 'student',
+            createdAt: new Date().toISOString(),
+            avatar: data.secure_url
+          });
+        } else {
+          // Update existing document
+          await updateDoc(userRef, {
+            avatar: data.secure_url
+          });
+        }
+        
+        setAvatar(data.secure_url);
+        setMessage({ type: 'success', content: 'Avatar updated successfully' });
+      }
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      setMessage({ 
+        type: 'error', 
+        content: error.message || 'Error updating avatar. Please try again.' 
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -82,14 +147,28 @@ export default function ProfilePage() {
     if (session?.user?.email) {
       try {
         const userRef = doc(db, 'users', session.user.email);
-        await updateDoc(userRef, {
-          name,
-          email
-        });
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            await setDoc(userRef, {
+              email: session.user.email,
+              name: name,
+              role: (session.user as any)?.role || 'student',
+              createdAt: new Date().toISOString()
+            });
+        } else {
+          await updateDoc(userRef, {
+            name,
+            email
+          });
+        }
         setMessage({ type: 'success', content: 'Profile updated successfully' });
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error updating profile:', error);
-        setMessage({ type: 'error', content: 'Error updating profile' });
+        setMessage({ 
+          type: 'error', 
+          content: error.message || 'Error updating profile' 
+        });
       }
     }
   };
@@ -102,21 +181,27 @@ export default function ProfilePage() {
     }
 
     try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      
-      if (user) {
-        await updatePassword(user, newPassword);
-        setMessage({ type: 'success', content: 'Password updated successfully' });
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+      if (!auth.currentUser) {
+        throw new Error('Please sign in again to change password');
       }
-    } catch (error) {
+
+      await updatePassword(auth.currentUser, newPassword);
+      setMessage({ type: 'success', content: 'Password updated successfully' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
       console.error('Error updating password:', error);
-      setMessage({ type: 'error', content: 'Error updating password' });
+      setMessage({ 
+        type: 'error', 
+        content: error.message || 'Error updating password' 
+      });
     }
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
@@ -127,7 +212,11 @@ export default function ProfilePage() {
       <h1 className="text-2xl font-bold mb-8 text-[#fc5d01]">Profile Settings</h1>
       
       {message.content && (
-        <div className={`mb-4 p-4 rounded ${message.type === 'success' ? 'bg-[#fedac2] text-[#fc5d01]' : 'bg-red-100 text-red-700'}`}>
+        <div className={`mb-4 p-4 rounded ${
+          message.type === 'success' ? 'bg-[#fedac2] text-[#fc5d01]' : 
+          message.type === 'info' ? 'bg-blue-100 text-blue-700' :
+          'bg-red-100 text-red-700'
+        }`}>
           {message.content}
         </div>
       )}
@@ -152,14 +241,20 @@ export default function ProfilePage() {
                 </div>
               )}
               <div>
-                <label className="bg-[#fc5d01] text-white px-4 py-2 rounded cursor-pointer hover:bg-[#fd7f33]">
-                  Change Avatar
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                  />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <label
+                  htmlFor="avatar-upload"
+                  className={`bg-[#fc5d01] text-white px-4 py-2 rounded cursor-pointer hover:bg-[#fd7f33] ${
+                    uploading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {uploading ? 'Uploading...' : 'Change Avatar'}
                 </label>
               </div>
             </div>
@@ -174,7 +269,7 @@ export default function ProfilePage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#fc5d01]"
+                className="text-black w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#fc5d01]"
               />
             </div>
             
@@ -186,7 +281,7 @@ export default function ProfilePage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#fc5d01]"
+                className="text-black w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#fc5d01]"
                 disabled
               />
             </div>

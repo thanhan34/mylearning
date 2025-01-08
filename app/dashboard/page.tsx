@@ -114,8 +114,8 @@ export default function DashboardPage() {
     if (session?.user?.email) {
       const userId = session.user.email.replace(/[.#$[\]]/g, '_');
       const weeklyData = await getWeeklyProgress(userId);
-      const labels = weeklyData.map(d => d.date.toLocaleDateString());
-      const data = weeklyData.map(d => d.completed);
+      const labels = weeklyData.map((d: { date: Date }) => d.date.toLocaleDateString());
+      const data = weeklyData.map((d: { completed: number }) => d.completed);
       
       setStudentProgressData({
         labels,
