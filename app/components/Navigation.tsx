@@ -15,9 +15,7 @@ const Navigation = () => {
 
   const adminNavItems: NavItem[] = [
     { href: "/dashboard/admin", label: "Dashboard" },
-    { href: "/dashboard/class", label: "Classes" },
-    { href: "/dashboard/assignments", label: "Assignments" },
-    { href: "/dashboard/one-on-one", label: "One-on-One" },
+    { href: "/dashboard/class", label: "Classes" },   
     { href: "/dashboard/profile", label: "Profile" },
   ];
 
@@ -25,14 +23,10 @@ const Navigation = () => {
     { href: "/dashboard/teacher", label: "Học viên" },
     { href: "/dashboard/teacher/assign", label: "Assign Học Viên" },
     { href: "/dashboard/class", label: "Classes" },
-    { href: "/dashboard/assignments", label: "Assignments" },
-    { href: "/dashboard/one-on-one", label: "One-on-One" },
     { href: "/dashboard/profile", label: "Profile" },
   ];
 
   const studentNavItems: NavItem[] = [
-    { href: "/dashboard/assignments", label: "Assignments" },
-    { href: "/dashboard/one-on-one", label: "One-on-One" },
     { href: "/dashboard/profile", label: "Profile" },
   ];
 
