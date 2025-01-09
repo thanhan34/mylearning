@@ -3,12 +3,14 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend,
@@ -20,13 +22,16 @@ import {
   saveHomeworkSubmission,
   getDailyProgress, 
   getHomeworkSubmissions,
-  getWeeklyProgress 
+  getWeeklyProgress,
+  getHomeworkProgress
 } from '../firebase/services';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend
@@ -50,15 +55,15 @@ const classProgressData = {
 
 // Default daily targets template
 const defaultDailyTargets = [
-  { id: 1, type: 'Read aloud', target: 20, completed: 15, source: 'Shadowing' },
-  { id: 2, type: 'Repeat sentence', target: 20, completed: 18, source: 'PTE Repeat Sentence' },
-  { id: 3, type: 'Describe image', target: 5, completed: 3, source: '' },
-  { id: 4, type: 'Retell lecture', target: 5, completed: 2, source: '' },
-  { id: 5, type: 'R&W: Fill in the blanks', target: 20, completed: 12, source: '' },
-  { id: 6, type: 'Reoder paragraphs', target: 20, completed: 15, source: '' },
-  { id: 7, type: 'Fill in the blanks', target: 20, completed: 16, source: '' },
-  { id: 8, type: 'Highlight incorrect words', target: 5, completed: 3, source: '' },
-  { id: 9, type: 'Write from dictation', target: 20, completed: 14, source: 'PTE Write From Dictation' }
+  { id: 1, type: 'Read aloud', target: 20, completed: 15, source: 'Shadowing', link: 'https://study.pteintensive.com/shadow' },
+  { id: 2, type: 'Repeat sentence', target: 20, completed: 18, source: 'PTE Repeat Sentence', link:'https://www.youtube.com/watch?v=7Nq357niMmE' },
+  { id: 3, type: 'Describe image', target: 5, completed: 3, source: '' ,link:''},
+  { id: 4, type: 'Retell lecture', target: 5, completed: 2, source: '', link:'' },
+  { id: 5, type: 'R&W: Fill in the blanks', target: 20, completed: 12, source: '', link:'' },
+  { id: 6, type: 'Reoder paragraphs', target: 20, completed: 15, source: '' , link:''},
+  { id: 7, type: 'Fill in the blanks', target: 20, completed: 16, source: '', link:'' },
+  { id: 8, type: 'Highlight incorrect words', target: 5, completed: 3, source: '',link:'' },
+  { id: 9, type: 'Write from dictation', target: 20, completed: 14, source: 'PTE Write From Dictation', link:'https://www.youtube.com/watch?v=pO2SH90pemc' }
 ];
 
 // Default homework submissions template
@@ -88,11 +93,30 @@ export default function DashboardPage() {
   }>({
     labels: [],
     datasets: [{
-      label: 'Completed Tasks',
+      label: 'Daily Tasks',
       data: [],
       backgroundColor: '#fc5d01',
     }]
   });
+
+  const [homeworkProgressData, setHomeworkProgressData] = useState<{
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      borderColor: string;
+      tension: number;
+    }[];
+  }>({
+    labels: [],
+    datasets: [{
+      label: 'Homework Completion',
+      data: [],
+      borderColor: '#fc5d01',
+      tension: 0.4
+    }]
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const { data: session, status } = useSession();
@@ -120,9 +144,28 @@ export default function DashboardPage() {
       setStudentProgressData({
         labels,
         datasets: [{
-          label: 'Completed Tasks',
+          label: 'Daily Tasks',
           data,
           backgroundColor: '#fc5d01',
+        }]
+      });
+    }
+  }, [session?.user?.email]);
+
+  const loadHomeworkProgress = useCallback(async () => {
+    if (session?.user?.email) {
+      const userId = session.user.email.replace(/[.#$[\]]/g, '_');
+      const progressData = await getHomeworkProgress(userId);
+      const labels = progressData.map(d => new Date(d.date).toLocaleDateString());
+      const data = progressData.map(d => d.completed);
+      
+      setHomeworkProgressData({
+        labels,
+        datasets: [{
+          label: 'Homework Completion',
+          data,
+          borderColor: '#fc5d01',
+          tension: 0.4
         }]
       });
     }
@@ -136,8 +179,9 @@ export default function DashboardPage() {
       setUserRole((session.user as any)?.role || 'student');
       loadDailyProgress();
       loadWeeklyProgress();
+      loadHomeworkProgress();
     }
-  }, [status, router, session, loadDailyProgress, loadWeeklyProgress]);
+  }, [status, router, session, loadDailyProgress, loadWeeklyProgress, loadHomeworkProgress]);
 
   const handleSaveProgress = async () => {
     if (!session?.user?.email) {
@@ -175,7 +219,10 @@ export default function DashboardPage() {
       if (progressSuccess && submissionsSuccess) {
         setSaveStatus('saved');
         console.log('Save successful, refreshing progress...');
-        await loadWeeklyProgress(); // Refresh the progress chart
+        await Promise.all([
+          loadWeeklyProgress(),
+          loadHomeworkProgress()
+        ]);
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
         console.error('Save operation failed:', { progressSuccess, submissionsSuccess });
@@ -300,11 +347,29 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Progress Chart */}
-      <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
-        <h3 className="text-[#fc5d01] text-lg font-medium mb-4">Your Progress</h3>
-        <div className="h-64">
-          <Bar data={studentProgressData} options={{ maintainAspectRatio: false }} />
+      {/* Progress Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+
+        {/* Homework Progress */}
+        <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
+          <h3 className="text-[#fc5d01] text-lg font-medium mb-4">Homework Progress</h3>
+          <div className="h-64">
+            <Line 
+              data={homeworkProgressData} 
+              options={{ 
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      stepSize: 1
+                    }
+                  }
+                }
+              }} 
+            />
+          </div>
         </div>
       </div>
 
@@ -317,10 +382,8 @@ export default function DashboardPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">NO</th>
                   <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">TYPE</th>
-                  <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Target</th>
-                  <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Completed</th>
-                  <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">Source</th>
-                  <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Status</th>
+                  <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Target</th>                  
+                  <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">Source</th>                  
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#fedac2]">
@@ -332,45 +395,14 @@ export default function DashboardPage() {
                   <tr key={task.id} className={task.id % 2 === 0 ? 'bg-[#fedac2] bg-opacity-10' : ''}>
                     <td className="px-4 py-3 text-black">{task.id}</td>
                     <td className="px-4 py-3 text-black">{task.type}</td>
-                    <td className="px-4 py-3 text-center text-black">{task.target}</td>
-                    <td className="px-4 py-3 text-center">
-                      <input
-                        type="number"
-                        value={task.completed}
-                        onChange={(e) => {
-                          const newValue = Math.max(0, parseInt(e.target.value) || 0);
-                          setDailyTargets(dailyTargets.map(t => 
-                            t.id === task.id ? { ...t, completed: newValue } : t
-                          ));
-                        }}
-                        className="w-16 text-center border border-[#fedac2] rounded px-2 py-1 text-black"
-                        min="0"
-                      />
-                    </td>
+                    <td className="px-4 py-3 text-center text-black">{task.target}</td>                    
                     <td className="px-4 py-3 text-[#fc5d01]">
                       {task.source && (
-                        <a href="#" className="text-black hover:text-[#fc5d01] underline">
+                        <a href={task.link}className="text-black hover:text-[#fc5d01] underline">
                           {task.source}
                         </a>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="relative pt-1">
-                        <div className="flex mb-2 items-center justify-center">
-                          <div className="w-full bg-[#fedac2] rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full ${isCompleted ? 'bg-[#fc5d01]' : 'bg-[#fd7f33]'}`}
-                              style={{ width: `${Math.min(progress, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        {!isCompleted && new Date().getHours() >= 20 && (
-                          <span className="text-[#fc5d01] text-xs">
-                            ⚠️ Target not met
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                    </td>                   
                   </tr>
                 );
               })}
@@ -456,7 +488,6 @@ export default function DashboardPage() {
           </table>
         </div>
       </div>
-
 
       {/* Notifications */}
       <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">

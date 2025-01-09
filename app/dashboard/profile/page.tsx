@@ -30,33 +30,22 @@ export default function ProfilePage() {
     const fetchUserData = async () => {
       if (session?.user?.email) {
         try {
-          const userRef = doc(db, 'users', session.user.email);
+          if (!session.user.id) return;
+          const userRef = doc(db, 'users', session.user.id);
           const userSnap = await getDoc(userRef);
           
-          if (userSnap.exists()) {
-            const userData = userSnap.data() as UserProfile;
-            setName(userData.name || '');
-            setEmail(userData.email || '');
-            setAvatar(userData.avatar || '');
-            
-            // Fetch classes for students
-            if (userData.role === 'student' && userData.classId) {
-              const classRef = doc(db, 'classes', userData.classId);
-              const classSnap = await getDoc(classRef);
-              if (classSnap.exists()) {
-                setClasses([classSnap.data() as ClassInfo]);
-              }
+          const userData = userSnap.data() as UserProfile;
+          setName(userData.name || '');
+          setEmail(userData.email || '');
+          setAvatar(userData.avatar || '');
+          
+          // Fetch classes for students
+          if (userData.role === 'student' && userData.classId) {
+            const classRef = doc(db, 'classes', userData.classId);
+            const classSnap = await getDoc(classRef);
+            if (classSnap.exists()) {
+              setClasses([classSnap.data() as ClassInfo]);
             }
-          } else {
-            // Create user document if it doesn't exist
-            await setDoc(userRef, {
-              email: session.user.email,
-              name: session.user.name || '',
-              role: (session.user as any)?.role || 'student',
-              createdAt: new Date().toISOString()
-            });
-            setName(session.user.name || '');
-            setEmail(session.user.email || '');
           }
           setLoading(false);
         } catch (error) {
@@ -108,25 +97,13 @@ export default function ProfilePage() {
       const data = await response.json();
 
       // Then handle Firestore update
-      const userRef = doc(db, 'users', session.user.email);
-      const userSnap = await getDoc(userRef);
-
+      if (!session.user.id) return;
+      const userRef = doc(db, 'users', session.user.id);
+      
       if (data.secure_url) {
-        if (!userSnap.exists()) {
-          // Create user document if it doesn't exist
-          await setDoc(userRef, {
-            email: session.user.email,
-            name: session.user.name || '',
-            role: (session.user as any)?.role || 'student',
-            createdAt: new Date().toISOString(),
-            avatar: data.secure_url
-          });
-        } else {
-          // Update existing document
-          await updateDoc(userRef, {
-            avatar: data.secure_url
-          });
-        }
+        await updateDoc(userRef, {
+          avatar: data.secure_url
+        });
         
         setAvatar(data.secure_url);
         setMessage({ type: 'success', content: 'Avatar updated successfully' });
@@ -144,24 +121,13 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (session?.user?.email) {
+    if (session?.user?.id) {
       try {
-        const userRef = doc(db, 'users', session.user.email);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-            await setDoc(userRef, {
-              email: session.user.email,
-              name: name,
-              role: (session.user as any)?.role || 'student',
-              createdAt: new Date().toISOString()
-            });
-        } else {
-          await updateDoc(userRef, {
-            name,
-            email
-          });
-        }
+        const userRef = doc(db, 'users', session.user.id);
+        await updateDoc(userRef, {
+          name,
+          email
+        });
         setMessage({ type: 'success', content: 'Profile updated successfully' });
       } catch (error: any) {
         console.error('Error updating profile:', error);

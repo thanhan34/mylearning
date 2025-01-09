@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { UserProfile } from "../../types/profile";
 
@@ -18,17 +18,18 @@ const Navigation = () => {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [userData, setUserData] = useState<UserProfile | null>(null);
-  const [lastUpdate, setLastUpdate] = useState(Date.now());
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (session?.user?.email) {
         try {
-          const userRef = doc(db, 'users', session.user.email);
-          const userSnap = await getDoc(userRef);
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('email', '==', session.user.email));
+          const querySnapshot = await getDocs(q);
           
-          if (userSnap.exists()) {
-            setUserData(userSnap.data() as UserProfile);
+          if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            setUserData(userDoc.data() as UserProfile);
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -37,21 +38,6 @@ const Navigation = () => {
     };
 
     fetchUserData();
-  }, [session?.user?.email, lastUpdate]);
-
-  // Set up real-time listener for user document changes
-  useEffect(() => {
-    if (!session?.user?.email) return;
-
-    const userRef = doc(db, 'users', session.user.email);
-    const unsubscribe = onSnapshot(userRef, (doc) => {
-      if (doc.exists()) {
-        setUserData(doc.data() as UserProfile);
-        setLastUpdate(Date.now());
-      }
-    });
-
-    return () => unsubscribe();
   }, [session?.user?.email]);
 
   const adminNavItems: NavItem[] = [
@@ -68,6 +54,7 @@ const Navigation = () => {
   ];
 
   const studentNavItems: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/profile", label: "Profile" },
   ];
 
@@ -99,7 +86,7 @@ const Navigation = () => {
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                   pathname === item.href
                     ? "border-[#fc5d01] text-[#fc5d01]"
-                    : "border-transparent text-gray-500 hover:text-[#fd7f33] hover:border-[#fedac2]"
+                    : "border-transparent text-[#fd7f33] hover:text-[#fc5d01] hover:border-[#fedac2]"
                 }`}
               >
                 {item.label}
@@ -109,28 +96,30 @@ const Navigation = () => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
               {userData?.avatar ? (
-                <Image
-                  src={userData.avatar}
-                  alt="Profile"
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
+                <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-[#fedac2]">
+                  <Image
+                    src={userData.avatar}
+                    alt="Profile"
+                    width={40}
+                    height={40}
+                    className="rounded-full object-cover"
+                  />
+                </div>
               ) : (
-                <div className="w-10 h-10 bg-[#fedac2] rounded-full flex items-center justify-center">
-                  <span className="text-lg text-[#fc5d01]">
+                <div className="w-10 h-10 bg-[#fedac2] rounded-full flex items-center justify-center ring-2 ring-[#fdbc94]">
+                  <span className="text-lg text-[#fc5d01] font-semibold">
                     {userData?.name?.charAt(0) || session?.user?.name?.charAt(0) || 'U'}
                   </span>
                 </div>
               )}
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-gray-900">
+              <div className="flex flex-col min-w-[120px]">
+                <span className="text-sm font-semibold text-[#fc5d01]">
                   {userData?.name || session?.user?.name || 'User'}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-[#fd7f33]">
                   {session?.user?.email}
                 </span>
-                <span className="text-xs text-[#fc5d01] capitalize">
+                <span className="text-xs text-[#fc5d01] capitalize font-medium">
                   {session?.user?.role || 'User'}
                 </span>
               </div>

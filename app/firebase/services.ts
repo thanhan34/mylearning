@@ -14,7 +14,8 @@ import {
   arrayRemove,
   orderBy,
   getDoc,
-  Firestore
+  Firestore,
+  runTransaction
 } from 'firebase/firestore';
 
 const getFirestoreInstance = (): Firestore => {
@@ -33,31 +34,29 @@ export const createUser = async (userData: {
   role?: "admin" | "teacher" | "student";
 }) => {
   try {
-    console.log('Creating user with data:', userData);
+    const firestore = getFirestoreInstance();
     
-    // Check if user already exists
-    const existingUser = await getUserRole(userData.email);
-    if (existingUser) {
-      console.log('User already exists with role:', existingUser);
-      return null;
+    // Check if user exists first
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('email', '==', userData.email));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      console.log('User already exists');
+      return querySnapshot.docs[0].id;
     }
 
-    const firestore = getFirestoreInstance();
-    // Create new user
-    const usersRef = collection(firestore, 'users');
+    // Create new user with Firebase-generated ID
     const newUser = {
       ...userData,
       role: userData.role || 'student',
       createdAt: new Date().toISOString()
     };
     
-    console.log('Creating new user document:', newUser);
     const docRef = await addDoc(usersRef, newUser);
-    console.log('User created successfully with ID:', docRef.id);
-    
     return docRef.id;
   } catch (error) {
-    console.error('Error creating user:', error);
+    console.error('Error in createUser transaction:', error);
     if (error instanceof Error) {
       console.error('Error details:', {
         message: error.message,
@@ -69,25 +68,44 @@ export const createUser = async (userData: {
   }
 };
 
-export const getUserRole = async (email: string): Promise<"admin" | "teacher" | "student" | null> => {
+export const getUserRole = async (userId: string): Promise<"admin" | "teacher" | "student" | null> => {
   try {
-    console.log('Querying Firebase for user:', email);
+    const firestore = getFirestoreInstance();
+    const userRef = doc(firestore, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      return userData.role as "admin" | "teacher" | "student";
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting user role:', error);
+    return null;
+  }
+};
+
+export const getUserByEmail = async (email: string): Promise<{ id: string; email: string; role: "admin" | "teacher" | "student" } | null> => {
+  try {
     const firestore = getFirestoreInstance();
     const usersRef = collection(firestore, 'users');
     const q = query(usersRef, where('email', '==', email));
     const querySnapshot = await getDocs(q);
     
     if (!querySnapshot.empty) {
-      const userData = querySnapshot.docs[0].data();
-      console.log('Found user data:', userData);
-      const role = userData.role as "admin" | "teacher" | "student";
-      return role;
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        role: data.role as "admin" | "teacher" | "student"
+      };
     }
     
-    console.log('User not found in Firebase');
     return null;
   } catch (error) {
-    console.error('Error getting user role:', error);
+    console.error('Error getting user by email:', error);
     return null;
   }
 };
@@ -121,6 +139,7 @@ export interface DailyTarget {
   target: number;
   completed: number;
   source: string;
+  link: string;
 }
 
 export interface HomeworkSubmission {
@@ -437,23 +456,23 @@ export const saveHomeworkSubmission = async (userId: string, submissions: Homewo
         lastUpdated: new Date().toISOString()
       });
     } else {
-    // Create new document
-    console.log('Creating new document for date:', date);
-    // Add empty submissions for all types if not present
-    const defaultSubmissions = getDefaultHomeworkSubmissions(date);
-    const mergedSubmissions = defaultSubmissions.map(defaultSub => {
-      const matchingSub = submissionsToSave.find(
-        s => s.type === defaultSub.type && s.questionNumber === defaultSub.questionNumber
-      );
-      return matchingSub || defaultSub;
-    });
-    
-    await setDoc(docRef, {
-      userId,
-      date,
-      submissions: mergedSubmissions,
-      lastUpdated: new Date().toISOString()
-    });
+      // Create new document
+      console.log('Creating new document for date:', date);
+      // Add empty submissions for all types if not present
+      const defaultSubmissions = getDefaultHomeworkSubmissions(date);
+      const mergedSubmissions = defaultSubmissions.map(defaultSub => {
+        const matchingSub = submissionsToSave.find(
+          s => s.type === defaultSub.type && s.questionNumber === defaultSub.questionNumber
+        );
+        return matchingSub || defaultSub;
+      });
+      
+      await setDoc(docRef, {
+        userId,
+        date,
+        submissions: mergedSubmissions,
+        lastUpdated: new Date().toISOString()
+      });
     }
 
     console.log('Successfully saved submissions for date:', date);
@@ -660,6 +679,29 @@ export const addClassAnnouncement = async (
   } catch (error) {
     console.error('Error adding announcement:', error);
     return false;
+  }
+};
+
+export const getHomeworkProgress = async (userId: string): Promise<{ date: string; completed: number }[]> => {
+  try {
+    const firestore = getFirestoreInstance();
+    const homeworkRef = collection(firestore, 'users', userId, 'homework');
+    const querySnapshot = await getDocs(homeworkRef);
+    
+    const progressData = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      const completedCount = data.submissions.filter((sub: HomeworkSubmission) => sub.link.trim() !== '').length;
+      return {
+        date: doc.id, // The document ID is the date
+        completed: completedCount
+      };
+    });
+
+    // Sort by date
+    return progressData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  } catch (error) {
+    console.error('Error getting homework progress:', error);
+    return [];
   }
 };
 

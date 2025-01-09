@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import { getServerSession } from "next-auth";
 import SessionProvider from "./providers/SessionProvider";
+import ClientProviders from "./providers/ClientProviders";
 import "./globals.css";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 
@@ -22,7 +23,11 @@ export default async function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <SessionProvider session={session}>
-          {children}
+          <ClientProviders>
+            <main className="min-h-screen">
+              {children}
+            </main>
+          </ClientProviders>
         </SessionProvider>
       </body>
     </html>

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -16,14 +17,20 @@ export default function LoginPage() {
   }, [status, router]);
 
   const handleGoogleLogin = async () => {
+    console.log('Login button clicked');
     try {
+      setError(null);
       setIsLoading(true);
+      
+      // Direct redirect approach
       await signIn("google", { 
         callbackUrl: "/dashboard",
+        redirect: true
       });
+      
     } catch (error) {
-      console.error(error);
-    } finally {
+      console.error('Sign in exception:', error);
+      setError('An unexpected error occurred');
       setIsLoading(false);
     }
   };
@@ -32,7 +39,7 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="text-[#fc5d01] text-xl">Loading...</div>
+          <div className="text-primary text-xl">Loading...</div>
         </div>
       </div>
     );
@@ -42,15 +49,24 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-[#fc5d01]">Welcome Back</h1>
-          <p className="mt-2 text-[#fd7f33]">Please sign in to continue</p>
+          <h1 className="text-3xl font-bold text-primary">Welcome Back</h1>
+          <p className="mt-2 text-primary-vivid">Please sign in to continue</p>
         </div>
+
+        {error && (
+          <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+            {error}
+          </div>
+        )}
 
         <button
           type="button"
-          onClick={handleGoogleLogin}
+          onClick={() => {
+            console.log('Button clicked');
+            handleGoogleLogin();
+          }}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-[#fedac2] rounded-md shadow-sm bg-white text-sm font-medium text-[#fd7f33] hover:bg-[#fedac2] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-primary-light rounded-md shadow-sm bg-white text-sm font-medium text-primary-vivid hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
