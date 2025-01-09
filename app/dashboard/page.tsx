@@ -83,21 +83,7 @@ export default function DashboardPage() {
   const [homeworkSubmissions, setHomeworkSubmissions] = useState<HomeworkSubmission[]>([]);
   const [selectedHomeworkType, setSelectedHomeworkType] = useState<string>('Read aloud');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [studentProgressData, setStudentProgressData] = useState<{
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[];
-      backgroundColor: string;
-    }[];
-  }>({
-    labels: [],
-    datasets: [{
-      label: 'Daily Tasks',
-      data: [],
-      backgroundColor: '#fc5d01',
-    }]
-  });
+  
 
   const [homeworkProgressData, setHomeworkProgressData] = useState<{
     labels: string[];
@@ -139,16 +125,7 @@ export default function DashboardPage() {
       const userId = session.user.email.replace(/[.#$[\]]/g, '_');
       const weeklyData = await getWeeklyProgress(userId);
       const labels = weeklyData.map((d: { date: Date }) => d.date.toLocaleDateString());
-      const data = weeklyData.map((d: { completed: number }) => d.completed);
-      
-      setStudentProgressData({
-        labels,
-        datasets: [{
-          label: 'Daily Tasks',
-          data,
-          backgroundColor: '#fc5d01',
-        }]
-      });
+      const data = weeklyData.map((d: { completed: number }) => d.completed); 
     }
   }, [session?.user?.email]);
 
@@ -490,19 +467,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Notifications */}
-      <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
-        <h3 className="text-[#fc5d01] text-lg font-medium mb-4">Notifications</h3>
-        <div className="space-y-4">
-          <div className="border-l-4 border-[#fc5d01] pl-4">
-            <p className="text-[#fd7f33] font-medium">Math Assignment Due Tomorrow</p>
-            <p className="text-[#fdbc94] text-sm">Complete Chapter 5 Exercises</p>
-          </div>
-          <div className="border-l-4 border-[#fc5d01] pl-4">
-            <p className="text-[#fd7f33] font-medium">New Teacher Feedback</p>
-            <p className="text-[#fdbc94] text-sm">On your English Essay</p>
-          </div>
-        </div>
-      </div>
+    
     </div>
   );
 

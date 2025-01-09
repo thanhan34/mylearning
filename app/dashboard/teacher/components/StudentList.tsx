@@ -6,6 +6,7 @@ import { AssignmentSubmission } from '../../../../types/submission';
 import { db } from '../../../../app/firebase/config';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, arrayUnion, CollectionReference, DocumentData } from 'firebase/firestore';
 import { useSession } from 'next-auth/react';
+import HomeworkProgress from '../../../components/HomeworkProgress';
 
 interface SubmissionWithId extends AssignmentSubmission {
   uniqueId: string;
@@ -146,149 +147,155 @@ const StudentList = () => {
         {/* Submissions List */}
         <div className="md:col-span-2">
           {selectedStudent ? (
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-medium text-[#fc5d01]">
-                  Bài nộp của {selectedStudent.name}
-                </h3>
-                <div className="flex space-x-4">
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="border rounded-lg px-3 py-2 text-black"
-                  />
-                  <select
-                    value={selectedType}
-                    onChange={(e) => setSelectedType(e.target.value)}
-                    className="border rounded-lg px-3 py-2 text-black"
-                  >
-                    <option value="">Tất cả</option>
-                    {homeworkTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              {submissions.length > 0 ? (
-                <div className="space-y-4">
-                  {submissions.map((submission) => (
-                    <div
-                      key={submission.uniqueId}
-                      className="border rounded-lg p-4 hover:border-[#fc5d01] transition-colors"
+            <div className="space-y-6">
+              {/* Homework Progress Chart */}
+              <HomeworkProgress studentId={selectedStudent.email.replace(/\./g, '_')} />
+
+              {/* Submissions */}
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-medium text-[#fc5d01]">
+                    Bài nộp của {selectedStudent.name}
+                  </h3>
+                  <div className="flex space-x-4">
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="border rounded-lg px-3 py-2 text-black"
+                    />
+                    <select
+                      value={selectedType}
+                      onChange={(e) => setSelectedType(e.target.value)}
+                      className="border rounded-lg px-3 py-2 text-black"
                     >
-                      <div className="mb-2">
-                        <p className="font-medium text-black">{submission.type}</p>
-                        <p className="text-sm text-gray-600">
-                          Ngày: {new Date(submission.date).toLocaleDateString('vi-VN')}
+                      <option value="">Tất cả</option>
+                      {homeworkTypes.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {submissions.length > 0 ? (
+                  <div className="space-y-4">
+                    {submissions.map((submission) => (
+                      <div
+                        key={submission.uniqueId}
+                        className="border rounded-lg p-4 hover:border-[#fc5d01] transition-colors"
+                      >
+                        <div className="mb-2">
+                          <p className="font-medium text-black">{submission.type}</p>
+                          <p className="text-sm text-gray-600">
+                            Ngày: {new Date(submission.date).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                        <p className="text-sm mb-2">
+                          <span className="font-medium text-black">Link:</span>{' '}
+                          <a
+                            href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#fc5d01] hover:text-[#fd7f33]"
+                            title="Click để mở link gốc"
+                          >
+                            {submission.link.split('https://')[0].trim()}
+                          </a>
                         </p>
-                      </div>
-                      <p className="text-sm mb-2">
-                        <span className="font-medium text-black">Link:</span>{' '}
-                        <a
-                          href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#fc5d01] hover:text-[#fd7f33]"
-                          title="Click để mở link gốc"
-                        >
-                          {submission.link.split('https://')[0].trim()}
-                        </a>
-                      </p>
-                      {submission.notes && (
-                        <p className="text-sm">
-                          <span className="font-medium text-black">Ghi chú:</span>{' '}
-                          <span className="text-gray-600">{submission.notes}</span>
-                        </p>
-                      )}
-                      <div className="mt-2 border-t pt-2">
-                        {editingSubmission === submission.uniqueId ? (
-                          <div className="space-y-2">
-                            <textarea
-                              value={feedbackText}
-                              onChange={(e) => setFeedbackText(e.target.value)}
-                              className="w-full p-2 border rounded-lg text-black"
-                              placeholder="Nhập feedback..."
-                              rows={2}
-                            />
-                            <div className="flex justify-end space-x-2">
+                        {submission.notes && (
+                          <p className="text-sm">
+                            <span className="font-medium text-black">Ghi chú:</span>{' '}
+                            <span className="text-gray-600">{submission.notes}</span>
+                          </p>
+                        )}
+                        <div className="mt-2 border-t pt-2">
+                          {editingSubmission === submission.uniqueId ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={feedbackText}
+                                onChange={(e) => setFeedbackText(e.target.value)}
+                                className="w-full p-2 border rounded-lg text-black"
+                                placeholder="Nhập feedback..."
+                                rows={2}
+                              />
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingSubmission(null);
+                                    setFeedbackText('');
+                                  }}
+                                  className="px-3 py-1 text-sm bg-gray-200 rounded-lg hover:bg-gray-300"
+                                >
+                                  Hủy
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const emailPath = selectedStudent.email.replace(/\./g, '_');
+                                      const dateDoc = doc(db, 'users', emailPath, 'homework', selectedDate);
+                                      const docSnapshot = await getDoc(dateDoc);
+                                      
+                                      if (docSnapshot.exists()) {
+                                        const data = docSnapshot.data();
+                                        const updatedSubmissions = data.submissions.map((s: AssignmentSubmission) => {
+                                          if (s.type === submission.type && 
+                                              s.questionNumber === submission.questionNumber && 
+                                              s.date === submission.date) {
+                                            return { ...s, feedback: feedbackText };
+                                          }
+                                          return s;
+                                        });
+                                        console.log('Updating submission:', {
+                                          type: submission.type,
+                                          link: submission.link,
+                                          feedback: feedbackText
+                                        });
+                                        
+                                        await updateDoc(dateDoc, {
+                                          submissions: updatedSubmissions
+                                        });
+                                        
+                                        // Refresh submissions
+                                        fetchStudentSubmissions(selectedStudent);
+                                        setEditingSubmission(null);
+                                        setFeedbackText('');
+                                      }
+                                    } catch (error) {
+                                      console.error('Error updating feedback:', error);
+                                    }
+                                  }}
+                                  className="px-3 py-1 text-sm bg-[#fc5d01] text-white rounded-lg hover:bg-[#fd7f33]"
+                                >
+                                  Lưu
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <span className="font-medium text-black">Feedback:</span>{' '}
+                                <span className="text-gray-600">{submission.feedback || 'Chưa có feedback'}</span>
+                              </div>
                               <button
                                 onClick={() => {
-                                  setEditingSubmission(null);
-                                  setFeedbackText('');
+                                  setEditingSubmission(submission.uniqueId);
+                                  setFeedbackText(submission.feedback || '');
                                 }}
-                                className="px-3 py-1 text-sm bg-gray-200 rounded-lg hover:bg-gray-300"
+                                className="text-[#fc5d01] hover:text-[#fd7f33] text-sm"
                               >
-                                Hủy
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const emailPath = selectedStudent.email.replace(/\./g, '_');
-                                    const dateDoc = doc(db, 'users', emailPath, 'homework', selectedDate);
-                                    const docSnapshot = await getDoc(dateDoc);
-                                    
-                                    if (docSnapshot.exists()) {
-                                      const data = docSnapshot.data();
-                                      const updatedSubmissions = data.submissions.map((s: AssignmentSubmission) => {
-                                        if (s.type === submission.type && 
-                                            s.questionNumber === submission.questionNumber && 
-                                            s.date === submission.date) {
-                                          return { ...s, feedback: feedbackText };
-                                        }
-                                        return s;
-                                      });
-                                      console.log('Updating submission:', {
-                                        type: submission.type,
-                                        link: submission.link,
-                                        feedback: feedbackText
-                                      });
-                                      
-                                      await updateDoc(dateDoc, {
-                                        submissions: updatedSubmissions
-                                      });
-                                      
-                                      // Refresh submissions
-                                      fetchStudentSubmissions(selectedStudent);
-                                      setEditingSubmission(null);
-                                      setFeedbackText('');
-                                    }
-                                  } catch (error) {
-                                    console.error('Error updating feedback:', error);
-                                  }
-                                }}
-                                className="px-3 py-1 text-sm bg-[#fc5d01] text-white rounded-lg hover:bg-[#fd7f33]"
-                              >
-                                Lưu
+                                Chỉnh sửa
                               </button>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <span className="font-medium text-black">Feedback:</span>{' '}
-                              <span className="text-gray-600">{submission.feedback || 'Chưa có feedback'}</span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                setEditingSubmission(submission.uniqueId);
-                                setFeedbackText(submission.feedback || '');
-                              }}
-                              className="text-[#fc5d01] hover:text-[#fd7f33] text-sm"
-                            >
-                              Chỉnh sửa
-                            </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">Chưa có bài nộp nào.</p>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">Chưa có bài nộp nào.</p>
+                )}
+              </div>
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow p-4">

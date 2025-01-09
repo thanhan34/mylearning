@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, getDocs, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../firebase/config';
 import { HomeworkSubmission } from '../../../firebase/services';
+import HomeworkProgress from '../../../components/HomeworkProgress';
 
 interface Student {
   id: string;
@@ -128,78 +129,85 @@ const StudentSubmissions = () => {
         </select>
       </div>
 
-      {/* Date Selection */}
-      {selectedStudent && dates.length > 0 && (
-        <div className="mb-6">
-          <select
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fc5d01] text-black"
-          >
-            {dates.map((date) => (
-              <option key={date} value={date}>
-                {new Date(date).toLocaleDateString('vi-VN')}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {selectedStudent && (
+        <div className="space-y-6">
+          {/* Homework Progress Chart */}
+          <HomeworkProgress studentId={selectedStudent.email.replace(/\./g, '_')} />
 
-      {/* Submissions List */}
-      {selectedStudent && selectedDate && (
-        <div className="space-y-8">
-          {Object.entries(groupedSubmissions).length === 0 ? (
-            <p className="text-gray-500 text-center py-8">Chưa có bài tập nào được nộp</p>
-          ) : (
-            Object.entries(groupedSubmissions).map(([type, typeSubmissions]) => (
-              <div key={type} className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="p-4 bg-[#fc5d01] text-white font-semibold">
-                  {type}
-                </div>
-                <div className="p-4">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 text-gray-600">Câu số</th>
-                        <th className="text-left py-2 text-gray-600">Link bài làm</th>
-                        <th className="text-left py-2 text-gray-600">Feedback</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {typeSubmissions
-                        .sort((a, b) => a.questionNumber - b.questionNumber)
-                        .map((submission, index, array) => (
-                          <tr key={`${submission.type}_${submission.questionNumber}_${selectedDate}`} className="border-b">
-                            <td className="py-2 w-24 text-black">{submission.questionNumber}</td>
-                            <td className="py-2 ">
-                              {submission.link ? (
-                                <a
-                                  href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-black hover:text-[#fd7f33] break-all"
-                                  title="Click để mở link gốc"
-                                >
-                                  {submission.link.split('https://')[0].trim()}
-                                </a>
-                              ) : (
-                                <span className="text-gray-400">No submission yet</span>
-                              )}
-                            </td>
-                            <td className="py-2">
-                              {submission.feedback ? (
-                                <span className="text-gray-700">{submission.feedback}</span>
-                              ) : (
-                                <span className="text-gray-400">No submission yet</span>
-                              )}
-                            </td>
+          {/* Date Selection */}
+          {dates.length > 0 && (
+            <div className="mb-6">
+              <select
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fc5d01] text-black"
+              >
+                {dates.map((date) => (
+                  <option key={date} value={date}>
+                    {new Date(date).toLocaleDateString('vi-VN')}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Submissions List */}
+          {selectedDate && (
+            <div className="space-y-8">
+              {Object.entries(groupedSubmissions).length === 0 ? (
+                <p className="text-gray-500 text-center py-8">Chưa có bài tập nào được nộp</p>
+              ) : (
+                Object.entries(groupedSubmissions).map(([type, typeSubmissions]) => (
+                  <div key={type} className="bg-white rounded-lg shadow overflow-hidden">
+                    <div className="p-4 bg-[#fc5d01] text-white font-semibold">
+                      {type}
+                    </div>
+                    <div className="p-4">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 text-gray-600">Câu số</th>
+                            <th className="text-left py-2 text-gray-600">Link bài làm</th>
+                            <th className="text-left py-2 text-gray-600">Feedback</th>
                           </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))
+                        </thead>
+                        <tbody>
+                          {typeSubmissions
+                            .sort((a, b) => a.questionNumber - b.questionNumber)
+                            .map((submission) => (
+                              <tr key={`${submission.type}_${submission.questionNumber}_${selectedDate}`} className="border-b">
+                                <td className="py-2 w-24 text-black">{submission.questionNumber}</td>
+                                <td className="py-2">
+                                  {submission.link ? (
+                                    <a
+                                      href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-black hover:text-[#fd7f33] break-all"
+                                      title="Click để mở link gốc"
+                                    >
+                                      {submission.link.split('https://')[0].trim()}
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-400">No submission yet</span>
+                                  )}
+                                </td>
+                                <td className="py-2">
+                                  {submission.feedback ? (
+                                    <span className="text-gray-700">{submission.feedback}</span>
+                                  ) : (
+                                    <span className="text-gray-400">No submission yet</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           )}
         </div>
       )}
