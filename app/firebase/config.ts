@@ -34,11 +34,8 @@ if (typeof window !== 'undefined') {
     });
 }
 
-// Log initialization
-console.log('Firebase initialized with config:', {
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain
-});
+
+
 
 const auth = getAuth(app);
 export { db, storage, auth };

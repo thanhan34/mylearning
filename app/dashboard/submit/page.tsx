@@ -97,7 +97,7 @@ export default function SubmitPage() {
 
       // Get existing submissions
       const existingSubmissions = await getHomeworkSubmissions(userId, selectedDate) || getDefaultHomeworkSubmissions(selectedDate);
-      console.log('Existing submissions:', existingSubmissions);
+      
       
       // Update only the selected type's submissions
       // Keep existing submissions for other types
@@ -122,15 +122,11 @@ export default function SubmitPage() {
 
       // Combine both arrays
       const updatedSubmissions = [...otherTypeSubmissions, ...typeSubmissions];
-      console.log('Updated submissions:', updatedSubmissions);
+      
 
-      console.log('Attempting to save submissions:', {
-        userId,
-        submissionsCount: updatedSubmissions.length,
-        submissions: updatedSubmissions
-      });
+      
       const success = await saveHomeworkSubmission(userId, updatedSubmissions);
-      console.log('Save result:', { success, userId, date: selectedDate });
+     
       if (!success) {
         throw new Error('Failed to save submissions');
       }

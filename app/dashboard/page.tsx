@@ -167,17 +167,11 @@ export default function DashboardPage() {
     }
     
     setSaveStatus('saving');
-    try {
-      console.log('Starting save operation:', {
-        email: session.user.email,
-        targetsCount: dailyTargets.length,
-        submissionsCount: homeworkSubmissions.length,
-        selectedDate
-      });
+    try {     
 
       // Filter out submissions with empty links
       const submissionsToSave = homeworkSubmissions.filter(s => s.link.trim() !== '');
-      console.log('Filtered submissions to save:', submissionsToSave.length);
+     
 
       // Ensure all submissions have the correct date
       const updatedSubmissions = submissionsToSave.map(submission => ({
@@ -189,13 +183,10 @@ export default function DashboardPage() {
       const [progressSuccess, submissionsSuccess] = await Promise.all([
         saveDailyProgress(userId, dailyTargets),
         saveHomeworkSubmission(userId, updatedSubmissions)
-      ]);
-
-      console.log('Save operation results:', { progressSuccess, submissionsSuccess });
+      ]);     
 
       if (progressSuccess && submissionsSuccess) {
-        setSaveStatus('saved');
-        console.log('Save successful, refreshing progress...');
+        setSaveStatus('saved');        
         await Promise.all([
           loadWeeklyProgress(),
           loadHomeworkProgress()

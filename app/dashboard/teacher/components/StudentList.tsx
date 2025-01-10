@@ -67,7 +67,6 @@ const StudentList = () => {
     try {
       // Format email for path (replace . with _)
       const emailPath = student.email.replace(/\./g, '_');
-      console.log('Fetching submissions for:', emailPath, selectedDate);
       
       // Get the specific date document from homework collection
       const dateDoc = doc(db, 'users', emailPath, 'homework', selectedDate);
@@ -76,7 +75,6 @@ const StudentList = () => {
       let submissionsData: SubmissionWithId[] = [];
       
       if (docSnapshot.exists()) {
-        console.log('Document data:', docSnapshot.data());
         const data = docSnapshot.data();
         if (Array.isArray(data.submissions)) {
           // Filter out submissions with empty links and add unique IDs
@@ -86,20 +84,14 @@ const StudentList = () => {
               ...submission,
               uniqueId: `${submission.type}_${submission.questionNumber}_${submission.date}` // Create unique ID from type, question number and date
             }));
-          console.log('Found valid submissions:', submissionsData);
           
           // Filter by type if selected
           if (selectedType) {
             submissionsData = submissionsData.filter(
               (submission: AssignmentSubmission) => submission.type === selectedType
             );
-            console.log('Filtered by type:', submissionsData);
           }
-        } else {
-          console.log('No submissions array found in document');
         }
-      } else {
-        console.log('Document does not exist');
       }
       
       setSubmissions(submissionsData);
@@ -245,11 +237,6 @@ const StudentList = () => {
                                             return { ...s, feedback: feedbackText };
                                           }
                                           return s;
-                                        });
-                                        console.log('Updating submission:', {
-                                          type: submission.type,
-                                          link: submission.link,
-                                          feedback: feedbackText
                                         });
                                         
                                         await updateDoc(dateDoc, {

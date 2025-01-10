@@ -7,8 +7,7 @@ export default function LoginButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGoogleLogin = async () => {
-    console.log('Login button clicked');
+  const handleGoogleLogin = async () => {    
     try {
       setError(null);
       setIsLoading(true);
@@ -36,8 +35,7 @@ export default function LoginButton() {
 
       <button
         type="button"
-        onClick={() => {
-          console.log('Button clicked');
+        onClick={() => {          
           handleGoogleLogin();
         }}
         disabled={isLoading}

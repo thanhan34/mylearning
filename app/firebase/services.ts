@@ -42,7 +42,6 @@ export const createUser = async (userData: {
     const querySnapshot = await getDocs(q);
     
     if (!querySnapshot.empty) {
-      console.log('User already exists');
       return querySnapshot.docs[0].id;
     }
 
@@ -413,8 +412,6 @@ export const saveDailyProgress = async (userId: string, targets: DailyTarget[]) 
 
 export const saveHomeworkSubmission = async (userId: string, submissions: HomeworkSubmission[]) => {
   try {
-    console.log('Starting saveHomeworkSubmission with:', { userId, submissionsCount: submissions.length });
-    
     const firestore = getFirestoreInstance();
     const date = submissions[0]?.date;
     if (!date) {
@@ -424,7 +421,6 @@ export const saveHomeworkSubmission = async (userId: string, submissions: Homewo
 
     // Filter out submissions with empty links
     const submissionsToSave = submissions.filter(s => s.link.trim() !== '');
-    console.log('Filtered submissions to save:', submissionsToSave.length);
 
     // Create a document reference with userId and date
     const docRef = doc(collection(firestore, 'users'), userId, 'homework', date);
@@ -433,8 +429,6 @@ export const saveHomeworkSubmission = async (userId: string, submissions: Homewo
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      // Update existing document
-      console.log('Updating existing document for date:', date);
       const existingData = docSnap.data();
       const existingSubmissions = existingData.submissions || [];
       
@@ -456,8 +450,6 @@ export const saveHomeworkSubmission = async (userId: string, submissions: Homewo
         lastUpdated: new Date().toISOString()
       });
     } else {
-      // Create new document
-      console.log('Creating new document for date:', date);
       // Add empty submissions for all types if not present
       const defaultSubmissions = getDefaultHomeworkSubmissions(date);
       const mergedSubmissions = defaultSubmissions.map(defaultSub => {
@@ -475,7 +467,6 @@ export const saveHomeworkSubmission = async (userId: string, submissions: Homewo
       });
     }
 
-    console.log('Successfully saved submissions for date:', date);
     return true;
   } catch (error) {
     console.error('Error in saveHomeworkSubmission:', error);
@@ -516,19 +507,15 @@ export const getDailyProgress = async (userId: string): Promise<DailyTarget[] | 
 
 export const getHomeworkSubmissions = async (userId: string, date: string): Promise<HomeworkSubmission[] | null> => {
   try {
-    console.log('Getting homework submissions for:', { userId, date });
-    
     const firestore = getFirestoreInstance();
     const docRef = doc(collection(firestore, 'users'), userId, 'homework', date);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      console.log('Found submissions:', data.submissions);
       return data.submissions as HomeworkSubmission[];
     }
 
-    console.log('No submissions found for date:', date);
     return null;
   } catch (error) {
     console.error('Error getting homework submissions:', error);
