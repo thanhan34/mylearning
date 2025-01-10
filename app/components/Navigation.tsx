@@ -78,20 +78,31 @@ const Navigation = () => {
     <nav className="bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between h-16">
-          <div className="flex space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathname === item.href
-                    ? "border-[#fc5d01] text-[#fc5d01]"
-                    : "border-transparent text-[#fd7f33] hover:text-[#fc5d01] hover:border-[#fedac2]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+          <div className="flex items-center">
+            <Link href="/" className="flex-shrink-0">
+              <Image
+                src="/orange-logo.png"
+                alt="PTE Intensive Logo"
+                width={40}
+                height={40}
+                className="h-10 w-auto"
+              />
+            </Link>
+            <div className="flex space-x-8 ml-8">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    pathname === item.href
+                      ? "border-[#fc5d01] text-[#fc5d01]"
+                      : "border-transparent text-[#fd7f33] hover:text-[#fc5d01] hover:border-[#fedac2]"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
