@@ -32,24 +32,6 @@ const DailyHome = () => {
 
     useEffect(() => {
         updateMessage(selectedDate);
-
-        // Check if it's time to show message (7 AM Vietnam time)
-        const checkTime = () => {
-            const vietnamTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
-            const vietnamDate = new Date(vietnamTime);
-            const hours = vietnamDate.getHours();
-            const minutes = vietnamDate.getMinutes();
-
-            if (hours === 7 && minutes === 0) {
-                setSelectedDate(vietnamDate);
-                updateMessage(vietnamDate);
-            }
-        };
-
-        // Check every minute
-        const interval = setInterval(checkTime, 60000);
-
-        return () => clearInterval(interval);
     }, [selectedDate]);
 
     const navigateDay = (direction: 'prev' | 'next') => {
