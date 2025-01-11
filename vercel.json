@@ -1,2 +1,6 @@
 {
+  "crons": [{
+    "path": "/api/cron/daily-home",
+    "schedule": "0 7 * * *"
+  }]
 }
