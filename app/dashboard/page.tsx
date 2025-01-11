@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
+import DailyHome from './components/DailyHome';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -296,29 +297,9 @@ export default function DashboardPage() {
 
   const StudentDashboard = () => (
     <div className="space-y-6">
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button
-          onClick={() => router.push('/dashboard/assignments')}
-          className="bg-white p-6 rounded-lg shadow border border-[#fedac2] hover:bg-[#fedac2] transition-colors group"
-        >
-          <h3 className="text-[#fd7f33] text-sm font-medium group-hover:text-[#fc5d01]">Assignments</h3>
-          <p className="text-[#fc5d01] text-2xl font-bold">View All</p>
-        </button>
-        <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
-          <h3 className="text-[#fd7f33] text-sm font-medium">Due Soon</h3>
-          <p className="text-[#fc5d01] text-2xl font-bold">2</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
-          <h3 className="text-[#fd7f33] text-sm font-medium">Completed</h3>
-          <p className="text-[#fc5d01] text-2xl font-bold">16</p>
-        </div>
-      </div>
-
+     
       {/* Progress Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-
         {/* Homework Progress */}
         <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
           <h3 className="text-[#fc5d01] text-lg font-medium mb-4">Homework Progress</h3>
@@ -340,6 +321,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Daily Homework */}
+      <DailyHome />
 
       {/* Daily Targets */}
       <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
