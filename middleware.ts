@@ -16,14 +16,20 @@ export default withAuth(
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    // Allow students to access assignments page
-    if (path.startsWith("/dashboard/assignments")) {
+    // Allow students to access submit page
+    if (path.startsWith("/dashboard/submit")) {
       if (!token?.role) {
         return NextResponse.redirect(new URL("/login", req.url));
       }
       if (!["admin", "teacher", "student"].includes(token.role)) {
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
+    }
+
+    // Teacher route protection
+    if (path.startsWith("/dashboard/teacher") && 
+        !["admin", "teacher"].includes(token?.role as string)) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
     return NextResponse.next();
@@ -38,17 +44,9 @@ export default withAuth(
   }
 );
 
+// Only protect dashboard routes and related paths
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api/auth (auth API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     * - login page
-     */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|public|login).*)",
-  ],
+    '/dashboard/:path*'
+  ]
 };
