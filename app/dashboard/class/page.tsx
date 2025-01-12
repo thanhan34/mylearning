@@ -8,13 +8,9 @@ import {
   Class, 
   ClassStudent,
   getTeacherClasses,
-  updateStudentRole,
   removeStudentFromClass,
   addStudentToClass,
-  addClassAnnouncement,
-  createClass,
-  getTargetAssignments,
-  updateAssignmentStatus
+  createClass
 } from '../../firebase/services';
 import AssignmentForm from '../components/AssignmentForm';
 import { Assignment } from '@/types/assignment';
@@ -25,23 +21,12 @@ export default function ClassManagement() {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [newClassName, setNewClassName] = useState('');
   const [showNewClassForm, setShowNewClassForm] = useState(false);
-  const [showUnassignedList, setShowUnassignedList] = useState(false);
-  const [showAssignmentForm, setShowAssignmentForm] = useState(false);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [showUnassignedList, setShowUnassignedList] = useState(false); 
   const [selectedStudent, setSelectedStudent] = useState<{id: string; email: string; name: string} | null>(null);
 
-  const loadAssignments = async () => {
-    if (selectedClass) {
-      const classAssignments = await getTargetAssignments('class', selectedClass.id);
-      setAssignments(classAssignments);
-    }
-  };
+ 
 
-  useEffect(() => {
-    if (selectedClass) {
-      loadAssignments();
-    }
-  }, [selectedClass]);
+ 
 
   const handleCreateClass = async () => {
     if (!newClassName.trim() || !session?.user?.email) return;
@@ -71,18 +56,6 @@ export default function ClassManagement() {
     loadClasses();
   }, [session]);
 
-  const handleRoleChange = async (studentId: string, newRole: 'leader' | 'regular') => {
-    if (!selectedClass) return;
-
-    const success = await updateStudentRole(selectedClass.id, studentId, newRole);
-    if (success) {
-      const updatedStudents = selectedClass.students.map(student => 
-        student.id === studentId ? { ...student, role: newRole } : student
-      );
-      setSelectedClass({ ...selectedClass, students: updatedStudents });
-    }
-  };
-
   const handleRemoveStudent = async (studentId: string) => {
     if (!selectedClass) return;
 
@@ -93,19 +66,7 @@ export default function ClassManagement() {
     }
   };
 
-  
 
-  const handleAssignmentComplete = async () => {
-    setShowAssignmentForm(false);
-    loadAssignments();
-  };
-
-  const handleUpdateAssignmentStatus = async (assignmentId: string, status: Assignment['status']) => {
-    const success = await updateAssignmentStatus(assignmentId, status);
-    if (success) {
-      loadAssignments();
-    }
-  };
 
   return (
     <div className="p-6">
@@ -183,61 +144,7 @@ export default function ClassManagement() {
             </div>
           </div>
 
-          {/* Assignment Form Modal */}
-          {showAssignmentForm && session?.user?.email && (
-            <AssignmentForm
-              teacherId={session.user.email}
-              onAssign={handleAssignmentComplete}
-              onCancel={() => setShowAssignmentForm(false)}
-            />
-          )}
-
-          {/* Assignments List */}
-          <div className="mb-6">
-            <h3 className="font-semibold mb-2 text-black">Assignments</h3>
-            <div className="space-y-2">
-              {assignments.map(assignment => (
-                <div key={assignment.id} className="p-4 bg-[#fedac2] rounded-lg">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold">{assignment.title}</h4>
-                      <p className="text-sm">{assignment.instructions}</p>
-                      <p className="text-sm mt-1">
-                        Due: {new Date(assignment.dueDate).toLocaleString()}
-                      </p>
-                    </div>
-                    <select
-                      value={assignment.status}
-                      onChange={(e) => handleUpdateAssignmentStatus(assignment.id, e.target.value as Assignment['status'])}
-                      className="border rounded p-1"
-                    >
-                      <option value="active">Active</option>
-                      <option value="completed">Completed</option>
-                      <option value="expired">Expired</option>
-                    </select>
-                  </div>
-                  {assignment.attachments && assignment.attachments.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-sm font-semibold">Attachments:</p>
-                      <div className="flex gap-2">
-                        {assignment.attachments.map((url, index) => (
-                          <a
-                            key={index}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#fc5d01] hover:underline text-sm"
-                          >
-                            Attachment {index + 1}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+       
 
           {/* Unassigned Students List */}
           {showUnassignedList && selectedClass && (
@@ -246,9 +153,8 @@ export default function ClassManagement() {
                 await addStudentToClass(selectedClass.id, {
                   id: student.id,
                   name: student.name,
-                  email: student.email,
-                  role: 'regular'
-                });
+                  email: student.email,                  
+                }, selectedClass.teacherId);
                 const teacherClasses = await getTeacherClasses(session?.user?.email || '');
                 setClasses(teacherClasses);
                 const updatedClass = teacherClasses.find(c => c.id === selectedClass.id);

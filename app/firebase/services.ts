@@ -32,8 +32,6 @@ export interface ClassStudent {
   id: string;
   name: string;
   email: string;
-  role: 'leader' | 'regular';
-  progress: number;
 }
 
 export interface ClassAnnouncement {
@@ -396,5 +394,96 @@ export const getWeeklyProgress = async (userId: string): Promise<{ date: Date; c
   } catch (error) {
     console.error('Error getting weekly progress:', error);
     return [];
+  }
+};
+
+export const getTeacherClasses = async (teacherEmail: string): Promise<Class[]> => {
+  try {
+    const firestore = getFirestoreInstance();
+    const classesRef = collection(firestore, 'classes');
+    const q = query(classesRef, where('teacherId', '==', teacherEmail));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Class));
+  } catch (error) {
+    console.error('Error getting teacher classes:', error);
+    return [];
+  }
+};
+
+export const createClass = async (classData: Omit<Class, 'id'>): Promise<string | null> => {
+  try {
+    const firestore = getFirestoreInstance();
+    const classesRef = collection(firestore, 'classes');
+    const docRef = await addDoc(classesRef, classData);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating class:', error);
+    return null;
+  }
+};
+
+export const addStudentToClass = async (classId: string, student: ClassStudent, teacherId: string): Promise<boolean> => {
+  try {
+    const firestore = getFirestoreInstance();
+    const classRef = doc(firestore, 'classes', classId);
+    const userRef = doc(firestore, 'users', student.id);
+    
+    await runTransaction(firestore, async (transaction) => {
+      // Get class document
+      const classDoc = await transaction.get(classRef);
+      if (!classDoc.exists()) throw new Error('Class not found');
+      
+      // Get user document
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists()) throw new Error('User not found');
+      
+      // Update class students array
+      transaction.update(classRef, {
+        students: arrayUnion(student)
+      });
+      
+      // Update user's teacherId
+      transaction.update(userRef, { teacherId: teacherId });
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error adding student to class:', error);
+    return false;
+  }
+};
+
+export const removeStudentFromClass = async (classId: string, studentId: string): Promise<boolean> => {
+  try {
+    const firestore = getFirestoreInstance();
+    const classRef = doc(firestore, 'classes', classId);
+    const userRef = doc(firestore, 'users', studentId);
+    
+    await runTransaction(firestore, async (transaction) => {
+      // Get class document
+      const classDoc = await transaction.get(classRef);
+      if (!classDoc.exists()) throw new Error('Class not found');
+      
+      // Get user document
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists()) throw new Error('User not found');
+      
+      // Update class students array
+      const classData = classDoc.data() as Class;
+      const updatedStudents = classData.students.filter(student => student.id !== studentId);
+      transaction.update(classRef, { students: updatedStudents });
+      
+      // Update user's teacherId to empty
+      transaction.update(userRef, { teacherId: '' });
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error removing student from class:', error);
+    return false;
   }
 };

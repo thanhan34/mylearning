@@ -22,23 +22,22 @@ export default function UnassignedStudentsList({ onSelect, onClose }: Props) {
         // First, get all users with role 'student'
         const q = query(
           studentsRef,
-          where('role', '==', 'student')
+          where('role', '==', 'student'),
+          where('teacherId', '==', '')
         );
         
         const querySnapshot = await getDocs(q);
-        const students = querySnapshot.docs
-          .map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              email: data.email,
-              name: data.name,
-              role: data.role as 'student',
-              createdAt: data.createdAt,
-              teacherId: data.teacherId
-            } as User;
-          })
-          .filter(user => !user.teacherId); // Only include students without a teacherId
+        const students = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            email: data.email,
+            name: data.name,
+            role: data.role as 'student',
+            createdAt: data.createdAt,
+            teacherId: data.teacherId
+          } as User;
+        });
         
         setUnassignedStudents(students);
       } catch (error) {
