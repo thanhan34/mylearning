@@ -41,14 +41,11 @@ const Navigation = () => {
   }, [session?.user?.email]);
 
   const adminNavItems: NavItem[] = [
-    { href: "/dashboard/admin", label: "Dashboard" },
-    { href: "/dashboard/class", label: "Classes" },   
+    { href: "/dashboard/admin", label: "Dashboard" },       
     { href: "/dashboard/profile", label: "Profile" },
   ];
 
-  const teacherNavItems: NavItem[] = [
-    { href: "/dashboard/teacher", label: "Học viên" },
-    { href: "/dashboard/teacher/assign", label: "Assign Học Viên" },
+  const teacherNavItems: NavItem[] = [  
     { href: "/dashboard/class", label: "Classes" },
     { href: "/dashboard/profile", label: "Profile" },
   ];
