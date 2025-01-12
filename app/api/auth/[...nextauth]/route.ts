@@ -12,8 +12,7 @@ export const authOptions: AuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
       authorization: {
         params: {
-      // Don't force account selection every time
-      prompt: "consent",
+          prompt: "consent",
           access_type: "offline",
           response_type: "code"
         }
@@ -36,33 +35,16 @@ export const authOptions: AuthOptions = {
       }
 
       try {
-        console.log('Attempting sign in for:', user.email);
-        
         // Check if user exists
         const existingUser = await getUserByEmail(user.email);
-        console.log('Existing user check:', {
-          email: user.email,
-          found: !!existingUser,
-          role: existingUser?.role
-        });
 
         if (existingUser) {
           user.id = existingUser.id;
           user.role = existingUser.role;
-          console.log('User found:', {
-            id: user.id,
-            role: user.role,
-            email: user.email
-          });
           return true;
         }
 
         // Create new user
-        console.log('Creating new user:', {
-          email: user.email,
-          name: user.name || 'User'
-        });
-
         const userId = await createUser({
           email: user.email,
           name: user.name || 'User',
@@ -80,15 +62,9 @@ export const authOptions: AuthOptions = {
 
         user.id = userId;
         user.role = 'student';
-        console.log('New user created:', {
-          id: userId,
-          role: 'student',
-          email: user.email
-        });
         return true;
       } catch (error) {
         console.error('Error in signIn callback:', error);
-        // Log the full error details
         if (error instanceof Error) {
           console.error('Error details:', {
             message: error.message,

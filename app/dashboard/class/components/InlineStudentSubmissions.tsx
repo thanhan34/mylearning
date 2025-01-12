@@ -40,13 +40,7 @@ export default function InlineStudentSubmissions({ student }: Props) {
     const loadSubmissions = async () => {
       setLoading(true);
       try {
-        console.log('Loading submissions for:', {
-          email: student.email,
-          date: selectedDate
-        });
-        
         const userSubmissions = await getHomeworkSubmissions(student.email, selectedDate);
-        console.log('Loaded submissions:', userSubmissions);
         setSubmissions(userSubmissions || []);
       } catch (error) {
         console.error('Error loading submissions:', error);
@@ -59,19 +53,6 @@ export default function InlineStudentSubmissions({ student }: Props) {
     loadSubmissions();
   }, [student.email, selectedDate]);
 
-  // Debug log for student data
-  useEffect(() => {
-    console.log('InlineStudentSubmissions student data:', {
-      id: student.id,
-      name: student.name,
-      email: student.email,
-      avatar: student.avatar,
-      target: student.target,
-      hasAvatar: Boolean(student.avatar),
-      avatarType: typeof student.avatar,
-      avatarValue: student.avatar
-    });
-  }, [student]);
 
   const handleSaveFeedback = async () => {
     if (!editingFeedback) return;
@@ -79,12 +60,6 @@ export default function InlineStudentSubmissions({ student }: Props) {
     try {
       // Replace dots with underscores in email
       const sanitizedEmail = student.email.replace(/\./g, '_');
-      console.log('Saving feedback for:', {
-        email: student.email,
-        sanitizedEmail,
-        date: selectedDate
-      });
-
       const docRef = doc(db, 'users', sanitizedEmail, 'homework', selectedDate);
 
       // Update the specific submission's feedback

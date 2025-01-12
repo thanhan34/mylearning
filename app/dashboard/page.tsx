@@ -106,9 +106,7 @@ export default function DashboardPage() {
     }
     
     if (session?.user) {
-      console.log('Session user:', session.user);
       const role = (session.user as any)?.role;
-      console.log('User role:', role);
       setUserRole(role || 'student');
       setIsLoading(false);
       
@@ -122,15 +120,6 @@ export default function DashboardPage() {
       }
     }
   }, [status, router, session, loadHomeworkProgress]);
-
-  useEffect(() => {
-    console.log('Current state:', {
-      userRole,
-      isLoading,
-      homeworkSubmissions: homeworkSubmissions.length,
-      progressData: homeworkProgressData
-    });
-  }, [userRole, isLoading, homeworkSubmissions, homeworkProgressData]);
 
   useEffect(() => {
     if (selectedDate) {

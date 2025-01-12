@@ -107,8 +107,8 @@ export const createUser = async (userData: {
       ...userData,
       role: userData.role || 'student',
       createdAt: new Date().toISOString(),
-      avatar: null,  // Initialize avatar field
-      target: null   // Initialize target field
+      avatar: null,
+      target: null
     };
     
     const docRef = await addDoc(usersRef, newUser);
@@ -146,7 +146,6 @@ export const getUserByEmail = async (email: string): Promise<{
   name?: string;
 } | null> => {
   try {
-    console.log('Getting user by email:', email);
     const firestore = getFirestoreInstance();
     const usersRef = collection(firestore, 'users');
     const q = query(usersRef, where('email', '==', email));
@@ -155,14 +154,6 @@ export const getUserByEmail = async (email: string): Promise<{
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0];
       const data = doc.data();
-      console.log('Found user data:', {
-        id: doc.id,
-        email: data.email,
-        role: data.role,
-        hasAvatar: Boolean(data.avatar),
-        hasTarget: Boolean(data.target),
-        name: data.name
-      });
       return {
         id: doc.id,
         email: data.email,
@@ -173,7 +164,6 @@ export const getUserByEmail = async (email: string): Promise<{
       };
     }
     
-    console.log('No user found for email:', email);
     return null;
   } catch (error) {
     console.error('Error getting user by email:', error);
@@ -219,13 +209,7 @@ export const getDailyProgress = async (userId: string): Promise<DailyTarget[] | 
 export const getHomeworkProgress = async (email: string): Promise<{ date: string; completed: number }[]> => {
   try {
     const firestore = getFirestoreInstance();
-    console.log('Getting homework progress for email:', email);
-
-    // Replace dots with underscores in email
     const sanitizedEmail = email.replace(/\./g, '_');
-    console.log('Sanitized email:', sanitizedEmail);
-
-    // Get homework submissions using sanitized email
     const homeworkRef = collection(firestore, 'users', sanitizedEmail, 'homework');
     const homeworkSnapshot = await getDocs(homeworkRef);
     
@@ -233,12 +217,11 @@ export const getHomeworkProgress = async (email: string): Promise<{ date: string
       const data = doc.data();
       const completedCount = data.submissions.filter((sub: HomeworkSubmission) => sub.link.trim() !== '').length;
       return {
-        date: doc.id, // The document ID is the date
+        date: doc.id,
         completed: completedCount
       };
     });
 
-    // Sort by date
     return progressData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   } catch (error) {
     console.error('Error getting homework progress:', error);
@@ -249,14 +232,7 @@ export const getHomeworkProgress = async (email: string): Promise<{ date: string
 export const getHomeworkSubmissions = async (email: string, date: string): Promise<HomeworkSubmission[] | null> => {
   try {
     const firestore = getFirestoreInstance();
-    // Replace dots with underscores in email
     const sanitizedEmail = email.replace(/\./g, '_');
-    console.log('Getting homework submissions for:', {
-      email,
-      sanitizedEmail,
-      date
-    });
-
     const docRef = doc(collection(firestore, 'users'), sanitizedEmail, 'homework', date);
     const docSnap = await getDoc(docRef);
 
@@ -281,30 +257,16 @@ export const saveHomeworkSubmission = async (email: string, submissions: Homewor
       return false;
     }
 
-    // Replace dots with underscores in email
     const sanitizedEmail = email.replace(/\./g, '_');
-    console.log('Saving homework submissions for:', {
-      email,
-      sanitizedEmail,
-      date
-    });
-
-    // Filter out submissions with empty links
-    const submissionsToSave = submissions.filter(s => s.link.trim() !== '');
-
-    // Create a document reference with sanitized email
     const docRef = doc(collection(firestore, 'users'), sanitizedEmail, 'homework', date);
-    
-    // Check if document exists
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
       const existingData = docSnap.data();
       const existingSubmissions = existingData.submissions || [];
       
-      // Merge existing and new submissions
       const mergedSubmissions = [...existingSubmissions];
-      submissionsToSave.forEach(newSubmission => {
+      submissions.forEach(newSubmission => {
         const index = mergedSubmissions.findIndex(s => 
           s.id === newSubmission.id && s.questionNumber === newSubmission.questionNumber
         );
@@ -320,10 +282,9 @@ export const saveHomeworkSubmission = async (email: string, submissions: Homewor
         lastUpdated: new Date().toISOString()
       });
     } else {
-      // Add empty submissions for all types if not present
       const defaultSubmissions = getDefaultHomeworkSubmissions(date);
       const mergedSubmissions = defaultSubmissions.map(defaultSub => {
-        const matchingSub = submissionsToSave.find(
+        const matchingSub = submissions.find(
           s => s.type === defaultSub.type && s.questionNumber === defaultSub.questionNumber
         );
         return matchingSub || defaultSub;

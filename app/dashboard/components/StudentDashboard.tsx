@@ -33,15 +33,6 @@ export default function StudentDashboard({
 }: StudentDashboardProps) {
   const router = useRouter();
 
-  // Debug logging
-  useEffect(() => {
-    console.log('StudentDashboard props:', {
-      progressData: homeworkProgressData,
-      submissions: homeworkSubmissions,
-      date: selectedDate,
-      type: selectedHomeworkType
-    });
-  }, [homeworkProgressData, homeworkSubmissions, selectedDate, selectedHomeworkType]);
 
   // Check if we have data
   const hasData = homeworkProgressData.datasets[0].data.length > 0;

@@ -129,20 +129,16 @@ const ClassManagement = () => {
       }
 
       try {
-        console.log('Getting students from class:', selectedClass.id);
         const classRef = doc(db, 'classes', selectedClass.id);
         const classDoc = await getDoc(classRef);
         
         if (!classDoc.exists()) {
-          console.error('Class document not found');
           return;
         }
         
         const classData = classDoc.data();
-        console.log('Class data:', classData);
         
         if (classData.students && Array.isArray(classData.students)) {
-          console.log('Found students:', classData.students);
           const studentsWithProfiles = await Promise.all(
             classData.students.map(async (student) => {
               try {
@@ -160,85 +156,20 @@ const ClassManagement = () => {
                     userDocRef = querySnapshot.docs[0];
                     userDocId = userDocRef.id;
                     userData = userDocRef.data();
-
-                    // Log the raw user data
-                    console.log('Found user document:', {
-                        email: student.email,
-                        docId: userDocId,
-                        rawData: userData
-                    });
-
-                    // Log avatar and target specifically
-                    console.log('User profile data:', {
-                        avatar: userData?.avatar || 'No avatar',
-                        target: userData?.target || 'No target',
-                        hasAvatar: Boolean(userData?.avatar),
-                        hasTarget: Boolean(userData?.target)
-                    });
-                    
-                    // Log raw user data
-                    console.log('Raw user document data:', {
-                        id: userDocRef.id,
-                        data: userData,
-                        allFields: Object.keys(userData || {})
-                    });
-
-                    // Log specific fields
-                    console.log('User profile fields:', {
-                        email: student.email,
-                        docId: userDocRef.id,
-                        hasAvatar: Boolean(userData?.avatar),
-                        avatarValue: userData?.avatar,
-                        avatarType: typeof userData?.avatar,
-                        hasTarget: Boolean(userData?.target),
-                        targetValue: userData?.target
-                    });
-
-                    // Set avatar URL directly from user data
                     validatedAvatar = userData?.avatar;
-                    if (validatedAvatar) {
-                        console.log('Found avatar URL:', validatedAvatar);
-                    } else {
-                        console.log('No avatar URL in user document');
-                    }
-                } else {
-                    console.error('No user profile found for:', student.email);
                 }
 
                 // Create student profile with validated data
                 const studentWithProfile: Student = {
-                    id: student.id, // Keep original class student ID
+                    id: student.id,
                     name: userData?.name || student.name,
                     email: student.email,
                     classId: selectedClass.id,
                     avatar: validatedAvatar,
                     target: userData?.target || student.target,
                     role: userData?.role || student.role,
-                    docId: userDocId // Store Firebase document ID separately
+                    docId: userDocId
                 };
-
-                // Log the ID mapping
-                console.log('Student ID mapping:', {
-                    classStudentId: student.id,
-                    userDocId: userDocId,
-                    docId: userDocId, // Log explicit docId
-                    email: student.email
-                });
-
-                // Log the constructed profile
-                console.log('Constructed student profile:', {
-                  ...studentWithProfile,
-                  hasAvatar: Boolean(studentWithProfile.avatar),
-                  avatarValue: studentWithProfile.avatar,
-                  avatarType: typeof studentWithProfile.avatar
-                });
-
-                // Log the final constructed profile
-                console.log('Final student profile:', {
-                  ...studentWithProfile,
-                  hasAvatar: Boolean(studentWithProfile.avatar),
-                  avatarValue: studentWithProfile.avatar
-                });
 
                 return studentWithProfile;
               } catch (error) {
@@ -255,7 +186,6 @@ const ClassManagement = () => {
           );
           setClassStudents(studentsWithProfiles);
         } else {
-          console.log('No students array in class document');
           setClassStudents([]);
         }
       } catch (error: any) {
@@ -269,19 +199,11 @@ const ClassManagement = () => {
     fetchClassStudents();
   }, [selectedClass]);
 
-  // Debug log when classStudents changes
-  useEffect(() => {
-    console.log('Updated classStudents:', classStudents);
-  }, [classStudents]);
-
   const handleClassSelect = (classData: Class) => {
-    console.log('Class selected:', classData);
     if (selectedClass?.id === classData.id) {
-      console.log('Deselecting class');
       setSelectedClass(null);
       setSelectedStudent(null);
     } else {
-      console.log('Setting new selected class');
       setSelectedClass(classData);
       setSelectedStudent(null);
     }

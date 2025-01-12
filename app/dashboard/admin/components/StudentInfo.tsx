@@ -21,6 +21,7 @@ const StudentInfo = ({ student, studentEmail }: StudentInfoProps) => {
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(student?.avatar);
   const [userData, setUserData] = useState<{
     name: string;
+    email: string;
     avatar?: string;
     target?: string;
   } | null>(null);
@@ -40,6 +41,7 @@ const StudentInfo = ({ student, studentEmail }: StudentInfoProps) => {
           const data = userDoc.data();
           setUserData({
             name: data.name,
+            email: data.email,
             avatar: data.avatar,
             target: data.target
           });
@@ -53,19 +55,12 @@ const StudentInfo = ({ student, studentEmail }: StudentInfoProps) => {
     loadUserData();
   }, [studentEmail, student]);
 
-    // Update avatar URL when student changes
+  // Update avatar URL when student changes
   useEffect(() => {
     if (!student) return;
 
     setAvatarError(false);
     setAvatarUrl(student.avatar);
-
-    console.log('StudentInfo received:', {
-      name: student.name,
-      email: student.email,
-      avatar: student.avatar,
-      hasAvatar: Boolean(student.avatar)
-    });
   }, [student]);
 
   const displayData = student || userData;
@@ -96,12 +91,6 @@ const StudentInfo = ({ student, studentEmail }: StudentInfoProps) => {
                   if (aspectRatio === 0 || aspectRatio === Infinity) {
                     setAvatarError(true);
                   }
-                  console.log('Avatar image loaded:', {
-                    url: avatarUrl,
-                    width: result.naturalWidth,
-                    height: result.naturalHeight,
-                    aspectRatio
-                  });
                 }}
                 onError={() => {
                   console.error('Error loading avatar for student:', {

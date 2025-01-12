@@ -44,7 +44,6 @@ export default function SubmitPage() {
   useEffect(() => {
     const loadExisting = async () => {
       if (!session?.user?.email) {
-        console.error('No user email found in session');
         return;
       }
 
@@ -70,10 +69,9 @@ export default function SubmitPage() {
     loadExisting();
   }, [session?.user?.email, selectedDate, selectedHomeworkType]);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!session?.user?.email) {
-      console.error('No user email found in session');
       return;
     }
 
@@ -102,17 +100,8 @@ export default function SubmitPage() {
     }
 
     try {
-      console.log('Starting submission process:', {
-        userId,
-        date: selectedDate,
-        type: selectedHomeworkType,
-        linksCount: links.length,
-        links
-      });
-
       // Get existing submissions
       const existingSubmissions = await getHomeworkSubmissions(userId, selectedDate) || getDefaultHomeworkSubmissions(selectedDate);
-      
       
       // Update only the selected type's submissions
       // Keep existing submissions for other types
@@ -137,8 +126,6 @@ export default function SubmitPage() {
 
       // Combine both arrays
       const updatedSubmissions = [...otherTypeSubmissions, ...typeSubmissions];
-      
-
       
       const success = await saveHomeworkSubmission(userId, updatedSubmissions);
      

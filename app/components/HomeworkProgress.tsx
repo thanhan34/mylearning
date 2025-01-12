@@ -34,7 +34,6 @@ const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
   useEffect(() => {
     const fetchProgress = async () => {
       try {
-        console.log('Fetching homework progress for:', studentId);
         const progress = await getHomeworkProgress(studentId);
         
         if (progress.length > 0) {
@@ -44,10 +43,8 @@ const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
             .slice(0, 7)
             .reverse();
             
-          console.log('Sorted homework progress:', sortedData);
           setProgressData(sortedData);
         } else {
-          console.log('No homework progress found');
           setProgressData([]);
         }
       } catch (error) {

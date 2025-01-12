@@ -29,13 +29,10 @@ export default function TeacherStats() {
   useEffect(() => {
     const fetchStats = async () => {
       if (!session?.user?.email) {
-        console.log('No user email in session');
         setError('Không thể xác định giảng viên. Vui lòng đăng nhập lại.');
         setIsLoading(false);
         return;
       }
-
-      console.log('Fetching stats for teacher:', session.user.email);
 
       try {
         setIsLoading(true);
@@ -46,7 +43,6 @@ export default function TeacherStats() {
         const classesQuery = query(classesRef, where('teacherId', '==', session.user.email));
         const classesSnapshot = await getDocs(classesQuery);
         const totalClasses = classesSnapshot.size;
-        console.log('Found classes:', totalClasses);
 
         // Get students
         const usersRef = collection(db, 'users');
@@ -57,18 +53,10 @@ export default function TeacherStats() {
         );
         const studentsSnapshot = await getDocs(studentsQuery);
         const totalStudents = studentsSnapshot.size;
-        console.log('Found students:', totalStudents);
 
         // Calculate active students (submitted homework in last 7 days)
         const activeStudents = Math.floor(totalStudents * 0.85); // Placeholder calculation
         const completionRate = totalStudents > 0 ? Math.floor((activeStudents / totalStudents) * 100) : 0;
-
-        console.log('Calculated stats:', {
-          totalClasses,
-          totalStudents,
-          activeStudents,
-          completionRate
-        });
 
         setStats({
           totalClasses,

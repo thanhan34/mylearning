@@ -33,16 +33,12 @@ const DailyTargetTable = () => {
   useEffect(() => {
     const fetchTargets = async () => {
       try {
-        console.log('Fetching targets from Firebase...');
         const docRef = await getDoc(doc(db, 'settings', 'dailyTargets'));
-        console.log('Document exists:', docRef.exists());
         
         if (docRef.exists()) {
           const data = docRef.data();
-          console.log('Firebase data:', data);
           
           if (data.targets) {
-            console.log('Setting targets:', data.targets);
             // Ensure all required fields exist
             const mergedTargets = defaultTargets.map(defaultTarget => {
               const firebaseTarget = data.targets.find((t: any) => t.id === defaultTarget.id);
