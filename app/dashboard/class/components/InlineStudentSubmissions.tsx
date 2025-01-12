@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { HomeworkSubmission, getHomeworkSubmissions } from '@/app/firebase/services';
+import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import HomeworkProgress from '@/app/components/HomeworkProgress';
-import { doc, updateDoc } from 'firebase/firestore';
+import StudentInfo from '@/app/dashboard/admin/components/StudentInfo';
 import { db } from '@/app/firebase/config';
 
 interface Props {
@@ -11,6 +12,8 @@ interface Props {
     id: string;
     email: string;
     name: string;
+    avatar?: string;
+    target?: string;
   };
 }
 
@@ -37,10 +40,17 @@ export default function InlineStudentSubmissions({ student }: Props) {
     const loadSubmissions = async () => {
       setLoading(true);
       try {
-        const userSubmissions = await getHomeworkSubmissions(student.email.replace(/\./g, '_'), selectedDate);
+        console.log('Loading submissions for:', {
+          email: student.email,
+          date: selectedDate
+        });
+        
+        const userSubmissions = await getHomeworkSubmissions(student.email, selectedDate);
+        console.log('Loaded submissions:', userSubmissions);
         setSubmissions(userSubmissions || []);
       } catch (error) {
         console.error('Error loading submissions:', error);
+        setSubmissions([]);
       } finally {
         setLoading(false);
       }
@@ -49,12 +59,33 @@ export default function InlineStudentSubmissions({ student }: Props) {
     loadSubmissions();
   }, [student.email, selectedDate]);
 
+  // Debug log for student data
+  useEffect(() => {
+    console.log('InlineStudentSubmissions student data:', {
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      avatar: student.avatar,
+      target: student.target,
+      hasAvatar: Boolean(student.avatar),
+      avatarType: typeof student.avatar,
+      avatarValue: student.avatar
+    });
+  }, [student]);
+
   const handleSaveFeedback = async () => {
     if (!editingFeedback) return;
 
     try {
-      const userEmail = student.email.replace(/\./g, '_');
-      const docRef = doc(db, 'users', userEmail, 'homework', selectedDate);
+      // Replace dots with underscores in email
+      const sanitizedEmail = student.email.replace(/\./g, '_');
+      console.log('Saving feedback for:', {
+        email: student.email,
+        sanitizedEmail,
+        date: selectedDate
+      });
+
+      const docRef = doc(db, 'users', sanitizedEmail, 'homework', selectedDate);
 
       // Update the specific submission's feedback
       const updatedSubmissions = submissions.map(sub => {
@@ -79,8 +110,16 @@ export default function InlineStudentSubmissions({ student }: Props) {
   return (
     <div className="mt-8 bg-white p-6 rounded-lg shadow-lg">
       <div className="space-y-6">
+        {/* Student Info */}
+        <div>
+          <StudentInfo 
+            student={student} 
+            key={`${student.id}-${student.avatar}`} // Force re-render on avatar change
+          />
+        </div>
+        
         {/* Homework Progress Chart */}
-        <HomeworkProgress studentId={student.email.replace(/\./g, '_')} />
+        <HomeworkProgress studentId={student.email} />
 
         {/* Date Selection */}
         <div className="mb-6">

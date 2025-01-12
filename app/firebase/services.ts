@@ -17,96 +17,14 @@ import {
   Firestore,
   runTransaction
 } from 'firebase/firestore';
+import { Assignment } from '../../types/assignment';
+import { AssignmentSubmission, SubmissionFormData } from '../../types/submission';
 
 const getFirestoreInstance = (): Firestore => {
   if (!db) {
     throw new Error('Firestore instance not initialized');
   }
   return db;
-};
-import { Assignment } from '../../types/assignment';
-import { AssignmentSubmission, SubmissionFormData } from '../../types/submission';
-
-// User Management
-export const createUser = async (userData: {
-  email: string;
-  name: string;
-  role?: "admin" | "teacher" | "student";
-}) => {
-  try {
-    const firestore = getFirestoreInstance();
-    
-    // Check if user exists first
-    const usersRef = collection(firestore, 'users');
-    const q = query(usersRef, where('email', '==', userData.email));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-      return querySnapshot.docs[0].id;
-    }
-
-    // Create new user with Firebase-generated ID
-    const newUser = {
-      ...userData,
-      role: userData.role || 'student',
-      createdAt: new Date().toISOString()
-    };
-    
-    const docRef = await addDoc(usersRef, newUser);
-    return docRef.id;
-  } catch (error) {
-    console.error('Error in createUser transaction:', error);
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-    }
-    return null;
-  }
-};
-
-export const getUserRole = async (userId: string): Promise<"admin" | "teacher" | "student" | null> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const userRef = doc(firestore, 'users', userId);
-    const userSnap = await getDoc(userRef);
-    
-    if (userSnap.exists()) {
-      const userData = userSnap.data();
-      return userData.role as "admin" | "teacher" | "student";
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error getting user role:', error);
-    return null;
-  }
-};
-
-export const getUserByEmail = async (email: string): Promise<{ id: string; email: string; role: "admin" | "teacher" | "student" } | null> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const usersRef = collection(firestore, 'users');
-    const q = query(usersRef, where('email', '==', email));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-      const doc = querySnapshot.docs[0];
-      const data = doc.data();
-      return {
-        id: doc.id,
-        email: data.email,
-        role: data.role as "admin" | "teacher" | "student"
-      };
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error getting user by email:', error);
-    return null;
-  }
 };
 
 // Class Management Types
@@ -150,6 +68,12 @@ export interface HomeworkSubmission {
   feedback?: string;
 }
 
+export interface DailyProgress {
+  userId: string;
+  date: Date;
+  targets: DailyTarget[];
+}
+
 // Default homework submissions template
 const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
   // Read aloud: 20 questions
@@ -162,255 +86,195 @@ const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
   ...Array(5).fill(null).map((_, i) => ({ id: 4, type: 'Retell lecture', questionNumber: i + 1, link: '', date, feedback: '' }))
 ];
 
-export interface DailyProgress {
-  userId: string;
-  date: Date;
-  targets: DailyTarget[];
-}
-
-// Assignment Submission Functions
-export const createSubmission = async (
-  assignmentId: string,
-  studentId: string,
-  data: SubmissionFormData
-): Promise<string | null> => {
+// User Management Functions
+export const createUser = async (userData: {
+  email: string;
+  name: string;
+  role?: "admin" | "teacher" | "student";
+}) => {
   try {
     const firestore = getFirestoreInstance();
-    const submissionsRef = collection(firestore, 'submissions');
-    const submission: Omit<AssignmentSubmission, 'id'> = {
-      assignmentId,
-      studentId,
-      submittedAt: new Date().toISOString(),
-      type: data.type,
-      date: data.date,
-      link: data.link,
-      notes: data.notes,
-      status: 'submitted'
+    
+    // Check if user exists first
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('email', '==', userData.email));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      return querySnapshot.docs[0].id;
+    }
+
+    // Create new user with Firebase-generated ID
+    const newUser = {
+      ...userData,
+      role: userData.role || 'student',
+      createdAt: new Date().toISOString(),
+      avatar: null,  // Initialize avatar field
+      target: null   // Initialize target field
     };
     
-    const docRef = await addDoc(submissionsRef, submission);
+    const docRef = await addDoc(usersRef, newUser);
     return docRef.id;
   } catch (error) {
-    console.error('Error creating submission:', error);
+    console.error('Error creating user:', error);
     return null;
   }
 };
 
-export const getStudentSubmissions = async (studentId: string): Promise<AssignmentSubmission[]> => {
+export const getUserRole = async (userId: string): Promise<"admin" | "teacher" | "student" | null> => {
   try {
     const firestore = getFirestoreInstance();
-    const submissionsRef = collection(firestore, 'submissions');
-    const q = query(
-      submissionsRef,
-      where('studentId', '==', studentId),
-      orderBy('submittedAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
+    const userRef = doc(firestore, 'users', userId);
+    const userSnap = await getDoc(userRef);
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as AssignmentSubmission[];
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      return userData.role as "admin" | "teacher" | "student";
+    }
+    
+    return null;
   } catch (error) {
-    console.error('Error getting student submissions:', error);
-    return [];
+    console.error('Error getting user role:', error);
+    return null;
   }
 };
 
-export const getAssignmentSubmission = async (
-  assignmentId: string,
-  studentId: string
-): Promise<AssignmentSubmission | null> => {
+export const getUserByEmail = async (email: string): Promise<{ 
+  id: string; 
+  email: string; 
+  role: "admin" | "teacher" | "student";
+  avatar?: string;
+  target?: string;
+  name?: string;
+} | null> => {
   try {
+    console.log('Getting user by email:', email);
     const firestore = getFirestoreInstance();
-    const submissionsRef = collection(firestore, 'submissions');
-    const q = query(
-      submissionsRef,
-      where('assignmentId', '==', assignmentId),
-      where('studentId', '==', studentId)
-    );
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('email', '==', email));
     const querySnapshot = await getDocs(q);
     
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0];
+      const data = doc.data();
+      console.log('Found user data:', {
+        id: doc.id,
+        email: data.email,
+        role: data.role,
+        hasAvatar: Boolean(data.avatar),
+        hasTarget: Boolean(data.target),
+        name: data.name
+      });
       return {
         id: doc.id,
-        ...doc.data()
-      } as AssignmentSubmission;
+        email: data.email,
+        role: data.role as "admin" | "teacher" | "student",
+        avatar: data.avatar,
+        target: data.target,
+        name: data.name
+      };
     }
     
+    console.log('No user found for email:', email);
     return null;
   } catch (error) {
-    console.error('Error getting assignment submission:', error);
-    return null;
-  }
-};
-
-export const getDailySubmissionCount = async (studentId: string): Promise<number> => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const firestore = getFirestoreInstance();
-    const submissionsRef = collection(firestore, 'submissions');
-    const q = query(
-      submissionsRef,
-      where('studentId', '==', studentId),
-      where('submittedAt', '>=', today.toISOString()),
-      where('submittedAt', '<', tomorrow.toISOString())
-    );
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.size;
-  } catch (error) {
-    console.error('Error getting daily submission count:', error);
-    return 0;
-  }
-};
-
-// Assignment Management Functions
-export const createAssignment = async (assignment: Omit<Assignment, 'id'>): Promise<string | null> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const assignmentsRef = collection(firestore, 'assignments');
-    const docRef = await addDoc(assignmentsRef, assignment);
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating assignment:', error);
-    return null;
-  }
-};
-
-export const getTeacherAssignments = async (teacherId: string): Promise<Assignment[]> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const assignmentsRef = collection(firestore, 'assignments');
-    const q = query(
-      assignmentsRef, 
-      where('teacherId', '==', teacherId),
-      orderBy('createdAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Assignment[];
-  } catch (error) {
-    console.error('Error getting teacher assignments:', error);
-    return [];
-  }
-};
-
-export const getTargetAssignments = async (
-  targetType: Assignment['targetType'],
-  targetId: string
-): Promise<Assignment[]> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const assignmentsRef = collection(firestore, 'assignments');
-
-    if (targetType === 'class') {
-      // Get all classes where the student is a member
-      const classesRef = collection(firestore, 'classes');
-      const classesQuery = query(classesRef);
-      const classesSnapshot = await getDocs(classesQuery);
-      const studentClasses = classesSnapshot.docs
-        .filter(doc => {
-          const classData = doc.data() as Class;
-          return classData.students.some(student => student.id === targetId);
-        })
-        .map(doc => doc.id);
-
-      if (studentClasses.length === 0) return [];
-
-      // Get assignments for these classes
-      const q = query(
-        assignmentsRef,
-        where('targetType', '==', 'class'),
-        where('targetId', 'in', studentClasses),
-        where('status', '==', 'active'),
-        orderBy('dueDate', 'asc')
-      );
-      const querySnapshot = await getDocs(q);
-      
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Assignment[];
-    } else {
-      // For individual assignments
-      const q = query(
-        assignmentsRef,
-        where('targetType', '==', targetType),
-        where('targetId', '==', targetId),
-        where('status', '==', 'active'),
-        orderBy('dueDate', 'asc')
-      );
-      const querySnapshot = await getDocs(q);
-      
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Assignment[];
+    console.error('Error getting user by email:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        email,
+        timestamp: new Date().toISOString()
+      });
     }
-  } catch (error) {
-    console.error('Error getting target assignments:', error);
-    return [];
-  }
-};
-
-export const updateAssignmentStatus = async (
-  assignmentId: string,
-  status: Assignment['status']
-): Promise<boolean> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const assignmentRef = doc(firestore, 'assignments', assignmentId);
-    await updateDoc(assignmentRef, { status });
-    return true;
-  } catch (error) {
-    console.error('Error updating assignment status:', error);
-    return false;
-  }
-};
-
-export const markNotificationSent = async (assignmentId: string): Promise<boolean> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const assignmentRef = doc(firestore, 'assignments', assignmentId);
-    await updateDoc(assignmentRef, { notificationSent: true });
-    return true;
-  } catch (error) {
-    console.error('Error marking notification as sent:', error);
-    return false;
+    return null;
   }
 };
 
 // Daily Progress Functions
-export const saveDailyProgress = async (userId: string, targets: DailyTarget[]) => {
+export const getDailyProgress = async (userId: string): Promise<DailyTarget[] | null> => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const firestore = getFirestoreInstance();
-    await setDoc(doc(firestore, 'dailyProgress', `${userId}_${today.toISOString().split('T')[0]}`), {
-      userId,
-      date: Timestamp.fromDate(today),
-      targets,
-      lastUpdated: Timestamp.now()
-    });
+    const progressQuery = query(
+      collection(getFirestoreInstance(), 'dailyProgress'),
+      where('userId', '==', userId),
+      where('date', '==', Timestamp.fromDate(today))
+    );
 
-    return true;
+    const querySnapshot = await getDocs(progressQuery);
+    if (!querySnapshot.empty) {
+      const data = querySnapshot.docs[0].data();
+      return data.targets as DailyTarget[];
+    }
+
+    return null;
   } catch (error) {
-    console.error('Error saving daily progress:', error);
-    return false;
+    console.error('Error getting daily progress:', error);
+    return null;
   }
 };
 
-export const saveHomeworkSubmission = async (userId: string, submissions: HomeworkSubmission[]) => {
+// Updated functions for homework data
+export const getHomeworkProgress = async (email: string): Promise<{ date: string; completed: number }[]> => {
+  try {
+    const firestore = getFirestoreInstance();
+    console.log('Getting homework progress for email:', email);
+
+    // Replace dots with underscores in email
+    const sanitizedEmail = email.replace(/\./g, '_');
+    console.log('Sanitized email:', sanitizedEmail);
+
+    // Get homework submissions using sanitized email
+    const homeworkRef = collection(firestore, 'users', sanitizedEmail, 'homework');
+    const homeworkSnapshot = await getDocs(homeworkRef);
+    
+    const progressData = homeworkSnapshot.docs.map(doc => {
+      const data = doc.data();
+      const completedCount = data.submissions.filter((sub: HomeworkSubmission) => sub.link.trim() !== '').length;
+      return {
+        date: doc.id, // The document ID is the date
+        completed: completedCount
+      };
+    });
+
+    // Sort by date
+    return progressData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  } catch (error) {
+    console.error('Error getting homework progress:', error);
+    return [];
+  }
+};
+
+export const getHomeworkSubmissions = async (email: string, date: string): Promise<HomeworkSubmission[] | null> => {
+  try {
+    const firestore = getFirestoreInstance();
+    // Replace dots with underscores in email
+    const sanitizedEmail = email.replace(/\./g, '_');
+    console.log('Getting homework submissions for:', {
+      email,
+      sanitizedEmail,
+      date
+    });
+
+    const docRef = doc(collection(firestore, 'users'), sanitizedEmail, 'homework', date);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.submissions as HomeworkSubmission[];
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting homework submissions:', error);
+    return null;
+  }
+};
+
+export const saveHomeworkSubmission = async (email: string, submissions: HomeworkSubmission[]) => {
   try {
     const firestore = getFirestoreInstance();
     const date = submissions[0]?.date;
@@ -419,11 +283,19 @@ export const saveHomeworkSubmission = async (userId: string, submissions: Homewo
       return false;
     }
 
+    // Replace dots with underscores in email
+    const sanitizedEmail = email.replace(/\./g, '_');
+    console.log('Saving homework submissions for:', {
+      email,
+      sanitizedEmail,
+      date
+    });
+
     // Filter out submissions with empty links
     const submissionsToSave = submissions.filter(s => s.link.trim() !== '');
 
-    // Create a document reference with userId and date
-    const docRef = doc(collection(firestore, 'users'), userId, 'homework', date);
+    // Create a document reference with sanitized email
+    const docRef = doc(collection(firestore, 'users'), sanitizedEmail, 'homework', date);
     
     // Check if document exists
     const docSnap = await getDoc(docRef);
@@ -460,7 +332,7 @@ export const saveHomeworkSubmission = async (userId: string, submissions: Homewo
       });
       
       await setDoc(docRef, {
-        userId,
+        email: sanitizedEmail,
         date,
         submissions: mergedSubmissions,
         lastUpdated: new Date().toISOString()
@@ -469,255 +341,28 @@ export const saveHomeworkSubmission = async (userId: string, submissions: Homewo
 
     return true;
   } catch (error) {
-    console.error('Error in saveHomeworkSubmission:', error);
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-    }
+    console.error('Error saving homework submissions:', error);
     return false;
   }
 };
 
-export const getDailyProgress = async (userId: string): Promise<DailyTarget[] | null> => {
+export const saveDailyProgress = async (userId: string, targets: DailyTarget[]) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const progressQuery = query(
-      collection(getFirestoreInstance(), 'dailyProgress'),
-      where('userId', '==', userId),
-      where('date', '==', Timestamp.fromDate(today))
-    );
-
-    const querySnapshot = await getDocs(progressQuery);
-    if (!querySnapshot.empty) {
-      const data = querySnapshot.docs[0].data();
-      return data.targets as DailyTarget[];
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error getting daily progress:', error);
-    return null;
-  }
-};
-
-export const getHomeworkSubmissions = async (userId: string, date: string): Promise<HomeworkSubmission[] | null> => {
-  try {
     const firestore = getFirestoreInstance();
-    const docRef = doc(collection(firestore, 'users'), userId, 'homework', date);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return data.submissions as HomeworkSubmission[];
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error getting homework submissions:', error);
-    return null;
-  }
-};
-
-// Class Management Functions
-export const getTeacherClasses = async (teacherId: string): Promise<Class[]> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const classesRef = collection(firestore, 'classes');
-    const q = query(classesRef, where('teacherId', '==', teacherId));
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Class[];
-  } catch (error) {
-    console.error('Error getting teacher classes:', error);
-    return [];
-  }
-};
-
-export const createClass = async (classData: Omit<Class, 'id'>): Promise<string | null> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const classesRef = collection(firestore, 'classes');
-    const docRef = await addDoc(classesRef, {
-      ...classData,
-      announcements: [],
-      students: []
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating class:', error);
-    return null;
-  }
-};
-
-export const addStudentToClass = async (
-  classId: string, 
-  student: Omit<ClassStudent, 'progress'>
-): Promise<boolean> => {
-  try {
-    const firestore = getFirestoreInstance();
-    
-    // Get the class document to get the teacherId
-    const classDoc = await getDoc(doc(firestore, 'classes', classId));
-    if (!classDoc.exists()) {
-      throw new Error('Class not found');
-    }
-    const classData = classDoc.data();
-
-    // Update the class with the new student
-    const classRef = doc(firestore, 'classes', classId);
-    await updateDoc(classRef, {
-      students: arrayUnion({
-        ...student,
-        progress: 0
-      })
-    });
-
-    // Update the student's teacherId
-    const studentRef = doc(firestore, 'users', student.id);
-    await updateDoc(studentRef, {
-      teacherId: classData.teacherId,
-      updatedAt: new Date().toISOString()
+    await setDoc(doc(firestore, 'dailyProgress', `${userId}_${today.toISOString().split('T')[0]}`), {
+      userId,
+      date: Timestamp.fromDate(today),
+      targets,
+      lastUpdated: Timestamp.now()
     });
 
     return true;
   } catch (error) {
-    console.error('Error adding student:', error);
+    console.error('Error saving daily progress:', error);
     return false;
-  }
-};
-
-export const removeStudentFromClass = async (
-  classId: string,
-  studentId: string
-): Promise<boolean> => {
-  try {
-    const firestore = getFirestoreInstance();
-    
-    // Get class document
-    const classRef = doc(firestore, 'classes', classId);
-    const classDoc = await getDoc(classRef);
-    if (!classDoc.exists()) return false;
-    
-    const currentClass = classDoc.data() as Class;
-    const studentToRemove = currentClass.students.find(s => s.id === studentId);
-    if (!studentToRemove) return false;
-
-    // Remove student from class
-    await updateDoc(classRef, {
-      students: arrayRemove(studentToRemove)
-    });
-
-    // Remove teacherId from student's user document
-    const studentRef = doc(firestore, 'users', studentId);
-    await updateDoc(studentRef, {
-      teacherId: null,
-      updatedAt: new Date().toISOString()
-    });
-
-    return true;
-  } catch (error) {
-    console.error('Error removing student:', error);
-    return false;
-  }
-};
-
-export const updateStudentRole = async (
-  classId: string,
-  studentId: string,
-  newRole: 'leader' | 'regular'
-): Promise<boolean> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const classRef = doc(firestore, 'classes', classId);
-    const classDoc = await getDocs(query(collection(firestore, 'classes'), where('id', '==', classId)));
-    const currentClass = classDoc.docs[0].data() as Class;
-    
-    const updatedStudents = currentClass.students.map(student => 
-      student.id === studentId ? { ...student, role: newRole } : student
-    );
-
-    await updateDoc(classRef, { students: updatedStudents });
-    return true;
-  } catch (error) {
-    console.error('Error updating student role:', error);
-    return false;
-  }
-};
-
-export const updateStudentProgress = async (
-  classId: string,
-  studentId: string,
-  progress: number
-): Promise<boolean> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const classRef = doc(firestore, 'classes', classId);
-    const classDoc = await getDocs(query(collection(firestore, 'classes'), where('id', '==', classId)));
-    const currentClass = classDoc.docs[0].data() as Class;
-    
-    const updatedStudents = currentClass.students.map(student => 
-      student.id === studentId ? { ...student, progress } : student
-    );
-
-    await updateDoc(classRef, { students: updatedStudents });
-    return true;
-  } catch (error) {
-    console.error('Error updating student progress:', error);
-    return false;
-  }
-};
-
-export const addClassAnnouncement = async (
-  classId: string,
-  message: string
-): Promise<boolean> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const classRef = doc(firestore, 'classes', classId);
-    const announcement: ClassAnnouncement = {
-      id: Date.now().toString(),
-      message,
-      timestamp: new Date()
-    };
-    
-    await updateDoc(classRef, {
-      announcements: arrayUnion(announcement)
-    });
-    return true;
-  } catch (error) {
-    console.error('Error adding announcement:', error);
-    return false;
-  }
-};
-
-export const getHomeworkProgress = async (userId: string): Promise<{ date: string; completed: number }[]> => {
-  try {
-    const firestore = getFirestoreInstance();
-    const homeworkRef = collection(firestore, 'users', userId, 'homework');
-    const querySnapshot = await getDocs(homeworkRef);
-    
-    const progressData = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      const completedCount = data.submissions.filter((sub: HomeworkSubmission) => sub.link.trim() !== '').length;
-      return {
-        date: doc.id, // The document ID is the date
-        completed: completedCount
-      };
-    });
-
-    // Sort by date
-    return progressData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  } catch (error) {
-    console.error('Error getting homework progress:', error);
-    return [];
   }
 };
 

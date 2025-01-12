@@ -5,6 +5,7 @@ import { collection, query, getDocs, where, doc, getDoc } from 'firebase/firesto
 import { db } from '../../../firebase/config';
 import { HomeworkSubmission } from '../../../firebase/services';
 import HomeworkProgress from '../../../components/HomeworkProgress';
+import StudentInfo from './StudentInfo';
 
 interface StudentSubmissionsProps {
   selectedStudentId: string;
@@ -85,6 +86,9 @@ const StudentSubmissions = ({ selectedStudentId, selectedStudentEmail }: Student
       <h2 className="text-xl font-semibold mb-4 text-[#fc5d01]">Bài tập về nhà</h2>
       
       <div className="space-y-6">
+          {/* Student Info */}
+          <StudentInfo studentEmail={selectedStudentEmail} />
+          
           {/* Homework Progress Chart */}
           <HomeworkProgress studentId={selectedStudentEmail.replace(/\./g, '_')} />
 

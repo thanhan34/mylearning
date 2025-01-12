@@ -11,15 +11,10 @@ interface Student {
   name: string;
   email: string;
   classId?: string;
-}
-
-interface FirebaseUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  classId?: string;
-  class?: string;
+  avatar?: string;
+  target?: string;
+  role?: string;
+  docId?: string;
 }
 
 const ClassManagement = () => {
@@ -117,12 +112,117 @@ const ClassManagement = () => {
         
         if (classData.students && Array.isArray(classData.students)) {
           console.log('Found students:', classData.students);
-          setClassStudents(classData.students.map(student => ({
-            id: student.id,
-            name: student.name,
-            email: student.email,
-            classId: selectedClass.id
-          })));
+          const studentsWithProfiles = await Promise.all(
+            classData.students.map(async (student) => {
+              try {
+                // Query users collection by email field
+                const usersRef = collection(db, 'users');
+                const q = query(usersRef, where('email', '==', student.email));
+                const querySnapshot = await getDocs(q);
+
+                let userData = null;
+                let validatedAvatar: string | undefined = undefined;
+                let userDocId: string | undefined = undefined;
+                let userDocRef = null;
+
+                if (!querySnapshot.empty) {
+                    userDocRef = querySnapshot.docs[0];
+                    userDocId = userDocRef.id;
+                    userData = userDocRef.data();
+
+                    // Log the raw user data
+                    console.log('Found user document:', {
+                        email: student.email,
+                        docId: userDocId,
+                        rawData: userData
+                    });
+
+                    // Log avatar and target specifically
+                    console.log('User profile data:', {
+                        avatar: userData?.avatar || 'No avatar',
+                        target: userData?.target || 'No target',
+                        hasAvatar: Boolean(userData?.avatar),
+                        hasTarget: Boolean(userData?.target)
+                    });
+                    
+                    // Log raw user data
+                    console.log('Raw user document data:', {
+                        id: userDocRef.id,
+                        data: userData,
+                        allFields: Object.keys(userData || {})
+                    });
+
+                    // Log specific fields
+                    console.log('User profile fields:', {
+                        email: student.email,
+                        docId: userDocRef.id,
+                        hasAvatar: Boolean(userData?.avatar),
+                        avatarValue: userData?.avatar,
+                        avatarType: typeof userData?.avatar,
+                        hasTarget: Boolean(userData?.target),
+                        targetValue: userData?.target
+                    });
+
+                    // Set avatar URL directly from user data
+                    validatedAvatar = userData?.avatar;
+                    if (validatedAvatar) {
+                        console.log('Found avatar URL:', validatedAvatar);
+                    } else {
+                        console.log('No avatar URL in user document');
+                    }
+                } else {
+                    console.error('No user profile found for:', student.email);
+                }
+
+                // Create student profile with validated data
+                const studentWithProfile: Student = {
+                    id: student.id, // Keep original class student ID
+                    name: userData?.name || student.name,
+                    email: student.email,
+                    classId: selectedClass.id,
+                    avatar: validatedAvatar,
+                    target: userData?.target || student.target,
+                    role: userData?.role || student.role,
+                    docId: userDocId // Store Firebase document ID separately
+                };
+
+                // Log the ID mapping
+                console.log('Student ID mapping:', {
+                    classStudentId: student.id,
+                    userDocId: userDocId,
+                    docId: userDocId, // Log explicit docId
+                    email: student.email
+                });
+
+                // Log the constructed profile
+                console.log('Constructed student profile:', {
+                  ...studentWithProfile,
+                  hasAvatar: Boolean(studentWithProfile.avatar),
+                  avatarValue: studentWithProfile.avatar,
+                  avatarType: typeof studentWithProfile.avatar
+                });
+
+                // Log the final constructed profile
+                console.log('Final student profile:', {
+                  ...studentWithProfile,
+                  hasAvatar: Boolean(studentWithProfile.avatar),
+                  avatarValue: studentWithProfile.avatar
+                });
+
+                return studentWithProfile;
+              } catch (error) {
+                console.error('Error fetching user data:', error);
+                // Return basic student info if there's an error
+                return {
+                  id: student.id,
+                  name: student.name,
+                  email: student.email,
+                  classId: selectedClass.id,
+                };
+              }
+            })
+          );
+          setClassStudents(studentsWithProfiles);
         } else {
           console.log('No students array in class document');
           setClassStudents([]);
@@ -193,7 +293,7 @@ const ClassManagement = () => {
               {editingId ? 'Chỉnh sửa lớp học' : 'Thêm lớp học mới'}
             </h3>
             <form onSubmit={handleSubmit} className="text-black">
-              <div className="mb-4 ">
+              <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">Tên lớp</label>
                 <input
                   type="text"
@@ -365,13 +465,22 @@ const ClassManagement = () => {
 
       {/* Selected Student Submissions */}
       {selectedStudent && (
-        <InlineStudentSubmissions 
-          student={{
-            id: selectedStudent.id,
-            email: selectedStudent.email,
-            name: selectedStudent.name
-          }} 
-        />
+        <>
+          {console.log('Passing student data to InlineStudentSubmissions:', {
+            selectedStudent,
+            hasAvatar: Boolean(selectedStudent?.avatar),
+            avatar: selectedStudent?.avatar
+          })}
+          <InlineStudentSubmissions 
+            student={{
+              id: selectedStudent.id,
+              name: selectedStudent.name,
+              email: selectedStudent.email,
+              avatar: selectedStudent.avatar,  // Pass the avatar from user profile
+              target: selectedStudent.target   // Pass the target from user profile
+            }}
+          />
+        </>
       )}
     </div>
   );

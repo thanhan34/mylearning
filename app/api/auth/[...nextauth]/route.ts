@@ -30,17 +30,39 @@ export const authOptions: AuthOptions = {
   },
   callbacks: {
     async signIn({ user, account }) {
-      if (!user?.email) return false;
+      if (!user?.email) {
+        console.error('No email provided');
+        return false;
+      }
 
       try {
+        console.log('Attempting sign in for:', user.email);
+        
+        // Check if user exists
         const existingUser = await getUserByEmail(user.email);
+        console.log('Existing user check:', {
+          email: user.email,
+          found: !!existingUser,
+          role: existingUser?.role
+        });
+
         if (existingUser) {
           user.id = existingUser.id;
           user.role = existingUser.role;
+          console.log('User found:', {
+            id: user.id,
+            role: user.role,
+            email: user.email
+          });
           return true;
         }
 
         // Create new user
+        console.log('Creating new user:', {
+          email: user.email,
+          name: user.name || 'User'
+        });
+
         const userId = await createUser({
           email: user.email,
           name: user.name || 'User',
@@ -48,12 +70,21 @@ export const authOptions: AuthOptions = {
         });
 
         if (!userId) {
-          console.error('Failed to create user');
+          console.error('Failed to create user:', {
+            email: user.email,
+            name: user.name,
+            timestamp: new Date().toISOString()
+          });
           return false;
         }
 
         user.id = userId;
         user.role = 'student';
+        console.log('New user created:', {
+          id: userId,
+          role: 'student',
+          email: user.email
+        });
         return true;
       } catch (error) {
         console.error('Error in signIn callback:', error);
@@ -62,10 +93,12 @@ export const authOptions: AuthOptions = {
           console.error('Error details:', {
             message: error.message,
             stack: error.stack,
-            name: error.name
+            name: error.name,
+            email: user.email,
+            timestamp: new Date().toISOString()
           });
         }
-        return false;
+        return '/login?error=AccessDenied';
       }
     },
     async jwt({ token, user, account }) {

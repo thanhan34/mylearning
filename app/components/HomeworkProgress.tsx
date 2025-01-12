@@ -25,7 +25,7 @@ ChartJS.register(
 );
 
 interface HomeworkProgressProps {
-  studentId: string;
+  studentId: string; // This is actually the email
 }
 
 const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
@@ -33,8 +33,27 @@ const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
 
   useEffect(() => {
     const fetchProgress = async () => {
-      const progress = await getHomeworkProgress(studentId);
-      setProgressData(progress);
+      try {
+        console.log('Fetching homework progress for:', studentId);
+        const progress = await getHomeworkProgress(studentId);
+        
+        if (progress.length > 0) {
+          // Sort by date and get last 7 days
+          const sortedData = progress
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 7)
+            .reverse();
+            
+          console.log('Sorted homework progress:', sortedData);
+          setProgressData(sortedData);
+        } else {
+          console.log('No homework progress found');
+          setProgressData([]);
+        }
+      } catch (error) {
+        console.error('Error fetching homework progress:', error);
+        setProgressData([]);
+      }
     };
 
     if (studentId) {
@@ -42,8 +61,15 @@ const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
     }
   }, [studentId]);
 
+  // Format dates for display
   const chartData = {
-    labels: progressData.map(item => item.date),
+    labels: progressData.map(item => {
+      const date = new Date(item.date);
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }),
     datasets: [
       {
         label: "Completed Homework",
@@ -68,6 +94,16 @@ const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
                 beginAtZero: true,
                 ticks: {
                   stepSize: 1
+                }
+              }
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  title: (context) => {
+                    const index = context[0].dataIndex;
+                    return progressData[index]?.date || '';
+                  }
                 }
               }
             }
