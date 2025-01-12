@@ -600,16 +600,28 @@ export const removeStudentFromClass = async (
 ): Promise<boolean> => {
   try {
     const firestore = getFirestoreInstance();
-    const classRef = doc(firestore, 'classes', classId);
-    const classDoc = await getDocs(query(collection(firestore, 'classes'), where('id', '==', classId)));
-    const currentClass = classDoc.docs[0].data() as Class;
     
+    // Get class document
+    const classRef = doc(firestore, 'classes', classId);
+    const classDoc = await getDoc(classRef);
+    if (!classDoc.exists()) return false;
+    
+    const currentClass = classDoc.data() as Class;
     const studentToRemove = currentClass.students.find(s => s.id === studentId);
     if (!studentToRemove) return false;
 
+    // Remove student from class
     await updateDoc(classRef, {
       students: arrayRemove(studentToRemove)
     });
+
+    // Remove teacherId from student's user document
+    const studentRef = doc(firestore, 'users', studentId);
+    await updateDoc(studentRef, {
+      teacherId: null,
+      updatedAt: new Date().toISOString()
+    });
+
     return true;
   } catch (error) {
     console.error('Error removing student:', error);
