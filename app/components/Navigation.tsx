@@ -45,8 +45,7 @@ const Navigation = () => {
     { href: "/dashboard/profile", label: "Profile" },
   ];
 
-  const teacherNavItems: NavItem[] = [  
-    { href: "/dashboard/teacher", label: "Dashboard" },
+  const teacherNavItems: NavItem[] = [     
     { href: "/dashboard/class", label: "Classes" },
     { href: "/dashboard/profile", label: "Profile" },
   ];
