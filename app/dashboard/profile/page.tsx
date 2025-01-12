@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import { updatePassword } from 'firebase/auth';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
-import { db, auth } from '../../firebase/config';
+import { db } from '../../firebase/config';
 import { ClassInfo, UserProfile } from '../../../types/profile';
 
 export default function ProfilePage() {
@@ -13,10 +12,6 @@ export default function ProfilePage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [avatar, setAvatar] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
@@ -32,21 +27,11 @@ export default function ProfilePage() {
         try {
           if (!session.user.id) return;
           const userRef = doc(db, 'users', session.user.id);
-          const userSnap = await getDoc(userRef);
-          
+          const userSnap = await getDoc(userRef);          
           const userData = userSnap.data() as UserProfile;
           setName(userData.name || '');
           setEmail(userData.email || '');
-          setAvatar(userData.avatar || '');
-          
-          // Fetch classes for students
-          if (userData.role === 'student' && userData.classId) {
-            const classRef = doc(db, 'classes', userData.classId);
-            const classSnap = await getDoc(classRef);
-            if (classSnap.exists()) {
-              setClasses([classSnap.data() as ClassInfo]);
-            }
-          }
+          setAvatar(userData.avatar || '');        
           setLoading(false);
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -139,31 +124,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setMessage({ type: 'error', content: 'Passwords do not match' });
-      return;
-    }
-
-    try {
-      if (!auth.currentUser) {
-        throw new Error('Please sign in again to change password');
-      }
-
-      await updatePassword(auth.currentUser, newPassword);
-      setMessage({ type: 'success', content: 'Password updated successfully' });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (error: any) {
-      console.error('Error updating password:', error);
-      setMessage({ 
-        type: 'error', 
-        content: error.message || 'Error updating password' 
-      });
-    }
-  };
+  
 
   if (!mounted) {
     return null;
@@ -259,71 +220,7 @@ export default function ProfilePage() {
               Update Profile
             </button>
           </form>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-6 text-[#fc5d01]">Change Password</h2>
-          
-          <form onSubmit={handlePasswordChange}>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Current Password
-              </label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#fc5d01]"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                New Password
-              </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#fc5d01]"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#fc5d01]"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
-            >
-              Change Password
-            </button>
-          </form>
-        </div>
-
-        {classes.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow md:col-span-2">
-            <h2 className="text-xl font-semibold mb-6 text-[#fc5d01]">My Classes</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {classes.map((classInfo: ClassInfo) => (
-                <div key={classInfo.id} className="border p-4 rounded">
-                  <h3 className="font-semibold text-lg">{classInfo.name}</h3>
-                  <p className="text-gray-600">Teacher: {classInfo.teacherName}</p>
-                  <p className="text-gray-600">Schedule: {classInfo.schedule}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        </div>       
       </div>
     </div>
   );
