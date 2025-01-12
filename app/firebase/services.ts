@@ -364,6 +364,76 @@ export const saveDailyProgress = async (userId: string, targets: DailyTarget[]) 
   }
 };
 
+// Admin Dashboard Stats
+export const getAdminStats = async () => {
+  try {
+    const firestore = getFirestoreInstance();
+    const usersRef = collection(firestore, 'users');
+    const classesRef = collection(firestore, 'classes');
+
+    // Get all users
+    const usersSnapshot = await getDocs(usersRef);
+    const studentCount = usersSnapshot.docs.filter(doc => doc.data().role === 'student').length;
+    const teacherCount = usersSnapshot.docs.filter(doc => doc.data().role === 'teacher').length;
+
+    // Get all classes
+    const classesSnapshot = await getDocs(classesRef);
+    const classCount = classesSnapshot.size;
+
+    // Get class progress data
+    const classProgressData = await Promise.all(
+      classesSnapshot.docs.map(async (classDoc) => {
+        const classData = classDoc.data();
+        const studentIds = classData.students?.map((s: ClassStudent) => s.id) || [];
+        
+        // Calculate completion rate for each student
+        const studentCompletions = await Promise.all(
+          studentIds.map(async (studentId: string) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const progressQuery = query(
+              collection(firestore, 'dailyProgress'),
+              where('userId', '==', studentId),
+              where('date', '==', Timestamp.fromDate(today))
+            );
+            
+            const progressSnapshot = await getDocs(progressQuery);
+            if (!progressSnapshot.empty) {
+              const data = progressSnapshot.docs[0].data();
+              const targets = data.targets as DailyTarget[];
+              const completionRate = targets.reduce((sum, target) => 
+                sum + (target.completed / target.target), 0) / targets.length * 100;
+              return completionRate;
+            }
+            return 0;
+          })
+        );
+
+        // Calculate average completion rate for the class
+        const avgCompletion = studentIds.length > 0
+          ? studentCompletions.reduce((sum, rate) => sum + rate, 0) / studentIds.length
+          : 0;
+
+        return {
+          name: classData.name,
+          completionRate: Math.round(avgCompletion)
+        };
+      })
+    );
+
+    return {
+      studentCount,
+      teacherCount,
+      classCount,
+      classProgress: classProgressData
+    };
+  } catch (error) {
+    console.error('Error getting admin stats:', error);
+    return null;
+  }
+};
+
 export const getWeeklyProgress = async (userId: string): Promise<{ date: Date; completed: number }[]> => {
   try {
     const endDate = new Date();
