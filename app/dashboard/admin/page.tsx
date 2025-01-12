@@ -9,10 +9,11 @@ import UserManagement from './components/UserManagement';
 import ClassManagement from './components/ClassManagement';
 import SystemStats from './components/SystemStats';
 import StudentSubmissions from './components/StudentSubmissions';
+import DailyTargetSettings from './components/DailyTargetSettings';
 
 const AdminPanel = () => {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<'users' | 'classes' | 'stats' | 'submissions'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'classes' | 'stats' | 'submissions' | 'dailyTarget'>('users');
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -87,6 +88,16 @@ const AdminPanel = () => {
         >
           Bài tập học viên
         </button>
+        <button
+          onClick={() => setActiveTab('dailyTarget')}
+          className={`px-4 py-2 rounded-lg ${
+            activeTab === 'dailyTarget'
+              ? 'bg-[#fc5d01] text-white'
+              : 'bg-[#fedac2] text-[#fc5d01]'
+          }`}
+        >
+          Daily Target
+        </button>
       </div>
 
       {/* Content Area */}
@@ -95,6 +106,7 @@ const AdminPanel = () => {
         {activeTab === 'classes' && <ClassManagement />}
         {activeTab === 'stats' && <SystemStats />}
         {activeTab === 'submissions' && <StudentSubmissions />}
+        {activeTab === 'dailyTarget' && <DailyTargetSettings />}
       </div>
     </div>
   );

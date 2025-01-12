@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import DailyHome from './components/DailyHome';
+import DailyTargetTable from './components/DailyTargetTable';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -322,46 +323,14 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Daily Homework */}
-      <DailyHome />
-
-      {/* Daily Targets */}
-      <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
-        <h3 className="text-[#fc5d01] text-lg font-medium mb-4">Daily Targets</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-[#fedac2]">
-              <thead>
-                <tr>
-                  <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">NO</th>
-                  <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">TYPE</th>
-                  <th className="px-4 py-3 text-center text-[#fd7f33] font-medium">Target</th>                  
-                  <th className="px-4 py-3 text-left text-[#fd7f33] font-medium">Source</th>                  
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#fedac2]">
-              {dailyTargets.map((task) => {
-                const isCompleted = task.completed >= task.target;
-                const progress = (task.completed / task.target) * 100;
-                
-                return (
-                  <tr key={task.id} className={task.id % 2 === 0 ? 'bg-[#fedac2] bg-opacity-10' : ''}>
-                    <td className="px-4 py-3 text-black">{task.id}</td>
-                    <td className="px-4 py-3 text-black">{task.type}</td>
-                    <td className="px-4 py-3 text-center text-black">{task.target}</td>                    
-                    <td className="px-4 py-3 text-[#fc5d01]">
-                      {task.source && (
-                        <a href={task.link}className="text-black hover:text-[#fc5d01] underline">
-                          {task.source}
-                        </a>
-                      )}
-                    </td>                   
-                  </tr>
-                );
-              })}
-              </tbody>
-          </table>
+      {/* Daily Targets and Homework */}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-6">
+          <DailyTargetTable />
+          <DailyHome />
         </div>
       </div>
+
 
       {/* Homework Submissions */}
       <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
