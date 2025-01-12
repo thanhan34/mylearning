@@ -81,7 +81,38 @@ const ClassManagement = () => {
   const handleDelete = async (classId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
       try {
-        await deleteDoc(doc(db, 'classes', classId));
+        // Get the class document first
+        const classRef = doc(db, 'classes', classId);
+        const classDoc = await getDoc(classRef);
+        
+        if (classDoc.exists()) {
+          const classData = classDoc.data();
+          
+          // If there are students in the class
+          if (classData.students && Array.isArray(classData.students)) {
+            // Get all student emails from the class
+            const studentEmails = classData.students.map(student => student.email);
+            
+            // Update each student's document
+            for (const email of studentEmails) {
+              // Query users collection by email
+              const usersRef = collection(db, 'users');
+              const q = query(usersRef, where('email', '==', email));
+              const querySnapshot = await getDocs(q);
+              
+              if (!querySnapshot.empty) {
+                const userDoc = querySnapshot.docs[0];
+                // Update user document to set teacherId to empty string
+                await updateDoc(doc(db, 'users', userDoc.id), {
+                  teacherId: ""
+                });
+              }
+            }
+          }
+        }
+        
+        // Delete the class document
+        await deleteDoc(classRef);
         fetchClasses();
       } catch (error) {
         console.error('Error deleting class:', error);
