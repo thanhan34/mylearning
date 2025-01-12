@@ -13,20 +13,8 @@ interface DailyTarget {
   link: string;
 }
 
-const defaultTargets: DailyTarget[] = [
-  { id: 1, type: 'Read aloud', target: 20, completed: 0, source: '', link: '' },
-  { id: 2, type: 'Repeat sentence', target: 20, completed: 0, source: '', link: '' },
-  { id: 3, type: 'Describe image', target: 5, completed: 0, source: '', link: '' },
-  { id: 4, type: 'Retell lecture', target: 5, completed: 0, source: '', link: '' },
-  { id: 5, type: 'R&W: Fill in the blanks', target: 20, completed: 0, source: '', link: '' },
-  { id: 6, type: 'Reoder paragraphs', target: 20, completed: 0, source: '', link: '' },
-  { id: 7, type: 'Fill in the blanks', target: 20, completed: 0, source: '', link: '' },
-  { id: 8, type: 'Highlight incorrect words', target: 5, completed: 0, source: '', link: '' },
-  { id: 9, type: 'Write from dictation', target: 20, completed: 0, source: '', link: '' }
-];
-
 const DailyTargetSettings = () => {
-  const [targets, setTargets] = useState<DailyTarget[]>(defaultTargets);
+  const [targets, setTargets] = useState<DailyTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState({ type: '', content: '' });
 
@@ -36,14 +24,7 @@ const DailyTargetSettings = () => {
         const docRef = await getDoc(doc(db, 'settings', 'dailyTargets'));
         if (docRef.exists()) {
           const data = docRef.data();
-          if (data.targets) {
-            // Merge Firebase data with defaults to ensure all targets exist
-            const mergedTargets = defaultTargets.map(defaultTarget => {
-              const existingTarget = data.targets.find((t: DailyTarget) => t.id === defaultTarget.id);
-              return existingTarget ? { ...defaultTarget, ...existingTarget } : defaultTarget;
-            });
-            setTargets(mergedTargets);
-          }
+          setTargets(data.targets || []);
         }
       } catch (error) {
         console.error('Error fetching targets:', error);

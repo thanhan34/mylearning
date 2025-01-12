@@ -563,6 +563,15 @@ export const addStudentToClass = async (
 ): Promise<boolean> => {
   try {
     const firestore = getFirestoreInstance();
+    
+    // Get the class document to get the teacherId
+    const classDoc = await getDoc(doc(firestore, 'classes', classId));
+    if (!classDoc.exists()) {
+      throw new Error('Class not found');
+    }
+    const classData = classDoc.data();
+
+    // Update the class with the new student
     const classRef = doc(firestore, 'classes', classId);
     await updateDoc(classRef, {
       students: arrayUnion({
@@ -570,6 +579,14 @@ export const addStudentToClass = async (
         progress: 0
       })
     });
+
+    // Update the student's teacherId
+    const studentRef = doc(firestore, 'users', student.id);
+    await updateDoc(studentRef, {
+      teacherId: classData.teacherId,
+      updatedAt: new Date().toISOString()
+    });
+
     return true;
   } catch (error) {
     console.error('Error adding student:', error);

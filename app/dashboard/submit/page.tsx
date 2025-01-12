@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { saveHomeworkSubmission, getHomeworkSubmissions } from '../../firebase/services';
+import { saveHomeworkSubmission, getHomeworkSubmissions, getUserByEmail } from '../../firebase/services';
 
 // Default homework submissions template
 const getDefaultHomeworkSubmissions = (date: string) => [
@@ -22,8 +22,23 @@ export default function SubmitPage() {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [existingLinks, setExistingLinks] = useState<string>('');
+  const [isAssigned, setIsAssigned] = useState<boolean>(false);
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // Check if student is assigned to a teacher
+  useEffect(() => {
+    const checkAssignment = async () => {
+      if (session?.user?.email) {
+        const user = await getUserByEmail(session.user.email);
+        if (user) {
+          const userDoc = await fetch(`/api/users/${user.id}`).then(res => res.json());
+          setIsAssigned(!!userDoc.teacherId);
+        }
+      }
+    };
+    checkAssignment();
+  }, [session]);
 
   // Load existing submissions when type or date changes
   useEffect(() => {
@@ -141,6 +156,25 @@ export default function SubmitPage() {
   if (status === 'unauthenticated') {
     router.replace('/login');
     return null;
+  }
+
+  if (!isAssigned) {
+    return (
+      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
+        <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2] max-w-md w-full">
+          <h3 className="text-[#fc5d01] text-lg font-medium mb-4">Chưa được phân công</h3>
+          <p className="text-gray-600 mb-4">
+            Bạn cần được phân công vào một lớp học trước khi có thể nộp bài tập về nhà.
+          </p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33] transition-colors"
+          >
+            Quay lại Dashboard
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

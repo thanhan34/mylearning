@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import UnassignedStudentsList from './components/UnassignedStudentsList';
+import InlineStudentSubmissions from './components/InlineStudentSubmissions';
 import { useSession } from 'next-auth/react';
 import { 
   Class, 
@@ -21,13 +23,12 @@ export default function ClassManagement() {
   const { data: session } = useSession();
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-  const [announcement, setAnnouncement] = useState('');
   const [newClassName, setNewClassName] = useState('');
-  const [newStudent, setNewStudent] = useState({ name: '', email: '' });
   const [showNewClassForm, setShowNewClassForm] = useState(false);
-  const [showAddStudentForm, setShowAddStudentForm] = useState(false);
+  const [showUnassignedList, setShowUnassignedList] = useState(false);
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<{id: string; email: string; name: string} | null>(null);
 
   const loadAssignments = async () => {
     if (selectedClass) {
@@ -57,28 +58,6 @@ export default function ClassManagement() {
       setClasses(teacherClasses);
       setNewClassName('');
       setShowNewClassForm(false);
-    }
-  };
-
-  const handleAddStudent = async () => {
-    if (!selectedClass || !newStudent.name || !newStudent.email) return;
-
-    const success = await addStudentToClass(selectedClass.id, {
-      id: Date.now().toString(),
-      name: newStudent.name,
-      email: newStudent.email,
-      role: 'regular'
-    });
-
-    if (success) {
-      const teacherClasses = await getTeacherClasses(session?.user?.email || '');
-      setClasses(teacherClasses);
-      const updatedClass = teacherClasses.find(c => c.id === selectedClass.id);
-      if (updatedClass) {
-        setSelectedClass(updatedClass);
-      }
-      setNewStudent({ name: '', email: '' });
-      setShowAddStudentForm(false);
     }
   };
 
@@ -114,14 +93,7 @@ export default function ClassManagement() {
     }
   };
 
-  const handleAnnouncement = async () => {
-    if (!announcement.trim() || !selectedClass) return;
-
-    const success = await addClassAnnouncement(selectedClass.id, announcement);
-    if (success) {
-      setAnnouncement('');
-    }
-  };
+  
 
   const handleAssignmentComplete = async () => {
     setShowAssignmentForm(false);
@@ -203,17 +175,11 @@ export default function ClassManagement() {
             </h2>
             <div className="space-x-2">
               <button
-                onClick={() => setShowAddStudentForm(true)}
+                onClick={() => setShowUnassignedList(true)}
                 className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
               >
                 Add Student
-              </button>
-              <button
-                onClick={() => setShowAssignmentForm(true)}
-                className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
-              >
-                Create Assignment
-              </button>
+              </button>              
             </div>
           </div>
 
@@ -273,41 +239,26 @@ export default function ClassManagement() {
             </div>
           </div>
 
-          {/* Add Student Form */}
-          {showAddStudentForm && (
-            <div className="mb-6 p-4 bg-[#fedac2] rounded-lg">
-              <h3 className="font-semibold mb-2">Add New Student</h3>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={newStudent.name}
-                  onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                  placeholder="Student name..."
-                  className="w-full p-2 border rounded"
-                />
-                <input
-                  type="email"
-                  value={newStudent.email}
-                  onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                  placeholder="Student email..."
-                  className="w-full p-2 border rounded"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAddStudent}
-                    className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => setShowAddStudentForm(false)}
-                    className="px-4 py-2 rounded border border-[#fc5d01] text-[#fc5d01] hover:bg-[#fedac2]"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
+          {/* Unassigned Students List */}
+          {showUnassignedList && selectedClass && (
+            <UnassignedStudentsList
+              onSelect={async (student) => {
+                await addStudentToClass(selectedClass.id, {
+                  id: student.id,
+                  name: student.name,
+                  email: student.email,
+                  role: 'regular'
+                });
+                const teacherClasses = await getTeacherClasses(session?.user?.email || '');
+                setClasses(teacherClasses);
+                const updatedClass = teacherClasses.find(c => c.id === selectedClass.id);
+                if (updatedClass) {
+                  setSelectedClass(updatedClass);
+                }
+                setShowUnassignedList(false);
+              }}
+              onClose={() => setShowUnassignedList(false)}
+            />
           )}
 
           {/* Student List */}
@@ -317,34 +268,31 @@ export default function ClassManagement() {
               <table className="w-full">
                 <thead className="bg-[#fc5d01] text-white">
                   <tr>
-                    <th className="p-2 text-left">Name</th>
-                    <th className="p-2 text-left">Role</th>
-                    <th className="p-2 text-left">Progress</th>
+                    <th className="p-2 text-left">Name</th>                    
                     <th className="p-2 text-left">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedClass.students.map(student => (
-                    <tr key={student.id} className="border-b text-black">
-                      <td className="p-2">{student.name}</td>
-                      <td className="p-2">
-                        <select
-                          value={student.role}
-                          onChange={(e) => handleRoleChange(student.id, e.target.value as 'leader' | 'regular')}
-                          className="border rounded p-1"
-                        >
-                          <option value="leader">Leader</option>
-                          <option value="regular">Regular</option>
-                        </select>
-                      </td>
-                      <td className="p-2">
-                        <div className="w-full bg-[#fedac2] rounded-full h-2.5">
-                          <div 
-                            className="bg-[#fc5d01] h-2.5 rounded-full"
-                            style={{ width: `${student.progress}%` }}
-                          ></div>
-                        </div>
-                      </td>
+                    <tr 
+                      key={student.id} 
+                      className="border-b text-black hover:bg-[#fedac2] cursor-pointer"
+                      onClick={(e) => {
+                        // Don't show submissions when clicking on select or remove button
+                        if (
+                          (e.target as HTMLElement).tagName === 'SELECT' ||
+                          (e.target as HTMLElement).tagName === 'BUTTON'
+                        ) {
+                          return;
+                        }
+                        setSelectedStudent({
+                          id: student.id,
+                          email: student.email,
+                          name: student.name
+                        });
+                      }}
+                    >
+                      <td className="p-2">{student.name}</td>                    
                       <td className="p-2">
                         <button 
                           className="text-red-500 hover:text-red-700"
@@ -360,25 +308,12 @@ export default function ClassManagement() {
             </div>
           </div>
 
-          {/* Announcement Section */}
-          <div className="mt-6">
-            <h3 className="font-semibold mb-2 text-black">Send Announcement</h3>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={announcement}
-                onChange={(e) => setAnnouncement(e.target.value)}
-                placeholder="Type your announcement here..."
-                className="flex-1 p-2 border rounded text-black"
-              />
-              <button
-                onClick={handleAnnouncement}
-                className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
-              >
-                Send
-              </button>
-            </div>
-          </div>
+        
+
+          {/* Student Submissions Section */}
+          {selectedStudent && (
+            <InlineStudentSubmissions student={selectedStudent} />
+          )}
         </div>
       )}
     </div>
