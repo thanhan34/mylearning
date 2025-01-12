@@ -4,6 +4,7 @@ export interface UserProfile {
   avatar?: string;
   role: 'student' | 'teacher' | 'admin';
   classId?: string; // For students
+  target?: string; // For students' target
 }
 
 export interface ClassInfo {

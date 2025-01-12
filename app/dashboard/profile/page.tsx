@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [target, setTarget] = useState('');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
@@ -31,7 +32,8 @@ export default function ProfilePage() {
           const userData = userSnap.data() as UserProfile;
           setName(userData.name || '');
           setEmail(userData.email || '');
-          setAvatar(userData.avatar || '');        
+          setAvatar(userData.avatar || '');
+          setTarget(userData.target || '');
           setLoading(false);
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -111,7 +113,8 @@ export default function ProfilePage() {
         const userRef = doc(db, 'users', session.user.id);
         await updateDoc(userRef, {
           name,
-          email
+          email,
+          target
         });
         setMessage({ type: 'success', content: 'Profile updated successfully' });
       } catch (error: any) {
@@ -212,6 +215,22 @@ export default function ProfilePage() {
                 disabled
               />
             </div>
+
+            {session?.user?.role === 'student' && (
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Target
+                </label>
+                <input
+                  type="text"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  placeholder="e.g. Target 30"
+                  className="text-black w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#fc5d01]"
+                />
+                <p className="mt-1 text-sm text-gray-500">Format: Target X (e.g. Target 30, Target 42, Target 50)</p>
+              </div>
+            )}
 
             <button
               type="submit"
