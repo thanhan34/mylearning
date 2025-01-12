@@ -3,7 +3,24 @@
 import { useState, useEffect } from 'react';
 import { Class } from '../../../../types/admin';
 import { db } from '../../../firebase/config';
-import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, where } from 'firebase/firestore';
+import InlineStudentSubmissions from '../../class/components/InlineStudentSubmissions';
+
+interface Student {
+  id: string;
+  name: string;
+  email: string;
+  classId?: string;
+}
+
+interface FirebaseUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  classId?: string;
+  class?: string;
+}
 
 const ClassManagement = () => {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -16,6 +33,9 @@ const ClassManagement = () => {
     studentCount: 0,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [classStudents, setClassStudents] = useState<Student[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   useEffect(() => {
     fetchClasses();
@@ -74,7 +94,75 @@ const ClassManagement = () => {
     }
   };
 
+  // Get students from selected class
+  useEffect(() => {
+    const fetchClassStudents = async () => {
+      if (!selectedClass) {
+        setClassStudents([]);
+        return;
+      }
+
+      try {
+        console.log('Getting students from class:', selectedClass.id);
+        const classRef = doc(db, 'classes', selectedClass.id);
+        const classDoc = await getDoc(classRef);
+        
+        if (!classDoc.exists()) {
+          console.error('Class document not found');
+          return;
+        }
+        
+        const classData = classDoc.data();
+        console.log('Class data:', classData);
+        
+        if (classData.students && Array.isArray(classData.students)) {
+          console.log('Found students:', classData.students);
+          setClassStudents(classData.students.map(student => ({
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            classId: selectedClass.id
+          })));
+        } else {
+          console.log('No students array in class document');
+          setClassStudents([]);
+        }
+      } catch (error: any) {
+        console.error('Error fetching class students:', error);
+        if (error.message) {
+          console.error('Error details:', error.message);
+        }
+      }
+    };
+
+    fetchClassStudents();
+  }, [selectedClass]);
+
+  // Debug log when classStudents changes
+  useEffect(() => {
+    console.log('Updated classStudents:', classStudents);
+  }, [classStudents]);
+
+  const handleClassSelect = (classData: Class) => {
+    console.log('Class selected:', classData);
+    if (selectedClass?.id === classData.id) {
+      console.log('Deselecting class');
+      setSelectedClass(null);
+      setSelectedStudent(null);
+    } else {
+      console.log('Setting new selected class');
+      setSelectedClass(classData);
+      setSelectedStudent(null);
+    }
+  };
+
+  const handleStudentSelect = (student: Student) => {
+    setSelectedStudent(student);
+  };
+
   const handleEdit = (classData: Class) => {
+    setSelectedClass(null);
+    setSelectedStudent(null);
     setFormData({
       name: classData.name,
       teacherId: classData.teacherId,
@@ -187,7 +275,8 @@ const ClassManagement = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow">
+      {/* Class List */}
+      <div className="bg-white rounded-lg shadow mb-6">
         <table className="min-w-full text-black">
           <thead className="bg-[#fc5d01]">
             <tr className="text-white">
@@ -200,20 +289,30 @@ const ClassManagement = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {classes.map((classData) => (
-              <tr key={classData.id}>
+              <tr 
+                key={classData.id} 
+                onClick={() => handleClassSelect(classData)}
+                className={`cursor-pointer hover:bg-[#fedac2] ${selectedClass?.id === classData.id ? 'bg-[#fdbc94]' : ''}`}
+              >
                 <td className="px-6 py-4">{classData.name}</td>
                 <td className="px-6 py-4">{classData.teacherId}</td>
                 <td className="px-6 py-4">{classData.schedule}</td>
                 <td className="px-6 py-4">{classData.studentCount}</td>
                 <td className="px-6 py-4">
                   <button
-                    onClick={() => handleEdit(classData)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(classData);
+                    }}
                     className="text-[#fc5d01] hover:text-[#fd7f33] mr-2"
                   >
                     Sửa
                   </button>
                   <button
-                    onClick={() => handleDelete(classData.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(classData.id);
+                    }}
                     className="text-red-600 hover:text-red-800"
                   >
                     Xóa
@@ -224,6 +323,56 @@ const ClassManagement = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Selected Class Students */}
+      {selectedClass && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-4 text-[#fc5d01]">
+            Học viên lớp {selectedClass.name}
+          </h3>
+          <div className="bg-white rounded-lg shadow">
+            <table className="min-w-full text-black">
+              <thead className="bg-[#fc5d01]">
+                <tr className="text-white">
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Tên học viên</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {classStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={2} className="px-6 py-4 text-center text-gray-500">
+                      Chưa có học viên trong lớp này
+                    </td>
+                  </tr>
+                ) : (
+                  classStudents.map((student) => (
+                    <tr 
+                      key={student.id}
+                      onClick={() => handleStudentSelect(student)}
+                      className={`cursor-pointer hover:bg-[#fedac2] ${selectedStudent?.id === student.id ? 'bg-[#fdbc94]' : ''}`}
+                    >
+                      <td className="px-6 py-4">{student.name}</td>
+                      <td className="px-6 py-4">{student.email}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Student Submissions */}
+      {selectedStudent && (
+        <InlineStudentSubmissions 
+          student={{
+            id: selectedStudent.id,
+            email: selectedStudent.email,
+            name: selectedStudent.name
+          }} 
+        />
+      )}
     </div>
   );
 };

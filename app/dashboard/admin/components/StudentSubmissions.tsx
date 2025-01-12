@@ -6,15 +6,12 @@ import { db } from '../../../firebase/config';
 import { HomeworkSubmission } from '../../../firebase/services';
 import HomeworkProgress from '../../../components/HomeworkProgress';
 
-interface Student {
-  id: string;
-  name: string;
-  email: string;
+interface StudentSubmissionsProps {
+  selectedStudentId: string;
+  selectedStudentEmail: string;
 }
 
-const StudentSubmissions = () => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+const StudentSubmissions = ({ selectedStudentId, selectedStudentEmail }: StudentSubmissionsProps) => {
   const [submissions, setSubmissions] = useState<HomeworkSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [dates, setDates] = useState<string[]>([]);
@@ -29,35 +26,12 @@ const StudentSubmissions = () => {
     return acc;
   }, {} as { [key: string]: HomeworkSubmission[] });
 
-  // Fetch all students
-  useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('role', '==', 'student'));
-        const querySnapshot = await getDocs(q);
-        const studentsList = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Student[];
-        setStudents(studentsList);
-      } catch (error) {
-        console.error('Error fetching students:', error);
-      }
-      setLoading(false);
-    };
-
-    fetchStudents();
-  }, []);
-
-  // Fetch dates when student is selected
+  // Fetch dates when component mounts or student changes
   useEffect(() => {
     const fetchDates = async () => {
-      if (!selectedStudent) return;
-      
       setLoading(true);
       try {
-        const email = selectedStudent.email.replace(/\./g, '_');
+        const email = selectedStudentEmail.replace(/\./g, '_');
         const homeworkRef = collection(db, 'users', email, 'homework');
         const querySnapshot = await getDocs(homeworkRef);
         const datesList = querySnapshot.docs.map(doc => doc.id);
@@ -70,16 +44,16 @@ const StudentSubmissions = () => {
     };
 
     fetchDates();
-  }, [selectedStudent]);
+  }, [selectedStudentEmail]);
 
   // Fetch submissions for selected date
   useEffect(() => {
     const fetchSubmissions = async () => {
-      if (!selectedStudent || !selectedDate) return;
+      if (!selectedDate) return;
       
       setLoading(true);
       try {
-        const email = selectedStudent.email.replace(/\./g, '_');
+        const email = selectedStudentEmail.replace(/\./g, '_');
         const homeworkDoc = doc(db, 'users', email, 'homework', selectedDate);
         const docSnap = await getDoc(homeworkDoc);
         
@@ -96,7 +70,7 @@ const StudentSubmissions = () => {
     };
 
     fetchSubmissions();
-  }, [selectedStudent, selectedDate]);
+  }, [selectedStudentEmail, selectedDate]);
 
   if (loading) {
     return (
@@ -110,29 +84,9 @@ const StudentSubmissions = () => {
     <div>
       <h2 className="text-xl font-semibold mb-4 text-[#fc5d01]">Bài tập về nhà</h2>
       
-      {/* Student Selection */}
-      <div className="mb-6">
-        <select
-          value={selectedStudent?.id || ''}
-          onChange={(e) => {
-            const student = students.find(s => s.id === e.target.value);
-            setSelectedStudent(student || null);
-          }}
-          className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fc5d01] text-black"
-        >
-          <option value="">Chọn học viên</option>
-          {students.map((student) => (
-            <option key={student.id} value={student.id}>
-              {student.name} ({student.email})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {selectedStudent && (
-        <div className="space-y-6">
+      <div className="space-y-6">
           {/* Homework Progress Chart */}
-          <HomeworkProgress studentId={selectedStudent.email.replace(/\./g, '_')} />
+          <HomeworkProgress studentId={selectedStudentEmail.replace(/\./g, '_')} />
 
           {/* Date Selection */}
           {dates.length > 0 && (
@@ -210,7 +164,6 @@ const StudentSubmissions = () => {
             </div>
           )}
         </div>
-      )}
     </div>
   );
 };

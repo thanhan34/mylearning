@@ -8,12 +8,11 @@ import { db } from '../../firebase/config';
 import UserManagement from './components/UserManagement';
 import ClassManagement from './components/ClassManagement';
 import SystemStats from './components/SystemStats';
-import StudentSubmissions from './components/StudentSubmissions';
 import DailyTargetSettings from './components/DailyTargetSettings';
 
 const AdminPanel = () => {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<'users' | 'classes' | 'stats' | 'submissions' | 'dailyTarget'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'classes' | 'stats' | 'dailyTarget'>('users');
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -79,16 +78,6 @@ const AdminPanel = () => {
           Thống kê tổng quan
         </button>
         <button
-          onClick={() => setActiveTab('submissions')}
-          className={`px-4 py-2 rounded-lg ${
-            activeTab === 'submissions'
-              ? 'bg-[#fc5d01] text-white'
-              : 'bg-[#fedac2] text-[#fc5d01]'
-          }`}
-        >
-          Bài tập học viên
-        </button>
-        <button
           onClick={() => setActiveTab('dailyTarget')}
           className={`px-4 py-2 rounded-lg ${
             activeTab === 'dailyTarget'
@@ -105,7 +94,6 @@ const AdminPanel = () => {
         {activeTab === 'users' && <UserManagement />}
         {activeTab === 'classes' && <ClassManagement />}
         {activeTab === 'stats' && <SystemStats />}
-        {activeTab === 'submissions' && <StudentSubmissions />}
         {activeTab === 'dailyTarget' && <DailyTargetSettings />}
       </div>
     </div>

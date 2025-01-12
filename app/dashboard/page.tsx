@@ -248,6 +248,18 @@ export default function DashboardPage() {
     );
   }
 
+  const AdminDashboard = () => (
+    <div className="space-y-6">
+      {/* Daily Targets and Homework */}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-6">
+          <DailyTargetTable />
+          <DailyHome />
+        </div>
+      </div>
+    </div>
+  );
+
   const TeacherDashboard = () => (
     <div className="space-y-6">
       {/* Overview Stats */}
@@ -425,10 +437,12 @@ export default function DashboardPage() {
                 Welcome, {session?.user?.name}
               </h1>
               <p className="text-[#fd7f33]">
-                {userRole === 'teacher' ? 'Teacher Dashboard' : 'Student Dashboard'}
+                {userRole === 'teacher' ? 'Teacher Dashboard' : userRole === 'admin' ? 'Admin Dashboard' : 'Student Dashboard'}
               </p>
             </div>
-            {userRole === 'teacher' ? <TeacherDashboard /> : <StudentDashboard />}
+            {userRole === 'teacher' ? <TeacherDashboard /> : 
+             userRole === 'admin' ? <AdminDashboard /> : 
+             <StudentDashboard />}
           </div>
         </div>
       </div>
