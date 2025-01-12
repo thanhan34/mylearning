@@ -465,22 +465,15 @@ const ClassManagement = () => {
 
       {/* Selected Student Submissions */}
       {selectedStudent && (
-        <>
-          {console.log('Passing student data to InlineStudentSubmissions:', {
-            selectedStudent,
-            hasAvatar: Boolean(selectedStudent?.avatar),
-            avatar: selectedStudent?.avatar
-          })}
-          <InlineStudentSubmissions 
-            student={{
-              id: selectedStudent.id,
-              name: selectedStudent.name,
-              email: selectedStudent.email,
-              avatar: selectedStudent.avatar,  // Pass the avatar from user profile
-              target: selectedStudent.target   // Pass the target from user profile
-            }}
-          />
-        </>
+        <InlineStudentSubmissions 
+          student={{
+            id: selectedStudent.id,
+            name: selectedStudent.name,
+            email: selectedStudent.email,
+            avatar: selectedStudent.avatar,
+            target: selectedStudent.target
+          }}
+        />
       )}
     </div>
   );
