@@ -22,5 +22,7 @@ export interface SystemStats {
   totalClasses: number;
   totalAssignments: number;
   totalUsers: number;
+  totalTeachers: number;
+  totalStudents: number;
   completionRate: number;
 }

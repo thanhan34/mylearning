@@ -30,9 +30,9 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#ffffff]">
+    <div className="min-h-screen bg-[#ffffff] relative">
       <Navigation />
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-0">
         {children}
       </main>
     </div>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import DailyHome from './components/DailyHome';
 import DailyTargetTable from './components/DailyTargetTable';
+import TeacherStats from './teacher/components/TeacherStats';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -39,12 +40,6 @@ ChartJS.register(
   Legend
 );
 
-// Mock data - In real app, this would come from API
-const teacherStats = {
-  totalClasses: 5,
-  totalStudents: 42,
-  pendingAssignments: 15,
-};
 
 const classProgressData = {
   labels: ['Class A', 'Class B', 'Class C', 'Class D', 'Class E'],
@@ -263,20 +258,7 @@ export default function DashboardPage() {
   const TeacherDashboard = () => (
     <div className="space-y-6">
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
-          <h3 className="text-[#fd7f33] text-sm font-medium">Total Classes</h3>
-          <p className="text-[#fc5d01] text-2xl font-bold">{teacherStats.totalClasses}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
-          <h3 className="text-[#fd7f33] text-sm font-medium">Total Students</h3>
-          <p className="text-[#fc5d01] text-2xl font-bold">{teacherStats.totalStudents}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
-          <h3 className="text-[#fd7f33] text-sm font-medium">Pending Assignments</h3>
-          <p className="text-[#fc5d01] text-2xl font-bold">{teacherStats.pendingAssignments}</p>
-        </div>
-      </div>
+      <TeacherStats />
 
       {/* Class Progress Chart */}
       <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">

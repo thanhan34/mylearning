@@ -46,6 +46,7 @@ const Navigation = () => {
   ];
 
   const teacherNavItems: NavItem[] = [  
+    { href: "/dashboard/teacher", label: "Dashboard" },
     { href: "/dashboard/class", label: "Classes" },
     { href: "/dashboard/profile", label: "Profile" },
   ];

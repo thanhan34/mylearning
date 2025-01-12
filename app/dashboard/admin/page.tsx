@@ -12,7 +12,7 @@ import DailyTargetSettings from './components/DailyTargetSettings';
 
 const AdminPanel = () => {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<'users' | 'classes' | 'stats' | 'dailyTarget'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'classes' | 'stats' | 'dailyTarget'>('stats');
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -90,7 +90,7 @@ const AdminPanel = () => {
       </div>
 
       {/* Content Area */}
-      <div className="bg-white rounded-lg p-6 shadow-lg">
+      <div className="bg-gray-50 rounded-lg p-6">
         {activeTab === 'users' && <UserManagement />}
         {activeTab === 'classes' && <ClassManagement />}
         {activeTab === 'stats' && <SystemStats />}
