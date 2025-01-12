@@ -363,26 +363,59 @@ export default function ProfilePage() {
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-lg">
-              <h2 className="text-xl font-semibold mb-6 text-[#fc5d01]">Thông báo</h2>
+              <h2 className="text-xl font-semibold mb-6 text-[#fc5d01]">Kết nối với PTE Intensive</h2>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors duration-200">
-                  <label className="flex items-center space-x-3 cursor-pointer flex-1">
-                    <input type="checkbox" className="form-checkbox text-[#fc5d01] rounded border-gray-300 focus:ring-[#fc5d01]" />
-                    <div>
-                      <span className="text-sm font-medium text-gray-900 block">Email thông báo</span>
-                      <span className="text-xs text-gray-500">Nhận thông báo qua email khi có cập nhật mới</span>
-                    </div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors duration-200">
-                  <label className="flex items-center space-x-3 cursor-pointer flex-1">
-                    <input type="checkbox" className="form-checkbox text-[#fc5d01] rounded border-gray-300 focus:ring-[#fc5d01]" />
-                    <div>
-                      <span className="text-sm font-medium text-gray-900 block">Thông báo trên trình duyệt</span>
-                      <span className="text-xs text-gray-500">Nhận thông báo trực tiếp trên trình duyệt</span>
-                    </div>
-                  </label>
-                </div>
+                <a 
+                  href="https://www.pteintensive.com/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center p-4 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <div className="w-10 h-10 bg-[#fedac2] rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#fc5d01]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0z"/>
+                      <path d="M12 8v8M8 12h8"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-900 block">Website chính thức</span>
+                    <span className="text-xs text-gray-500">www.pteintensive.com</span>
+                  </div>
+                </a>
+
+                <a 
+                  href="https://www.facebook.com/pteintensive" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center p-4 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <div className="w-10 h-10 bg-[#fedac2] rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#fc5d01]" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-900 block">Facebook Page</span>
+                    <span className="text-xs text-gray-500">Cập nhật tin tức và sự kiện mới nhất</span>
+                  </div>
+                </a>
+
+                <a 
+                  href="https://www.facebook.com/groups/pteintensive" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center p-4 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <div className="w-10 h-10 bg-[#fedac2] rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#fc5d01]" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-900 block">Facebook Group</span>
+                    <span className="text-xs text-gray-500">Tham gia cộng đồng học viên</span>
+                  </div>
+                </a>
               </div>
             </div>
           </div>

@@ -123,6 +123,7 @@ const StudentInfo = ({ student, studentEmail }: StudentInfoProps) => {
         )}
         <div>
           <h3 className="text-lg font-semibold text-[#fc5d01]">{displayData.name}</h3>
+          <h4>{displayData.email}</h4>
           {displayData.target && (
             <p className="text-[#fd7f33] mt-1">
               Target: <span className="font-medium">{displayData.target}</span>
