@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import AdminDashboard from "../components/AdminDashboard";
+import AdminDashboardClient from "./components/AdminDashboardClient";
 
 export const metadata: Metadata = {
   title: "Dashboard Quản Trị Viên - PTE Intensive",
@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminPage() {
-  return <AdminDashboard />;
+  return <AdminDashboardClient />;
 }
