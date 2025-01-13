@@ -41,7 +41,6 @@ ChartJS.register(
 
 export default function DashboardPage() {
   const [homeworkSubmissions, setHomeworkSubmissions] = useState<HomeworkSubmission[]>([]);
-  const [selectedHomeworkType, setSelectedHomeworkType] = useState<string>('Read aloud');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [homeworkProgressData, setHomeworkProgressData] = useState<{
     labels: string[];
@@ -70,7 +69,7 @@ export default function DashboardPage() {
     if (session?.user?.email) {
       const userId = session.user.email.replace(/[.#$[\]]/g, '_');
       const progressData = await getHomeworkProgress(userId);
-      const labels = progressData.map(d => new Date(d.date).toLocaleDateString('vi-VN'));
+      const labels = progressData.map(d => d.date);
       const data = progressData.map(d => d.completed);
       
       setHomeworkProgressData({
@@ -162,10 +161,8 @@ export default function DashboardPage() {
         <StudentDashboard 
           homeworkProgressData={homeworkProgressData}
           selectedDate={selectedDate}
-          selectedHomeworkType={selectedHomeworkType}
           homeworkSubmissions={homeworkSubmissions}
           onDateChange={setSelectedDate}
-          onTypeChange={setSelectedHomeworkType}
         />
       )}
     </div>
