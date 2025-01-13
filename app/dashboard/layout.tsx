@@ -1,40 +1,19 @@
-'use client';
+import { Metadata } from "next";
+import DashboardLayoutClient from "./DashboardLayoutClient";
 
-import Navigation from "../components/Navigation";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+export const metadata: Metadata = {
+  title: "Dashboard Học Viên - PTE Intensive",
+  description: "Theo dõi tiến độ học tập hàng ngày, nộp bài tập, và nhận thông báo từ hệ thống.",
+  viewport: "width=device-width, initial-scale=1",
+  icons: {
+    icon: "/favicon.ico"
+  }
+};
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/login");
-    }
-  }, [status, router]);
-
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="text-[#fc5d01] text-xl">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#ffffff] relative">
-      <Navigation />
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-0">
-        {children}
-      </main>
-    </div>
-  );
+  return <DashboardLayoutClient>{children}</DashboardLayoutClient>;
 }

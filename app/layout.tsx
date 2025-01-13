@@ -4,13 +4,7 @@ import SessionProvider from "./providers/SessionProvider";
 import ClientProviders from "./providers/ClientProviders";
 import "./globals.css";
 import { authOptions } from "./api/auth/[...nextauth]/route";
-
 const inter = Inter({ subsets: ["latin"] });
-
-export const metadata = {
-  title: "MyLearning Platform",
-  description: "An online learning platform",
-};
 
 export default async function RootLayout({
   children,
@@ -21,12 +15,11 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      
       <body className={inter.className}>
         <SessionProvider session={session}>
           <ClientProviders>
-            <main className="min-h-screen">
-              {children}
-            </main>
+            <main className="min-h-screen">{children}</main>
           </ClientProviders>
         </SessionProvider>
       </body>
