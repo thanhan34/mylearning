@@ -108,7 +108,8 @@ export const createUser = async (userData: {
       role: userData.role || 'student',
       createdAt: new Date().toISOString(),
       avatar: null,
-      target: null
+      target: null,
+      teacherId: ''
     };
     
     const docRef = await addDoc(usersRef, newUser);
