@@ -146,34 +146,45 @@ const ClassManagement = () => {
     if (!selectedClass) return;
 
     try {
-      // Update class document with new teacher
-      const classRef = doc(db, 'classes', selectedClass.id);
-      await updateDoc(classRef, {
-        teacherId: teacher.id
-      });
+      // Get teacher's document ID
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', teacher.email));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const teacherDocId = querySnapshot.docs[0].id;
+        
+        // Update class document with new teacher's ID
+        const classRef = doc(db, 'classes', selectedClass.id);
+        await updateDoc(classRef, {
+          teacherId: teacherDocId
+        });
 
-      // Update all students in the class with new teacherId
-      const classDoc = await getDoc(classRef);
-      if (classDoc.exists()) {
-        const classData = classDoc.data();
-        if (classData.students && Array.isArray(classData.students)) {
-          for (const student of classData.students) {
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, where('email', '==', student.email));
-            const querySnapshot = await getDocs(q);
+        // Update all students in the class with new teacherId
+        const classDoc = await getDoc(classRef);
+        if (classDoc.exists()) {
+          const classData = classDoc.data();
+          if (classData.students && Array.isArray(classData.students)) {
+            const updatePromises = classData.students.map(async (student) => {
+              const studentQuery = query(collection(db, 'users'), where('email', '==', student.email));
+              const studentSnapshot = await getDocs(studentQuery);
+              
+              if (!studentSnapshot.empty) {
+                const userDoc = studentSnapshot.docs[0];
+                await updateDoc(doc(db, 'users', userDoc.id), {
+                  teacherId: teacherDocId
+                });
+              }
+            });
             
-            if (!querySnapshot.empty) {
-              const userDoc = querySnapshot.docs[0];
-              await updateDoc(doc(db, 'users', userDoc.id), {
-                teacherId: teacher.id
-              });
-            }
+            await Promise.all(updatePromises);
           }
         }
-      }
 
-      // Refresh data
-      fetchClasses();
+        // Refresh data
+        await fetchClasses();
+      }
+      
       setShowTeacherForm(false);
       setSelectedTeacher(null);
     } catch (error) {

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import UnassignedStudentsList from './components/UnassignedStudentsList';
 import InlineStudentSubmissions from './components/InlineStudentSubmissions';
 import { useSession } from 'next-auth/react';
+import { db } from '../../firebase/config';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { 
   Class, 
   ClassStudent,
@@ -31,15 +33,23 @@ export default function ClassManagement() {
   const handleCreateClass = async () => {
     if (!newClassName.trim() || !session?.user?.email) return;
 
+    // Get teacher's document ID first
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', session.user.email));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) return;
+    
+    const teacherId = querySnapshot.docs[0].id;
     const classId = await createClass({
       name: newClassName,
-      teacherId: session.user.email,
+      teacherId: teacherId,
       students: [],
       announcements: []
     });
 
     if (classId) {
-      const teacherClasses = await getTeacherClasses(session.user.email);
+      const teacherClasses = await getTeacherClasses(teacherId);
       setClasses(teacherClasses);
       setNewClassName('');
       setShowNewClassForm(false);
@@ -49,20 +59,40 @@ export default function ClassManagement() {
   useEffect(() => {
     const loadClasses = async () => {
       if (session?.user?.email) {
-        const teacherClasses = await getTeacherClasses(session.user.email);
-        setClasses(teacherClasses);
+        // Get teacher's document ID first
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('email', '==', session.user.email));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const teacherId = querySnapshot.docs[0].id;
+          const teacherClasses = await getTeacherClasses(teacherId);
+          setClasses(teacherClasses);
+        }
       }
     };
     loadClasses();
   }, [session]);
 
   const handleRemoveStudent = async (studentId: string) => {
-    if (!selectedClass) return;
+    if (!selectedClass || !session?.user?.email) return;
 
     const success = await removeStudentFromClass(selectedClass.id, studentId);
     if (success) {
-      const updatedStudents = selectedClass.students.filter(student => student.id !== studentId);
-      setSelectedClass({ ...selectedClass, students: updatedStudents });
+      // Get teacher's document ID and refresh class data
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', session.user.email));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const teacherId = querySnapshot.docs[0].id;
+        const teacherClasses = await getTeacherClasses(teacherId);
+        setClasses(teacherClasses);
+        const updatedClass = teacherClasses.find((c: Class) => c.id === selectedClass.id);
+        if (updatedClass) {
+          setSelectedClass(updatedClass);
+        }
+      }
     }
   };
 
@@ -122,7 +152,7 @@ export default function ClassManagement() {
           >
             <h3 className="font-semibold">{cls.name}</h3>
             <p>Students: {cls.students.length}</p>
-            <p>Teacher: {cls.teacherId}</p>
+            
           </div>
         ))}
       </div>
@@ -155,11 +185,20 @@ export default function ClassManagement() {
                   name: student.name,
                   email: student.email,                  
                 }, selectedClass.teacherId);
-                const teacherClasses = await getTeacherClasses(session?.user?.email || '');
-                setClasses(teacherClasses);
-                const updatedClass = teacherClasses.find(c => c.id === selectedClass.id);
-                if (updatedClass) {
-                  setSelectedClass(updatedClass);
+                
+                // Get teacher's document ID first
+                const usersRef = collection(db, 'users');
+                const q = query(usersRef, where('email', '==', session?.user?.email));
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                  const teacherId = querySnapshot.docs[0].id;
+                  const teacherClasses = await getTeacherClasses(teacherId);
+                  setClasses(teacherClasses);
+                  const updatedClass = teacherClasses.find((c: Class) => c.id === selectedClass.id);
+                  if (updatedClass) {
+                    setSelectedClass(updatedClass);
+                  }
                 }
                 setShowUnassignedList(false);
               }}
