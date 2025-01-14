@@ -102,7 +102,8 @@ export const createUser = async (userData: {
       return querySnapshot.docs[0].id;
     }
 
-    // Create new user with Firebase-generated ID
+    // Create new user with email as document ID
+    const sanitizedEmail = userData.email.replace(/\./g, '_');
     const newUser = {
       ...userData,
       role: userData.role || 'student',
@@ -112,8 +113,8 @@ export const createUser = async (userData: {
       teacherId: ''
     };
     
-    const docRef = await addDoc(usersRef, newUser);
-    return docRef.id;
+    await setDoc(doc(usersRef, sanitizedEmail), newUser);
+    return sanitizedEmail;
   } catch (error) {
     console.error('Error creating user:', error);
     return null;
@@ -477,16 +478,23 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
       const userDoc = await transaction.get(userRef);
       if (!userDoc.exists()) throw new Error('User not found');
       
-      // Update class students array
-      transaction.update(classRef, {
-        students: arrayUnion(student)
-      });
+      // Get current students array and check for duplicates
+      const classData = classDoc.data();
+      const students = classData.students || [];
+      const isDuplicate = students.some((s: ClassStudent) => s.email === student.email);
       
-      // Update user's teacherId and classId
-      transaction.update(userRef, { 
-        teacherId: teacherId,
-        classId: classId 
-      });
+      if (!isDuplicate) {
+        // Only add if not already in class
+        transaction.update(classRef, {
+          students: arrayUnion(student)
+        });
+        
+        // Update user's teacherId and classId
+        transaction.update(userRef, { 
+          teacherId: teacherId,
+          classId: classId 
+        });
+      }
     });
     
     return true;
@@ -526,6 +534,45 @@ export const removeStudentFromClass = async (classId: string, studentId: string)
     return true;
   } catch (error) {
     console.error('Error removing student from class:', error);
+    return false;
+  }
+};
+
+export const cleanupClassStudents = async (classId: string): Promise<boolean> => {
+  try {
+    const firestore = getFirestoreInstance();
+    const classRef = doc(firestore, 'classes', classId);
+    
+    const classDoc = await getDoc(classRef);
+    if (!classDoc.exists()) return false;
+    
+    const classData = classDoc.data();
+    const students = classData.students || [];
+    
+    // Create a map to store unique students by email
+    const uniqueStudents = new Map<string, ClassStudent>();
+    students.forEach((student: ClassStudent) => {
+      // Keep only the first occurrence of each email
+      if (!uniqueStudents.has(student.email)) {
+        uniqueStudents.set(student.email, student);
+      }
+    });
+    
+    // Convert map back to array
+    const uniqueStudentsArray = Array.from(uniqueStudents.values());
+    
+    // Only update if we found duplicates
+    if (uniqueStudentsArray.length !== students.length) {
+      await updateDoc(classRef, {
+        students: uniqueStudentsArray,
+        studentCount: uniqueStudentsArray.length
+      });
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error cleaning up class students:', error);
     return false;
   }
 };

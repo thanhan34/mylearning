@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Class, User } from '../../../../types/admin';
 import { db } from '../../../firebase/config';
 import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, where } from 'firebase/firestore';
+import { cleanupClassStudents } from '../../../firebase/services';
 import InlineStudentSubmissions from '../../class/components/InlineStudentSubmissions';
 import UnassignedStudentsList from '../../class/components/UnassignedStudentsList';
 import TeachersList from './TeachersList';
@@ -249,28 +250,30 @@ const ClassManagement = () => {
                 const q = query(usersRef, where('email', '==', student.email));
                 const querySnapshot = await getDocs(q);
 
-                let userData = null;
-                let validatedAvatar: string | undefined = undefined;
-                let userDocId: string | undefined = undefined;
-                let userDocRef = null;
-
-                if (!querySnapshot.empty) {
-                    userDocRef = querySnapshot.docs[0];
-                    userDocId = userDocRef.id;
-                    userData = userDocRef.data();
-                    validatedAvatar = userData?.avatar;
+                if (querySnapshot.empty) {
+                  // If no user document found, return basic student info
+                  return {
+                    id: student.id,
+                    name: student.name,
+                    email: student.email,
+                    classId: selectedClass.id,
+                  };
                 }
+
+                // Take only the first matching document since email should be unique
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
 
                 // Create student profile with validated data
                 const studentWithProfile: Student = {
-                    id: student.id,
-                    name: userData?.name || student.name,
-                    email: student.email,
-                    classId: selectedClass.id,
-                    avatar: validatedAvatar,
-                    target: userData?.target || student.target,
-                    role: userData?.role || student.role,
-                    docId: userDocId
+                  id: student.id,
+                  name: userData?.name || student.name,
+                  email: student.email,
+                  classId: selectedClass.id,
+                  avatar: userData?.avatar,
+                  target: userData?.target || student.target,
+                  role: userData?.role || student.role,
+                  docId: userDoc.id
                 };
 
                 return studentWithProfile;
@@ -301,11 +304,17 @@ const ClassManagement = () => {
     fetchClassStudents();
   }, [selectedClass]);
 
-  const handleClassSelect = (classData: Class) => {
+  const handleClassSelect = async (classData: Class) => {
     if (selectedClass?.id === classData.id) {
       setSelectedClass(null);
       setSelectedStudent(null);
     } else {
+      // Clean up any duplicate students in the class
+      const cleaned = await cleanupClassStudents(classData.id);
+      if (cleaned) {
+        // If duplicates were removed, refresh the class data
+        await fetchClasses();
+      }
       setSelectedClass(classData);
       setSelectedStudent(null);
     }
