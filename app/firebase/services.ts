@@ -145,6 +145,8 @@ export const getUserByEmail = async (email: string): Promise<{
   avatar?: string;
   target?: string;
   name?: string;
+  classId?: string;
+  teacherId?: string;
 } | null> => {
   try {
     const firestore = getFirestoreInstance();
@@ -161,7 +163,9 @@ export const getUserByEmail = async (email: string): Promise<{
         role: data.role as "admin" | "teacher" | "student",
         avatar: data.avatar,
         target: data.target,
-        name: data.name
+        name: data.name,
+        classId: data.classId,
+        teacherId: data.teacherId
       };
     }
     
@@ -478,8 +482,11 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
         students: arrayUnion(student)
       });
       
-      // Update user's teacherId
-      transaction.update(userRef, { teacherId: teacherId });
+      // Update user's teacherId and classId
+      transaction.update(userRef, { 
+        teacherId: teacherId,
+        classId: classId 
+      });
     });
     
     return true;
@@ -509,8 +516,11 @@ export const removeStudentFromClass = async (classId: string, studentId: string)
       const updatedStudents = classData.students.filter(student => student.id !== studentId);
       transaction.update(classRef, { students: updatedStudents });
       
-      // Update user's teacherId to empty
-      transaction.update(userRef, { teacherId: '' });
+      // Update user's teacherId and classId to empty
+      transaction.update(userRef, { 
+        teacherId: '',
+        classId: '' 
+      });
     });
     
     return true;

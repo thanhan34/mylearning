@@ -1,6 +1,6 @@
 'use client';
 
-import { HomeworkSubmission } from '@/app/firebase/services';
+import { HomeworkSubmission, getUserByEmail } from '@/app/firebase/services';
 import DailyHome from './DailyHome';
 import DailyTargetTable from './DailyTargetTable';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,8 @@ import NewStudentGuide from './NewStudentGuide';
 import ProgressChart from './ProgressChart';
 import SubmissionsCalendar from './SubmissionsCalendar';
 import SubmissionsList from './SubmissionsList';
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 
 interface StudentDashboardProps {
   homeworkProgressData: {
@@ -33,11 +35,30 @@ export default function StudentDashboard({
   userRole,
 }: StudentDashboardProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const [isAssigned, setIsAssigned] = useState(true);
 
-  // Check if student has any submissions
-  const hasSubmissions = homeworkSubmissions.length > 0;
+  useEffect(() => {
+    const checkAssignment = async () => {
+      if (session?.user?.email) {
+        const user = await getUserByEmail(session.user.email);
+        if (user) {
+          console.log('User assignment status:', { 
+            email: user.email,
+            classId: user.classId, 
+            teacherId: user.teacherId,
+            role: user.role 
+          });
+          const hasAssignment = !!user.classId || !!user.teacherId;
+          console.log('Is assigned:', hasAssignment);
+          setIsAssigned(hasAssignment);
+        }
+      }
+    };
+    checkAssignment();
+  }, [session]);
 
-  if (userRole === 'student' && !hasSubmissions) {
+  if (userRole === 'student' && !isAssigned) {
     return <NewStudentGuide />;
   }
 
