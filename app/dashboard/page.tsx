@@ -163,6 +163,7 @@ export default function DashboardPage() {
           selectedDate={selectedDate}
           homeworkSubmissions={homeworkSubmissions}
           onDateChange={setSelectedDate}
+          userRole={userRole}
         />
       )}
     </div>

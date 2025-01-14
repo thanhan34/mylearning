@@ -145,24 +145,6 @@ export default function SubmitPage() {
     return null;
   }
 
-  if (!isAssigned) {
-    return (
-      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
-        <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2] max-w-md w-full">
-          <h3 className="text-[#fc5d01] text-lg font-medium mb-4">Chưa được phân công</h3>
-          <p className="text-gray-600 mb-4">
-            Bạn cần được phân công vào một lớp học trước khi có thể nộp bài tập về nhà.
-          </p>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="w-full bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33] transition-colors"
-          >
-            Quay lại Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
