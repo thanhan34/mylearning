@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Class } from '../../../../types/admin';
+import { Class, User } from '../../../../types/admin';
 import { db } from '../../../firebase/config';
 import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, where } from 'firebase/firestore';
 import InlineStudentSubmissions from '../../class/components/InlineStudentSubmissions';
+import UnassignedStudentsList from '../../class/components/UnassignedStudentsList';
+import TeachersList from './TeachersList';
 
 interface Student {
   id: string;
@@ -18,7 +20,7 @@ interface Student {
 }
 
 const ClassManagement = () => {
-  const [classes, setClasses] = useState<Class[]>([]);
+  const [classes, setClasses] = useState<(Class & { teacherName?: string })[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -31,6 +33,9 @@ const ClassManagement = () => {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [classStudents, setClassStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [showUnassignedList, setShowUnassignedList] = useState(false);
+  const [showTeacherForm, setShowTeacherForm] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState<User | null>(null);
 
   useEffect(() => {
     fetchClasses();
@@ -39,10 +44,31 @@ const ClassManagement = () => {
   const fetchClasses = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'classes'));
-      const classesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Class));
+      const classesData = await Promise.all(querySnapshot.docs.map(async doc => {
+        const classData = doc.data();
+        // Fetch teacher info
+        const teachersRef = collection(db, 'users');
+        const q = query(teachersRef, where('role', '==', 'teacher'));
+        const teacherSnapshot = await getDocs(q);
+        let teacherName = classData.teacherId; // Default to ID if name not found
+        
+        const teacher = teacherSnapshot.docs.find(doc => doc.id === classData.teacherId);
+        if (teacher) {
+          const teacherData = teacher.data();
+          teacherName = teacherData.name;
+        }
+
+        return {
+          id: doc.id,
+          name: classData.name,
+          teacherId: classData.teacherId,
+          description: classData.description,
+          schedule: classData.schedule,
+          studentCount: classData.studentCount,
+          createdAt: classData.createdAt,
+          teacherName
+        };
+      }));
       setClasses(classesData);
     } catch (error) {
       console.error('Error fetching classes:', error);
@@ -75,6 +101,82 @@ const ClassManagement = () => {
       fetchClasses();
     } catch (error) {
       console.error('Error saving class:', error);
+    }
+  };
+
+  const handleAssignStudent = async (student: User) => {
+    if (!selectedClass) return;
+
+    try {
+      // Update class document to add student
+      const classRef = doc(db, 'classes', selectedClass.id);
+      const classDoc = await getDoc(classRef);
+      
+      if (!classDoc.exists()) return;
+      
+      const classData = classDoc.data();
+      const students = classData.students || [];
+      
+      // Add student to class
+      await updateDoc(classRef, {
+        students: [...students, {
+          id: student.id,
+          name: student.name,
+          email: student.email
+        }],
+        studentCount: students.length + 1
+      });
+
+      // Update student's teacherId
+      const userRef = doc(db, 'users', student.id);
+      await updateDoc(userRef, {
+        teacherId: selectedClass.teacherId
+      });
+
+      // Refresh data
+      fetchClasses();
+      setShowUnassignedList(false);
+    } catch (error) {
+      console.error('Error assigning student:', error);
+    }
+  };
+
+  const handleChangeTeacher = async (teacher: User) => {
+    if (!selectedClass) return;
+
+    try {
+      // Update class document with new teacher
+      const classRef = doc(db, 'classes', selectedClass.id);
+      await updateDoc(classRef, {
+        teacherId: teacher.id
+      });
+
+      // Update all students in the class with new teacherId
+      const classDoc = await getDoc(classRef);
+      if (classDoc.exists()) {
+        const classData = classDoc.data();
+        if (classData.students && Array.isArray(classData.students)) {
+          for (const student of classData.students) {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('email', '==', student.email));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+              const userDoc = querySnapshot.docs[0];
+              await updateDoc(doc(db, 'users', userDoc.id), {
+                teacherId: teacher.id
+              });
+            }
+          }
+        }
+      }
+
+      // Refresh data
+      fetchClasses();
+      setShowTeacherForm(false);
+      setSelectedTeacher(null);
+    } catch (error) {
+      console.error('Error changing teacher:', error);
     }
   };
 
@@ -257,14 +359,18 @@ const ClassManagement = () => {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Giáo viên ID</label>
-                <input
-                  type="text"
-                  value={formData.teacherId}
-                  onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
-                  required
-                />
+                <label className="block text-sm font-medium mb-1">Giáo viên</label>
+                <button
+                  type="button"
+                  onClick={() => setShowTeacherForm(true)}
+                  className="w-full p-2 border rounded-lg text-left bg-white hover:bg-gray-50"
+                >
+                  {formData.teacherId ? (
+                    classes.find(c => c.teacherId === formData.teacherId)?.teacherName || formData.teacherId
+                  ) : (
+                    <span className="text-gray-500">Chọn giáo viên</span>
+                  )}
+                </button>
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">Mô tả</label>
@@ -348,7 +454,7 @@ const ClassManagement = () => {
                 className={`cursor-pointer hover:bg-[#fedac2] ${selectedClass?.id === classData.id ? 'bg-[#fdbc94]' : ''}`}
               >
                 <td className="px-6 py-4">{classData.name}</td>
-                <td className="px-6 py-4">{classData.teacherId}</td>
+                <td className="px-6 py-4">{classData.teacherName}</td>
                 <td className="px-6 py-4">{classData.schedule}</td>
                 <td className="px-6 py-4">{classData.studentCount}</td>
                 <td className="px-6 py-4">
@@ -380,9 +486,25 @@ const ClassManagement = () => {
       {/* Selected Class Students */}
       {selectedClass && (
         <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-4 text-[#fc5d01]">
-            Học viên lớp {selectedClass.name}
-          </h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-[#fc5d01]">
+              Học viên lớp {selectedClass.name}
+            </h3>
+            <div className="space-x-2">
+              <button
+                onClick={() => setShowUnassignedList(true)}
+                className="bg-[#fc5d01] text-white px-4 py-2 rounded-lg hover:bg-[#fd7f33]"
+              >
+                Thêm học viên
+              </button>
+              <button
+                onClick={() => setShowTeacherForm(true)}
+                className="bg-[#fc5d01] text-white px-4 py-2 rounded-lg hover:bg-[#fd7f33]"
+              >
+                Đổi giáo viên
+              </button>
+            </div>
+          </div>
           <div className="bg-white rounded-lg shadow">
             <table className="min-w-full text-black">
               <thead className="bg-[#fc5d01]">
@@ -426,6 +548,32 @@ const ClassManagement = () => {
             avatar: selectedStudent.avatar,
             target: selectedStudent.target
           }}
+        />
+      )}
+
+      {/* Unassigned Students Modal */}
+      {showUnassignedList && (
+        <UnassignedStudentsList
+          onSelect={handleAssignStudent}
+          onClose={() => setShowUnassignedList(false)}
+        />
+      )}
+
+      {/* Teachers List Modal */}
+      {showTeacherForm && (
+        <TeachersList
+          onSelect={(teacher) => {
+            if (selectedClass) {
+              handleChangeTeacher(teacher);
+            } else {
+              setFormData(prev => ({
+                ...prev,
+                teacherId: teacher.id
+              }));
+            }
+            setShowTeacherForm(false);
+          }}
+          onClose={() => setShowTeacherForm(false)}
         />
       )}
     </div>
