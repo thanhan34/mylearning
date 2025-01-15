@@ -110,15 +110,26 @@ export default function DashboardPage() {
       setIsLoading(false);
       
       if (role === 'student') {
+        // Load homework progress
         loadHomeworkProgress().catch(error => {
           console.error('Error loading homework progress:', error);
           setIsLoading(false);
         });
+
+        // Set up an interval to refresh data every minute
+        const intervalId = setInterval(() => {
+          loadHomeworkProgress().catch(console.error);
+          if (selectedDate) {
+            loadHomeworkSubmissions(selectedDate).catch(console.error);
+          }
+        }, 60000); // Refresh every minute
+
+        return () => clearInterval(intervalId);
       } else {
         setIsLoading(false);
       }
     }
-  }, [status, router, session, loadHomeworkProgress]);
+  }, [status, router, session, loadHomeworkProgress, loadHomeworkSubmissions, selectedDate]);
 
   useEffect(() => {
     if (selectedDate) {

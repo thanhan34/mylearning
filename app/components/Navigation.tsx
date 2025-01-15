@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
+import NotificationBell from "./NotificationBell";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -115,7 +116,8 @@ const Navigation = () => {
               ))}
             </div>
           </div>
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4">
+            {session?.user?.role === "teacher" && <NotificationBell />}
             <div className="flex items-center space-x-4 bg-gradient-to-r from-[#fedac2]/30 to-white/30 backdrop-blur-md px-5 py-2.5 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border border-white/20">
               {userData?.avatar ? (
                 <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-[#fedac2] transition-all duration-300 hover:ring-[#fc5d01] hover:ring-[3px] transform hover:scale-110 shadow-md">

@@ -54,7 +54,14 @@ const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
     };
 
     if (studentId) {
+      // Initial fetch
       fetchProgress();
+
+      // Set up periodic refresh
+      const intervalId = setInterval(fetchProgress, 60000); // Refresh every minute
+
+      // Cleanup
+      return () => clearInterval(intervalId);
     }
   }, [studentId]);
 

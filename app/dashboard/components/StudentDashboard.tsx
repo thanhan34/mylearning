@@ -1,6 +1,6 @@
 'use client';
 
-import { HomeworkSubmission, getUserByEmail } from '@/app/firebase/services';
+import { HomeworkSubmission, getUserByEmail, getDefaultHomeworkSubmissions } from '@/app/firebase/services';
 import DailyHome from './DailyHome';
 import DailyTargetTable from './DailyTargetTable';
 import { useRouter } from 'next/navigation';
@@ -62,14 +62,15 @@ export default function StudentDashboard({
     return <NewStudentGuide />;
   }
 
-  // Create a map of dates with submissions
+  // Create a map of dates with submissions and include today's date
   const submissionDates = homeworkProgressData.labels.reduce((acc: { [key: string]: number }, date, index) => {
     const count = homeworkProgressData.datasets[0].data[index];
-    if (count > 0) {
-      acc[date] = count;
-    }
+    acc[date] = count || 0; // Include all dates, even with 0 submissions
     return acc;
-  }, {});
+  }, {
+    // Always include today's date
+    [new Date().toISOString().split('T')[0]]: 0
+  });
 
   return (
     <div className="space-y-8">
@@ -108,7 +109,7 @@ export default function StudentDashboard({
           <SubmissionsList 
             selectedDate={selectedDate}
             submissionDates={submissionDates}
-            submissions={homeworkSubmissions}
+            submissions={homeworkSubmissions || getDefaultHomeworkSubmissions(selectedDate)}
           />
         </div>
       </div>

@@ -9,7 +9,15 @@ interface SubmissionsListProps {
 }
 
 export default function SubmissionsList({ selectedDate, submissionDates, submissions }: SubmissionsListProps) {
-  if (!selectedDate || !submissionDates[selectedDate]) return null;
+  if (!selectedDate) return null;
+  
+  if (!submissions?.length) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-500">
+        Không có bài tập nào cho ngày này
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1">

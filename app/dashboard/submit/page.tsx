@@ -32,8 +32,7 @@ export default function SubmitPage() {
       if (session?.user?.email) {
         const user = await getUserByEmail(session.user.email);
         if (user) {
-          const userDoc = await fetch(`/api/users/${user.id}`).then(res => res.json());
-          setIsAssigned(!!userDoc.teacherId);
+          setIsAssigned(!!user.teacherId);
         }
       }
     };
@@ -48,7 +47,11 @@ export default function SubmitPage() {
       }
 
       try {
-        const userId = session.user.email.replace(/[.#$[\]]/g, '_');
+    const user = await getUserByEmail(session.user.email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const userId = user.id;
         const submissions = await getHomeworkSubmissions(userId, selectedDate);
         if (submissions) {
           const links = submissions
@@ -71,7 +74,13 @@ export default function SubmitPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!session?.user?.email) {
+    if (!session?.user?.email || !session?.user?.name) {
+      return;
+    }
+
+    if (!isAssigned) {
+      alert('You must be assigned to a teacher before submitting homework');
+      setSaveStatus('error');
       return;
     }
 
@@ -90,7 +99,11 @@ export default function SubmitPage() {
       setSaveStatus('error');
       return;
     }
-    const userId = session.user.email.replace(/[.#$[\]]/g, '_');
+    const user = await getUserByEmail(session.user.email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const userId = user.id;
     
     const maxQuestions = selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5;
     if (links.length > maxQuestions) {
@@ -127,13 +140,16 @@ export default function SubmitPage() {
       // Combine both arrays
       const updatedSubmissions = [...otherTypeSubmissions, ...typeSubmissions];
       
-      const success = await saveHomeworkSubmission(userId, updatedSubmissions);
+      const success = await saveHomeworkSubmission(userId, updatedSubmissions, session.user.name);
      
       if (!success) {
         throw new Error('Failed to save submissions');
       }
       setSaveStatus('saved');
-      setTimeout(() => router.push('/dashboard'), 1000);
+      setTimeout(() => {
+        router.refresh(); // Force a refresh of the server components
+        router.push('/dashboard');
+      }, 1000);
     } catch (error) {
       console.error('Error saving submissions:', error);
       setSaveStatus('error');

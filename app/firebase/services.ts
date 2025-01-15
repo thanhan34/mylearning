@@ -15,7 +15,8 @@ import {
   orderBy,
   getDoc,
   Firestore,
-  runTransaction
+  runTransaction,
+  onSnapshot
 } from 'firebase/firestore';
 import { Assignment } from '../../types/assignment';
 import { AssignmentSubmission, SubmissionFormData } from '../../types/submission';
@@ -73,7 +74,7 @@ export interface DailyProgress {
 }
 
 // Default homework submissions template
-const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
+export const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
   // Read aloud: 20 questions
   ...Array(20).fill(null).map((_, i) => ({ id: 1, type: 'Read aloud', questionNumber: i + 1, link: '', date, feedback: '' })),
   // Repeat sentence: 20 questions
@@ -103,7 +104,7 @@ export const createUser = async (userData: {
     }
 
     // Create new user with email as document ID
-    const sanitizedEmail = userData.email.replace(/\./g, '_');
+    const sanitizedEmail = userData.email.replace(/[.#$[\]]/g, '_');
     const newUser = {
       ...userData,
       role: userData.role || 'student',
@@ -215,9 +216,12 @@ export const getDailyProgress = async (userId: string): Promise<DailyTarget[] | 
 export const getHomeworkProgress = async (email: string): Promise<{ date: string; completed: number }[]> => {
   try {
     const firestore = getFirestoreInstance();
-    const sanitizedEmail = email.replace(/\./g, '_');
+    const sanitizedEmail = email.replace(/[.#$[\]]/g, '_');
     const homeworkRef = collection(firestore, 'users', sanitizedEmail, 'homework');
     const homeworkSnapshot = await getDocs(homeworkRef);
+    
+    console.log('Fetching homework progress for:', sanitizedEmail);
+    console.log('Number of documents found:', homeworkSnapshot.size);
     
     const progressData = homeworkSnapshot.docs.map(doc => {
       const data = doc.data();
@@ -228,6 +232,7 @@ export const getHomeworkProgress = async (email: string): Promise<{ date: string
       };
     });
 
+    console.log('Progress data:', progressData);
     return progressData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   } catch (error) {
     console.error('Error getting homework progress:', error);
@@ -238,9 +243,15 @@ export const getHomeworkProgress = async (email: string): Promise<{ date: string
 export const getHomeworkSubmissions = async (email: string, date: string): Promise<HomeworkSubmission[] | null> => {
   try {
     const firestore = getFirestoreInstance();
-    const sanitizedEmail = email.replace(/\./g, '_');
-    const docRef = doc(collection(firestore, 'users'), sanitizedEmail, 'homework', date);
+    const sanitizedEmail = email.replace(/[.#$[\]]/g, '_');
+    const docRef = doc(firestore, 'users', sanitizedEmail, 'homework', date);
     const docSnap = await getDoc(docRef);
+
+    console.log('Fetching homework submissions:', {
+      email: sanitizedEmail,
+      date,
+      exists: docSnap.exists()
+    });
 
     if (docSnap.exists()) {
       const data = docSnap.data();
@@ -254,19 +265,38 @@ export const getHomeworkSubmissions = async (email: string, date: string): Promi
   }
 };
 
-export const saveHomeworkSubmission = async (email: string, submissions: HomeworkSubmission[]) => {
+export const saveHomeworkSubmission = async (email: string, submissions: HomeworkSubmission[], userName: string) => {
   try {
     const firestore = getFirestoreInstance();
     const date = submissions[0]?.date;
     if (!date) {
-      console.error('No date found in submissions');
-      return false;
+      throw new Error('No date found in submissions');
     }
 
-    const sanitizedEmail = email.replace(/\./g, '_');
-    const docRef = doc(collection(firestore, 'users'), sanitizedEmail, 'homework', date);
+    const sanitizedEmail = email.replace(/[.#$[\]]/g, '_');
+    const userRef = doc(firestore, 'users', sanitizedEmail);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+
+    const userData = userDoc.data();
+    const teacherId = userData?.teacherId;
+
+    if (!teacherId) {
+      throw new Error('No teacher assigned to student');
+    }
+
+    const docRef = doc(firestore, 'users', sanitizedEmail, 'homework', date);
     const docSnap = await getDoc(docRef);
     
+    console.log('Saving homework submission:', {
+      email: sanitizedEmail,
+      date,
+      submissionsCount: submissions.length
+    });
+
     if (docSnap.exists()) {
       const existingData = docSnap.data();
       const existingSubmissions = existingData.submissions || [];
@@ -304,6 +334,16 @@ export const saveHomeworkSubmission = async (email: string, submissions: Homewor
       });
     }
 
+    // Create notification for teacher
+    const notificationsRef = collection(firestore, 'notifications');
+    await addDoc(notificationsRef, {
+      teacher_id: teacherId,
+      message: `Học sinh ${userName} đã nộp bài tập ngày ${date}.`,
+      created_at: Timestamp.now(),
+      is_read: false
+    });
+
+    console.log('Successfully saved homework submission');
     return true;
   } catch (error) {
     console.error('Error saving homework submissions:', error);
@@ -534,6 +574,81 @@ export const removeStudentFromClass = async (classId: string, studentId: string)
     return true;
   } catch (error) {
     console.error('Error removing student from class:', error);
+    return false;
+  }
+};
+
+// Notification Types
+export interface Notification {
+  id: string;
+  teacher_id: string;
+  message: string;
+  created_at: Timestamp;
+  is_read: boolean;
+}
+
+// Notification Functions
+export const getUnreadNotifications = async (teacherId: string): Promise<Notification[]> => {
+  try {
+    const firestore = getFirestoreInstance();
+    const notificationsRef = collection(firestore, 'notifications');
+    const q = query(
+      notificationsRef,
+      where('teacher_id', '==', teacherId),
+      where('is_read', '==', false),
+      orderBy('created_at', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Notification));
+  } catch (error) {
+    console.error('Error getting unread notifications:', error);
+    return [];
+  }
+};
+
+export const subscribeToNotifications = (
+  teacherId: string,
+  callback: (notifications: Notification[]) => void,
+  onError?: (error: Error) => void
+) => {
+  const firestore = getFirestoreInstance();
+  const notificationsRef = collection(firestore, 'notifications');
+  const q = query(
+    notificationsRef,
+    where('teacher_id', '==', teacherId),
+    where('is_read', '==', false),
+    orderBy('created_at', 'desc')
+  );
+
+  return onSnapshot(q, 
+    (snapshot) => {
+      const notifications = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Notification));
+      callback(notifications);
+    },
+    (error) => {
+      console.error('Error in notifications subscription:', error);
+      if (onError) onError(error);
+    }
+  );
+};
+
+export const markNotificationAsRead = async (notificationId: string): Promise<boolean> => {
+  try {
+    const firestore = getFirestoreInstance();
+    const notificationRef = doc(firestore, 'notifications', notificationId);
+    await updateDoc(notificationRef, {
+      is_read: true
+    });
+    return true;
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
     return false;
   }
 };
