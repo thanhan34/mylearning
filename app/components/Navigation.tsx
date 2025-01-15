@@ -26,22 +26,43 @@ const Navigation = () => {
     const fetchUserData = async () => {
       if (session?.user?.email) {
         try {
+          console.log('Fetching user data for:', session.user.email);
           const usersRef = collection(db, 'users');
           const q = query(usersRef, where('email', '==', session.user.email));
           const querySnapshot = await getDocs(q);
           
           if (!querySnapshot.empty) {
             const userDoc = querySnapshot.docs[0];
-            setUserData(userDoc.data() as UserProfile);
+            const data = userDoc.data() as UserProfile;
+            console.log('User data fetched:', {
+              email: session.user.email,
+              role: data.role,
+              name: data.name
+            });
+            setUserData(data);
+            
+            // Update session role if it doesn't match
+            if (session.user.role !== data.role) {
+              console.log('Session role mismatch:', {
+                sessionRole: session.user.role,
+                dbRole: data.role
+              });
+            }
+          } else {
+            console.warn('No user document found for email:', session.user.email);
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
+          console.error('Error fetching user data:', {
+            error,
+            email: session.user.email,
+            timestamp: new Date().toISOString()
+          });
         }
       }
     };
 
     fetchUserData();
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.role]);
 
   const adminNavItems: NavItem[] = [
     { href: "/dashboard/admin", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> },       
@@ -117,7 +138,12 @@ const Navigation = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {session?.user?.role === "teacher" && <NotificationBell />}
+            {userData?.role === "teacher" && session?.user?.email && (
+              <NotificationBell 
+                userRole={userData.role} 
+                key={`${session.user.email}-${userData.role}`} 
+              />
+            )}
             <div className="flex items-center space-x-4 bg-gradient-to-r from-[#fedac2]/30 to-white/30 backdrop-blur-md px-5 py-2.5 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border border-white/20">
               {userData?.avatar ? (
                 <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-[#fedac2] transition-all duration-300 hover:ring-[#fc5d01] hover:ring-[3px] transform hover:scale-110 shadow-md">

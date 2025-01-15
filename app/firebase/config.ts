@@ -16,13 +16,52 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore with persistence enabled
+// Initialize Firestore with optimized settings for real-time updates
 const db = typeof window !== 'undefined' 
   ? initializeFirestore(app, {
       cacheSizeBytes: CACHE_SIZE_UNLIMITED,
       experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: false,
     })
   : getFirestore(app);
+
+// Enable offline persistence with better error handling
+if (typeof window !== 'undefined') {
+  try {
+    const { enableIndexedDbPersistence } = require('firebase/firestore');
+    enableIndexedDbPersistence(db)
+      .then(() => {
+        console.log('Firestore persistence enabled successfully');
+      })
+      .catch((err: { code: string; message: string; name: string; stack?: string }) => {
+        console.error('Persistence error:', {
+          code: err.code,
+          message: err.message,
+          name: err.name,
+          stack: err.stack,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (err.code === 'failed-precondition') {
+          console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+        } else if (err.code === 'unimplemented') {
+          console.warn('The current browser does not support persistence.');
+        }
+      });
+  } catch (error) {
+    console.error('Error enabling persistence:', {
+      error,
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
+// Log Firestore initialization
+console.log('Firestore initialized with config:', {
+  experimentalForceLongPolling: true,
+  experimentalAutoDetectLongPolling: false,
+  timestamp: new Date().toISOString()
+});
 
 const storage = getStorage(app);
 
