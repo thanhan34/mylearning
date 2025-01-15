@@ -2,6 +2,16 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper functions
+    function isTeacher() {
+      return get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role == 'teacher';
+    }
+
+    function isTeacherOfStudent(studentEmail) {
+      let studentDoc = get(/databases/$(database)/documents/users/$(studentEmail));
+      return studentDoc.data.teacherId == get(/databases/$(database)/documents/users/$(request.auth.token.email)).id;
+    }
+
     match /users/{email} {
       allow read, write: if request.auth != null && 
                         request.auth.token.email == email;
@@ -10,6 +20,23 @@ service cloud.firestore {
         allow read, write: if request.auth != null && 
                           request.auth.token.email == email;
       }
+    }
+    
+    match /homework/{email}/{date} {
+      // Students can read/write their own homework
+      allow read, write: if request.auth != null && 
+                        request.auth.token.email == email;
+      
+      // Teachers can read homework of their assigned students
+      allow read: if request.auth != null && 
+                 isTeacher() && 
+                 isTeacherOfStudent(email);
+      
+      // Teachers can write feedback
+      allow write: if request.auth != null && 
+                  isTeacher() && 
+                  isTeacherOfStudent(email) &&
+                  request.resource.data.diff(resource.data).affectedKeys().hasOnly(['submissions']);
     }
     
     match /dailyProgress/{document=**} {

@@ -1,7 +1,7 @@
 'use client';
 
-import CloudinaryConfig from './CloudinaryConfig';
-import ErrorBoundary from '../components/ErrorBoundary';
+import { SessionProvider } from 'next-auth/react';
+import ChartProvider from './ChartProvider';
 
 export default function ClientProviders({
   children,
@@ -9,9 +9,10 @@ export default function ClientProviders({
   children: React.ReactNode;
 }) {
   return (
-    <ErrorBoundary>
-      <CloudinaryConfig />
-      {children}
-    </ErrorBoundary>
+    <SessionProvider>
+      <ChartProvider>
+        {children}
+      </ChartProvider>
+    </SessionProvider>
   );
 }

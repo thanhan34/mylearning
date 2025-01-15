@@ -1,6 +1,7 @@
 'use client';
 
-import { HomeworkSubmission, getUserByEmail, getDefaultHomeworkSubmissions } from '@/app/firebase/services';
+import type { HomeworkSubmission } from '@/app/firebase/services/homework';
+import { getUserByEmail } from '@/app/firebase/services/user';
 import DailyHome from './DailyHome';
 import DailyTargetTable from './DailyTargetTable';
 import { useRouter } from 'next/navigation';
@@ -27,6 +28,17 @@ interface StudentDashboardProps {
   userRole?: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  role: "admin" | "teacher" | "student";
+  avatar?: string;
+  target?: string;
+  name?: string;
+  classId?: string;
+  teacherId?: string;
+}
+
 export default function StudentDashboard({
   homeworkProgressData,
   selectedDate,
@@ -37,11 +49,12 @@ export default function StudentDashboard({
   const router = useRouter();
   const { data: session } = useSession();
   const [isAssigned, setIsAssigned] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkAssignment = async () => {
       if (session?.user?.email) {
-        const user = await getUserByEmail(session.user.email);
+        const user = await getUserByEmail(session.user.email) as User | null;
         if (user) {
           console.log('User assignment status:', { 
             email: user.email,
@@ -53,10 +66,21 @@ export default function StudentDashboard({
           console.log('Is assigned:', hasAssignment);
           setIsAssigned(hasAssignment);
         }
+        setIsLoading(false);
       }
     };
     checkAssignment();
   }, [session]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-white p-6 rounded-xl shadow-lg animate-pulse">
+          <div className="h-64 bg-[#fedac2] rounded opacity-50"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (userRole === 'student' && !isAssigned) {
     return <NewStudentGuide />;
@@ -109,7 +133,7 @@ export default function StudentDashboard({
           <SubmissionsList 
             selectedDate={selectedDate}
             submissionDates={submissionDates}
-            submissions={homeworkSubmissions || getDefaultHomeworkSubmissions(selectedDate)}
+            submissions={homeworkSubmissions}
           />
         </div>
       </div>

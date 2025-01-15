@@ -1,10 +1,15 @@
-import { Inter } from "next/font/google";
-import { getServerSession } from "next-auth";
-import SessionProvider from "./providers/SessionProvider";
-import ClientProviders from "./providers/ClientProviders";
-import "./globals.css";
-import { authOptions } from "./api/auth/[...nextauth]/route";
-const inter = Inter({ subsets: ["latin"] });
+import './globals.css';
+import { Inter } from 'next/font/google';
+import ClientProviders from './providers/ClientProviders';
+import { getServerSession } from 'next-auth';
+import { authOptions } from './api/auth/[...nextauth]/route';
+
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata = {
+  title: 'My Learning',
+  description: 'Learning Management System',
+};
 
 export default async function RootLayout({
   children,
@@ -15,13 +20,23 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      
-      <body className={inter.className}>
-        <SessionProvider session={session}>
-          <ClientProviders>
-            <main className="min-h-screen">{children}</main>
-          </ClientProviders>
-        </SessionProvider>
+      <body className={`${inter.className} bg-gray-50`}>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('load', function() {
+                if (typeof Chart !== 'undefined') {
+                  console.log('Chart.js is loaded');
+                } else {
+                  console.error('Chart.js is not loaded');
+                }
+              });
+            `,
+          }}
+        />
       </body>
     </html>
   );

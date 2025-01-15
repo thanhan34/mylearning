@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Class, User } from '../../../../types/admin';
 import { db } from '../../../firebase/config';
-import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, where } from 'firebase/firestore';
-import { cleanupClassStudents } from '../../../firebase/services';
+import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, where, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import InlineStudentSubmissions from '../../class/components/InlineStudentSubmissions';
 import UnassignedStudentsList from '../../class/components/UnassignedStudentsList';
 import TeachersList from './TeachersList';
@@ -20,8 +19,13 @@ interface Student {
   docId?: string;
 }
 
+interface ExtendedClass extends Class {
+  students: Student[];
+  teacherName?: string;
+}
+
 const ClassManagement = () => {
-  const [classes, setClasses] = useState<(Class & { teacherName?: string })[]>([]);
+  const [classes, setClasses] = useState<ExtendedClass[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -31,22 +35,18 @@ const ClassManagement = () => {
     studentCount: 0,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [selectedClass, setSelectedClass] = useState<ExtendedClass | null>(null);
   const [classStudents, setClassStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showUnassignedList, setShowUnassignedList] = useState(false);
   const [showTeacherForm, setShowTeacherForm] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<User | null>(null);
 
-  useEffect(() => {
-    fetchClasses();
-  }, []);
-
   const fetchClasses = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'classes'));
-      const classesData = await Promise.all(querySnapshot.docs.map(async doc => {
-        const classData = doc.data();
+      const classesData = await Promise.all(querySnapshot.docs.map(async (docSnapshot: QueryDocumentSnapshot) => {
+        const classData = docSnapshot.data() as DocumentData;
         // Fetch teacher info
         const teachersRef = collection(db, 'users');
         const q = query(teachersRef, where('role', '==', 'teacher'));
@@ -59,24 +59,33 @@ const ClassManagement = () => {
           teacherName = teacherData.name;
         }
 
+        // Get actual student count from students array
+        const students = classData.students || [];
+
         return {
-          id: doc.id,
+          id: docSnapshot.id,
           name: classData.name,
           teacherId: classData.teacherId,
-          description: classData.description,
-          schedule: classData.schedule,
-          studentCount: classData.studentCount,
-          createdAt: classData.createdAt,
-          teacherName
+          description: classData.description || '',
+          schedule: classData.schedule || '',
+          studentCount: students.length, // Use actual length instead of stored count
+          createdAt: classData.createdAt || new Date().toISOString(),
+          teacherName,
+          students: students
         };
       }));
+      console.log('Fetched classes:', classesData); // Debug log
       setClasses(classesData);
     } catch (error) {
       console.error('Error fetching classes:', error);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
       if (editingId) {
@@ -87,7 +96,8 @@ const ClassManagement = () => {
       } else {
         await addDoc(collection(db, 'classes'), {
           ...formData,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          students: []
         });
       }
       setShowForm(false);
@@ -105,6 +115,70 @@ const ClassManagement = () => {
     }
   };
 
+  const handleClassSelect = (classData: ExtendedClass) => {
+    if (selectedClass?.id === classData.id) {
+      setSelectedClass(null);
+      setSelectedStudent(null);
+    } else {
+      setSelectedClass(classData);
+      setClassStudents(classData.students);
+      setSelectedStudent(null);
+    }
+  };
+
+  const handleEdit = (classData: ExtendedClass) => {
+    setSelectedClass(null);
+    setSelectedStudent(null);
+    setFormData({
+      name: classData.name,
+      teacherId: classData.teacherId,
+      description: classData.description,
+      schedule: classData.schedule,
+      studentCount: classData.studentCount,
+    });
+    setEditingId(classData.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (classId: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
+      try {
+        await deleteDoc(doc(db, 'classes', classId));
+        fetchClasses();
+      } catch (error) {
+        console.error('Error deleting class:', error);
+      }
+    }
+  };
+
+  const handleStudentSelect = (student: Student) => {
+    setSelectedStudent(student);
+  };
+
+  const handleChangeTeacher = async (teacher: User) => {
+    if (!selectedClass) return;
+
+    try {
+      const classRef = doc(db, 'classes', selectedClass.id);
+      await updateDoc(classRef, {
+        teacherId: teacher.id
+      });
+
+      // Update all students' teacherId
+      const promises = selectedClass.students.map(async (student) => {
+        const userRef = doc(db, 'users', student.id);
+        await updateDoc(userRef, {
+          teacherId: teacher.id
+        });
+      });
+
+      await Promise.all(promises);
+      fetchClasses();
+    } catch (error) {
+      console.error('Error changing teacher:', error);
+    }
+  };
+
   const handleAssignStudent = async (student: User) => {
     if (!selectedClass) return;
 
@@ -118,14 +192,23 @@ const ClassManagement = () => {
       const classData = classDoc.data();
       const students = classData.students || [];
       
+      // Check if student is already in class
+      const isStudentInClass = students.some((s: any) => s.email === student.email);
+      if (isStudentInClass) {
+        console.log('Student already in class');
+        return;
+      }
+      
+      const updatedStudents = [...students, {
+        id: student.id,
+        name: student.name,
+        email: student.email
+      }];
+      
       // Add student to class
       await updateDoc(classRef, {
-        students: [...students, {
-          id: student.id,
-          name: student.name,
-          email: student.email
-        }],
-        studentCount: students.length + 1
+        students: updatedStudents,
+        studentCount: updatedStudents.length // Update the count
       });
 
       // Update student's teacherId
@@ -140,213 +223,6 @@ const ClassManagement = () => {
     } catch (error) {
       console.error('Error assigning student:', error);
     }
-  };
-
-  const handleChangeTeacher = async (teacher: User) => {
-    if (!selectedClass) return;
-
-    try {
-      // Get teacher's document ID
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', teacher.email));
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        const teacherDocId = querySnapshot.docs[0].id;
-        
-        // Update class document with new teacher's ID
-        const classRef = doc(db, 'classes', selectedClass.id);
-        await updateDoc(classRef, {
-          teacherId: teacherDocId
-        });
-
-        // Update all students in the class with new teacherId
-        const classDoc = await getDoc(classRef);
-        if (classDoc.exists()) {
-          const classData = classDoc.data();
-          if (classData.students && Array.isArray(classData.students)) {
-            const updatePromises = classData.students.map(async (student) => {
-              const studentQuery = query(collection(db, 'users'), where('email', '==', student.email));
-              const studentSnapshot = await getDocs(studentQuery);
-              
-              if (!studentSnapshot.empty) {
-                const userDoc = studentSnapshot.docs[0];
-                await updateDoc(doc(db, 'users', userDoc.id), {
-                  teacherId: teacherDocId
-                });
-              }
-            });
-            
-            await Promise.all(updatePromises);
-          }
-        }
-
-        // Refresh data
-        await fetchClasses();
-      }
-      
-      setShowTeacherForm(false);
-      setSelectedTeacher(null);
-    } catch (error) {
-      console.error('Error changing teacher:', error);
-    }
-  };
-
-  const handleDelete = async (classId: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
-      try {
-        // Get the class document first
-        const classRef = doc(db, 'classes', classId);
-        const classDoc = await getDoc(classRef);
-        
-        if (classDoc.exists()) {
-          const classData = classDoc.data();
-          
-          // If there are students in the class
-          if (classData.students && Array.isArray(classData.students)) {
-            // Get all student emails from the class
-            const studentEmails = classData.students.map(student => student.email);
-            
-            // Update each student's document
-            for (const email of studentEmails) {
-              // Query users collection by email
-              const usersRef = collection(db, 'users');
-              const q = query(usersRef, where('email', '==', email));
-              const querySnapshot = await getDocs(q);
-              
-              if (!querySnapshot.empty) {
-                const userDoc = querySnapshot.docs[0];
-                // Update user document to set teacherId to empty string
-                await updateDoc(doc(db, 'users', userDoc.id), {
-                  teacherId: ""
-                });
-              }
-            }
-          }
-        }
-        
-        // Delete the class document
-        await deleteDoc(classRef);
-        fetchClasses();
-      } catch (error) {
-        console.error('Error deleting class:', error);
-      }
-    }
-  };
-
-  // Get students from selected class
-  useEffect(() => {
-    const fetchClassStudents = async () => {
-      if (!selectedClass) {
-        setClassStudents([]);
-        return;
-      }
-
-      try {
-        const classRef = doc(db, 'classes', selectedClass.id);
-        const classDoc = await getDoc(classRef);
-        
-        if (!classDoc.exists()) {
-          return;
-        }
-        
-        const classData = classDoc.data();
-        
-        if (classData.students && Array.isArray(classData.students)) {
-          const studentsWithProfiles = await Promise.all(
-            classData.students.map(async (student) => {
-              try {
-                // Query users collection by email field
-                const usersRef = collection(db, 'users');
-                const q = query(usersRef, where('email', '==', student.email));
-                const querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                  // If no user document found, return basic student info
-                  return {
-                    id: student.id,
-                    name: student.name,
-                    email: student.email,
-                    classId: selectedClass.id,
-                  };
-                }
-
-                // Take only the first matching document since email should be unique
-                const userDoc = querySnapshot.docs[0];
-                const userData = userDoc.data();
-
-                // Create student profile with validated data
-                const studentWithProfile: Student = {
-                  id: student.id,
-                  name: userData?.name || student.name,
-                  email: student.email,
-                  classId: selectedClass.id,
-                  avatar: userData?.avatar,
-                  target: userData?.target || student.target,
-                  role: userData?.role || student.role,
-                  docId: userDoc.id
-                };
-
-                return studentWithProfile;
-              } catch (error) {
-                console.error('Error fetching user data:', error);
-                // Return basic student info if there's an error
-                return {
-                  id: student.id,
-                  name: student.name,
-                  email: student.email,
-                  classId: selectedClass.id,
-                };
-              }
-            })
-          );
-          setClassStudents(studentsWithProfiles);
-        } else {
-          setClassStudents([]);
-        }
-      } catch (error: any) {
-        console.error('Error fetching class students:', error);
-        if (error.message) {
-          console.error('Error details:', error.message);
-        }
-      }
-    };
-
-    fetchClassStudents();
-  }, [selectedClass]);
-
-  const handleClassSelect = async (classData: Class) => {
-    if (selectedClass?.id === classData.id) {
-      setSelectedClass(null);
-      setSelectedStudent(null);
-    } else {
-      // Clean up any duplicate students in the class
-      const cleaned = await cleanupClassStudents(classData.id);
-      if (cleaned) {
-        // If duplicates were removed, refresh the class data
-        await fetchClasses();
-      }
-      setSelectedClass(classData);
-      setSelectedStudent(null);
-    }
-  };
-
-  const handleStudentSelect = (student: Student) => {
-    setSelectedStudent(student);
-  };
-
-  const handleEdit = (classData: Class) => {
-    setSelectedClass(null);
-    setSelectedStudent(null);
-    setFormData({
-      name: classData.name,
-      teacherId: classData.teacherId,
-      description: classData.description,
-      schedule: classData.schedule,
-      studentCount: classData.studentCount,
-    });
-    setEditingId(classData.id);
-    setShowForm(true);
   };
 
   return (
@@ -476,7 +352,7 @@ const ClassManagement = () => {
                 <td className="px-6 py-4">{classData.name}</td>
                 <td className="px-6 py-4">{classData.teacherName}</td>
                 <td className="px-6 py-4">{classData.schedule}</td>
-                <td className="px-6 py-4">{classData.studentCount}</td>
+                <td className="px-6 py-4">{classData.students.length}</td>
                 <td className="px-6 py-4">
                   <button
                     onClick={(e) => {

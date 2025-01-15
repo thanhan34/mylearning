@@ -1,15 +1,5 @@
-import { Metadata } from "next";
-import AdminDashboardClient from "./components/AdminDashboardClient";
-
-export const metadata: Metadata = {
-  title: "Dashboard Quản Trị Viên - PTE Intensive",
-  description: "Quản lý hệ thống, theo dõi hoạt động của giảng viên và học viên, phân quyền người dùng.",
-  viewport: "width=device-width, initial-scale=1",
-  icons: {
-    icon: "/favicon.ico"
-  }
-};
+import { redirect } from 'next/navigation';
 
 export default function AdminPage() {
-  return <AdminDashboardClient />;
+  redirect('/dashboard');
 }

@@ -3,18 +3,43 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { saveHomeworkSubmission, getHomeworkSubmissions, getUserByEmail } from '../../firebase/services';
+import { HomeworkSubmission, getHomeworkSubmissions, saveHomeworkSubmission } from '../../firebase/services/homework';
+import { getUserByEmail } from '../../firebase/services/user';
 
 // Default homework submissions template
-const getDefaultHomeworkSubmissions = (date: string) => [
+const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
   // Read aloud: 20 questions
-  ...Array(20).fill(null).map((_, i) => ({ id: 1, type: 'Read aloud', questionNumber: i + 1, link: '', date })),
+  ...Array(20).fill(null).map((_, i) => ({ 
+    id: i + 1, 
+    type: 'Read aloud', 
+    questionNumber: i + 1, 
+    link: '', 
+    date
+  })),
   // Repeat sentence: 20 questions
-  ...Array(20).fill(null).map((_, i) => ({ id: 2, type: 'Repeat sentence', questionNumber: i + 1, link: '', date })),
+  ...Array(20).fill(null).map((_, i) => ({ 
+    id: i + 21, 
+    type: 'Repeat sentence', 
+    questionNumber: i + 1, 
+    link: '', 
+    date
+  })),
   // Describe image: 5 questions
-  ...Array(5).fill(null).map((_, i) => ({ id: 3, type: 'Describe image', questionNumber: i + 1, link: '', date })),
+  ...Array(5).fill(null).map((_, i) => ({ 
+    id: i + 41, 
+    type: 'Describe image', 
+    questionNumber: i + 1, 
+    link: '', 
+    date
+  })),
   // Retell lecture: 5 questions
-  ...Array(5).fill(null).map((_, i) => ({ id: 4, type: 'Retell lecture', questionNumber: i + 1, link: '', date }))
+  ...Array(5).fill(null).map((_, i) => ({ 
+    id: i + 46, 
+    type: 'Retell lecture', 
+    questionNumber: i + 1, 
+    link: '', 
+    date
+  }))
 ];
 
 export default function SubmitPage() {
@@ -47,13 +72,12 @@ export default function SubmitPage() {
       }
 
       try {
-    const user = await getUserByEmail(session.user.email);
-    if (!user) {
-      throw new Error('User not found');
-    }
-    const userId = user.id;
-        const submissions = await getHomeworkSubmissions(userId, selectedDate);
-        if (submissions) {
+        const user = await getUserByEmail(session.user.email);
+        if (!user) {
+          throw new Error('User not found');
+        }
+        const submissions = await getHomeworkSubmissions(user.id, selectedDate);
+        if (submissions && submissions.length > 0) {
           const links = submissions
             .filter(s => s.type === selectedHomeworkType && s.link)
             .sort((a, b) => a.questionNumber - b.questionNumber)
@@ -99,12 +123,12 @@ export default function SubmitPage() {
       setSaveStatus('error');
       return;
     }
+
     const user = await getUserByEmail(session.user.email);
     if (!user) {
       throw new Error('User not found');
     }
-    const userId = user.id;
-    
+
     const maxQuestions = selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5;
     if (links.length > maxQuestions) {
       alert(`Maximum ${maxQuestions} links allowed for ${selectedHomeworkType}`);
@@ -114,7 +138,7 @@ export default function SubmitPage() {
 
     try {
       // Get existing submissions
-      const existingSubmissions = await getHomeworkSubmissions(userId, selectedDate) || getDefaultHomeworkSubmissions(selectedDate);
+      const existingSubmissions = await getHomeworkSubmissions(user.id, selectedDate) || getDefaultHomeworkSubmissions(selectedDate);
       
       // Update only the selected type's submissions
       // Keep existing submissions for other types
@@ -125,22 +149,15 @@ export default function SubmitPage() {
         .filter(s => s.type === selectedHomeworkType);
       
       // Map new links to template
-      const typeSubmissions = typeTemplate.map(template => {
-        const existingSubmission = existingSubmissions.find(
-          s => s.type === template.type && s.questionNumber === template.questionNumber
-        );
-        const newLink = links[template.questionNumber - 1];
-        
-        return {
-          ...template,
-          link: newLink || existingSubmission?.link || ''
-        };
-      });
+      const typeSubmissions = typeTemplate.map((template, index) => ({
+        ...template,
+        link: links[index] || ''
+      }));
 
       // Combine both arrays
       const updatedSubmissions = [...otherTypeSubmissions, ...typeSubmissions];
       
-      const success = await saveHomeworkSubmission(userId, updatedSubmissions, session.user.name);
+      const success = await saveHomeworkSubmission(user.id, updatedSubmissions, session.user.name);
      
       if (!success) {
         throw new Error('Failed to save submissions');
@@ -160,7 +177,6 @@ export default function SubmitPage() {
     router.replace('/login');
     return null;
   }
-
 
   return (
     <div className="min-h-screen bg-[#ffffff]">

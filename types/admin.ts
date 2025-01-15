@@ -8,6 +8,12 @@ export interface User {
   assignedStudents?: string[]; // Array of student IDs (for teachers)
 }
 
+export interface ClassStudent {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface Class {
   id: string;
   name: string;
@@ -15,6 +21,7 @@ export interface Class {
   description: string;
   schedule: string;
   studentCount: number;
+  students: ClassStudent[];
   createdAt: string;
 }
 

@@ -1,21 +1,46 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Check for error in URL
+    const errorType = searchParams?.get('error');
+    if (errorType) {
+      switch (errorType) {
+        case 'AccessDenied':
+          setError('Unable to sign in. Please try again.');
+          break;
+        case 'DatabaseError':
+          setError('Error creating user account. Please try again.');
+          break;
+        case 'Verification':
+          setError('Email verification required. Please check your inbox.');
+          break;
+        default:
+          setError('An error occurred during sign in. Please try again.');
+      }
+      console.error('Login error:', errorType);
+    }
+  }, [searchParams]);
 
   const handleGoogleLogin = async () => {    
     try {
       setError(null);
       setIsLoading(true);
       
-      // Direct redirect approach
+      console.log('Initiating Google sign in...');
+      
+      // Direct redirect approach with error handling
       await signIn("google", { 
         callbackUrl: "/dashboard",
-        redirect: true
+        redirect: true,
       });
       
     } catch (error) {

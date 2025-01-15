@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { db } from '../../../firebase/config';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Line } from 'react-chartjs-2';
 
 export default function TeacherStats() {
@@ -20,7 +20,7 @@ export default function TeacherStats() {
     labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
     datasets: [{
       label: 'Tỷ lệ hoàn thành',
-      data: [65, 72, 68, 75, 82, 78, 70],
+      data: [0, 0, 0, 0, 0, 0, 0],
       borderColor: '#fc5d01',
       tension: 0.4
     }]
@@ -38,32 +38,170 @@ export default function TeacherStats() {
         setIsLoading(true);
         setError(null);
 
-        // Get classes
+        // Get teacher's ID
+        const usersRef = collection(db, 'users');
+        const teacherQuery = query(usersRef, where('email', '==', session.user.email));
+        const teacherSnapshot = await getDocs(teacherQuery);
+        
+        if (teacherSnapshot.empty) {
+          throw new Error('Teacher not found');
+        }
+
+        const teacherDoc = teacherSnapshot.docs[0];
+        const teacherData = teacherDoc.data();
+
+        // Get classes for this teacher
         const classesRef = collection(db, 'classes');
-        const classesQuery = query(classesRef, where('teacherId', '==', session.user.email));
+        const classesQuery = query(classesRef, where('teacherId', '==', teacherDoc.id));
         const classesSnapshot = await getDocs(classesQuery);
         const totalClasses = classesSnapshot.size;
 
-        // Get students
-        const usersRef = collection(db, 'users');
-        const studentsQuery = query(
-          usersRef,
-          where('teacherId', '==', session.user.email),
-          where('role', '==', 'student')
-        );
-        const studentsSnapshot = await getDocs(studentsQuery);
-        const totalStudents = studentsSnapshot.size;
+        console.log('Teacher found:', {
+          email: session.user.email,
+          id: teacherDoc.id,
+          data: teacherData
+        });
 
-        // Calculate active students (submitted homework in last 7 days)
-        const activeStudents = Math.floor(totalStudents * 0.85); // Placeholder calculation
-        const completionRate = totalStudents > 0 ? Math.floor((activeStudents / totalStudents) * 100) : 0;
+        // Get all students from classes
+        let totalStudents = 0;
+        const studentEmails = new Set<string>();
+        
+        classesSnapshot.docs.forEach(doc => {
+          const classData = doc.data();
+          if (classData.students) {
+            totalStudents += classData.students.length;
+            classData.students.forEach((student: any) => {
+              if (student.email) {
+                studentEmails.add(student.email.replace(/[.#$[\]]/g, '_'));
+              }
+            });
+          }
+        });
+
+        console.log('Stats found:', {
+          classes: {
+            count: totalClasses,
+            ids: classesSnapshot.docs.map(doc => doc.id)
+          },
+          students: {
+            count: totalStudents,
+            emails: Array.from(studentEmails)
+          }
+        });
+        
+        // Calculate active students and weekly progress
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        lastWeek.setHours(0, 0, 0, 0);
+
+        // Get homework submissions for each student
+        const activeStudentsSet = new Set();
+        const submissionsByDate = new Map();
+        
+        // Initialize last 7 days with 0 submissions
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          date.setHours(0, 0, 0, 0);
+          submissionsByDate.set(date.getTime(), {
+            total: 0,
+            uniqueStudents: new Set()
+          });
+        }
+
+        // Fetch homework for each student
+        const emailArray = Array.from(studentEmails);
+        await Promise.all(emailArray.map(async (email) => {
+          const homeworkRef = collection(db, 'users', email, 'homework');
+          const homeworkSnapshot = await getDocs(homeworkRef);
+          
+          homeworkSnapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const submissionDate = new Date(doc.id); // date is the document ID
+            
+            if (submissionDate >= lastWeek && submissionDate <= today) {
+              // Count completed submissions
+              const completedSubmissions = data.submissions?.filter(
+                (s: any) => s.link && s.link.trim() !== ''
+              ).length || 0;
+              
+              if (completedSubmissions > 0) {
+                activeStudentsSet.add(email);
+                
+                // Add to daily stats
+                const dateKey = new Date(doc.id);
+                dateKey.setHours(0, 0, 0, 0);
+                const dateTime = dateKey.getTime();
+                
+                if (submissionsByDate.has(dateTime)) {
+                  const current = submissionsByDate.get(dateTime);
+                  current.total += completedSubmissions;
+                  current.uniqueStudents.add(email);
+                  submissionsByDate.set(dateTime, current);
+                }
+              }
+            }
+          });
+        }));
+        
+        const activeStudentsCount = activeStudentsSet.size;
+        
+        const completionRate = totalStudents > 0 
+          ? Math.floor((activeStudentsCount / totalStudents) * 100) 
+          : 0;
 
         setStats({
           totalClasses,
           totalStudents,
-          activeStudents,
+          activeStudents: activeStudentsCount,
           completionRate
         });
+
+
+        // Convert to chart data
+        const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const sortedDates = Array.from(submissionsByDate.keys()).sort();
+        const labels = sortedDates.map(timestamp => {
+          const date = new Date(timestamp);
+          const day = weekdays[date.getDay()];
+          return `${day} ${date.getDate()}/${date.getMonth() + 1}`; // Add date for clarity
+        });
+
+        const chartData = sortedDates.map(timestamp => {
+          const data = submissionsByDate.get(timestamp);
+          const avgSubmissions = data.uniqueStudents.size > 0
+            ? Math.round((data.total / (data.uniqueStudents.size * 50)) * 100) // 50 total tasks per day
+            : 0;
+          return Math.min(avgSubmissions, 100);
+        });
+
+        setStudentProgressData({
+          labels,
+          datasets: [{
+            label: 'Tỷ lệ hoàn thành',
+            data: chartData,
+            borderColor: '#fc5d01',
+            tension: 0.4
+          }]
+        });
+
+        console.log('Chart data:', {
+          labels,
+          data: chartData,
+          activeStudents: activeStudentsCount,
+          studentCount: totalStudents,
+          dailyStats: Object.fromEntries(
+            Array.from(submissionsByDate.entries()).map(([date, data]) => [
+              new Date(date).toISOString().split('T')[0],
+              {
+                total: data.total,
+                uniqueStudents: data.uniqueStudents.size
+              }
+            ])
+          )
+        });
+
       } catch (error) {
         console.error('Error fetching teacher stats:', error);
         setError('Không thể tải thông tin. Vui lòng thử lại sau.');

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HomeworkSubmission, getHomeworkSubmissions, getHomeworkProgress } from '@/app/firebase/services';
-import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { getHomeworkSubmissions, getHomeworkProgress } from '@/app/firebase/services';
+import type { HomeworkSubmission } from '@/app/firebase/services/types';
+import { doc, updateDoc } from 'firebase/firestore';
 import HomeworkProgress from '@/app/components/HomeworkProgress';
 import StudentInfo from '@/app/dashboard/admin/components/StudentInfo';
 import { db } from '@/app/firebase/config';
@@ -17,16 +18,18 @@ interface Props {
   };
 }
 
+interface EditingFeedback {
+  type: string;
+  questionNumber: number;
+  feedback: string;
+}
+
 export default function InlineStudentSubmissions({ student }: Props) {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [submissions, setSubmissions] = useState<HomeworkSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [submissionDates, setSubmissionDates] = useState<{[key: string]: number}>({});
-  const [editingFeedback, setEditingFeedback] = useState<{
-    type: string;
-    questionNumber: number;
-    feedback: string;
-  } | null>(null);
+  const [editingFeedback, setEditingFeedback] = useState<EditingFeedback | null>(null);
 
   // Group submissions by type
   const groupedSubmissions = submissions.reduce((acc, submission) => {
@@ -78,9 +81,8 @@ export default function InlineStudentSubmissions({ student }: Props) {
     if (!editingFeedback) return;
 
     try {
-      // Replace dots with underscores in email
-      const sanitizedEmail = student.email.replace(/\./g, '_');
-      const docRef = doc(db, 'users', sanitizedEmail, 'homework', selectedDate);
+      const sanitizedEmail = student.email.replace(/[.#$[\]]/g, '_');
+      const docRef = doc(db, 'homework', sanitizedEmail, selectedDate);
 
       // Update the specific submission's feedback
       const updatedSubmissions = submissions.map(sub => {
@@ -123,7 +125,7 @@ export default function InlineStudentSubmissions({ student }: Props) {
         </div>
         
         {/* Homework Progress Chart */}
-        <HomeworkProgress studentId={student.email} />
+        <HomeworkProgress email={student.email} />
 
         {/* Calendar and Submissions */}
         <div className="flex gap-8">
@@ -224,7 +226,7 @@ export default function InlineStudentSubmissions({ student }: Props) {
                       </div>
                       <div className="p-4">
                         <div className="grid gap-2">
-                          {typeSubmissions
+                          {(typeSubmissions as HomeworkSubmission[])
                             .sort((a, b) => a.questionNumber - b.questionNumber)
                             .map((submission) => (
                               <div key={`${submission.type}_${submission.questionNumber}`} className="flex items-center gap-4">
@@ -248,15 +250,18 @@ export default function InlineStudentSubmissions({ student }: Props) {
                                   {editingFeedback?.type === submission.type && 
                                    editingFeedback?.questionNumber === submission.questionNumber ? (
                                     <div className="flex gap-2">
-                                      <input
-                                        type="text"
-                                        value={editingFeedback.feedback}
-                                        onChange={(e) => setEditingFeedback({
-                                          ...editingFeedback,
-                                          feedback: e.target.value
-                                        })}
-                                        className="flex-1 p-1 border rounded text-black"
-                                      />
+                                      {editingFeedback && (
+                                        <input
+                                          type="text"
+                                          value={editingFeedback.feedback}
+                                          onChange={(e) => setEditingFeedback({
+                                            type: editingFeedback.type,
+                                            questionNumber: editingFeedback.questionNumber,
+                                            feedback: e.target.value
+                                          })}
+                                          className="flex-1 p-1 border rounded text-black"
+                                        />
+                                      )}
                                       <button
                                         onClick={handleSaveFeedback}
                                         className="px-2 py-1 bg-[#fc5d01] text-white rounded hover:bg-[#fd7f33]"

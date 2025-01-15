@@ -1,6 +1,6 @@
 'use client';
 
-import { HomeworkSubmission } from '@/app/firebase/services';
+import { HomeworkSubmission } from '@/app/firebase/services/homework';
 
 interface SubmissionsListProps {
   selectedDate: string;
@@ -19,18 +19,19 @@ export default function SubmissionsList({ selectedDate, submissionDates, submiss
     );
   }
 
+  // Group submissions by type
+  const submissionsByType = submissions.reduce((acc: { [key: string]: HomeworkSubmission[] }, submission) => {
+    if (!acc[submission.type]) {
+      acc[submission.type] = [];
+    }
+    acc[submission.type].push(submission);
+    return acc;
+  }, {});
+
   return (
-    <div className="flex-1">
+    <div className="flex-1 overflow-auto">
       <div className="space-y-4">
-        {Object.entries(
-          submissions.reduce((acc: { [key: string]: HomeworkSubmission[] }, submission: HomeworkSubmission) => {
-            if (!acc[submission.type]) {
-              acc[submission.type] = [];
-            }
-            acc[submission.type].push(submission);
-            return acc;
-          }, {} as { [key: string]: HomeworkSubmission[] })
-        ).map(([type, typeSubmissions]) => (
+        {Object.entries(submissionsByType).map(([type, typeSubmissions]) => (
           <div key={type} className="border border-[#fedac2] rounded-lg overflow-hidden">
             <div className="bg-[#fedac2] px-4 py-2">
               <h4 className="text-[#fc5d01] font-medium">{type}</h4>
@@ -49,8 +50,8 @@ export default function SubmissionsList({ selectedDate, submissionDates, submiss
                             href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[#fc5d01] hover:text-[#fd7f33] text-sm"
-                            title="Click để mở link gốc"
+                            className="text-[#fc5d01] hover:text-[#fd7f33] text-sm truncate block"
+                            title={submission.link}
                           >
                             {submission.link.split('https://')[0].trim() || 'Xem bài làm'}
                           </a>
@@ -58,9 +59,11 @@ export default function SubmissionsList({ selectedDate, submissionDates, submiss
                           <span className="text-gray-400 text-sm">Chưa nộp bài</span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {submission.feedback || 'Chưa có nhận xét'}
-                      </div>
+                      {submission.feedback && (
+                        <div className="text-sm text-gray-500 truncate max-w-[200px]" title={submission.feedback}>
+                          {submission.feedback}
+                        </div>
+                      )}
                     </div>
                   ))}
               </div>

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HomeworkSubmission, getHomeworkSubmissions } from '@/app/firebase/services';
+import { getHomeworkSubmissions } from '@/app/firebase/services';
+import type { HomeworkSubmission } from '@/app/firebase/services/types';
 import HomeworkProgress from '@/app/components/HomeworkProgress';
 
 interface Props {
@@ -31,7 +32,7 @@ export default function StudentSubmissionsView({ student, onClose }: Props) {
     const loadSubmissions = async () => {
       setLoading(true);
       try {
-        const userSubmissions = await getHomeworkSubmissions(student.email.replace(/\./g, '_'), selectedDate);
+        const userSubmissions = await getHomeworkSubmissions(student.email, selectedDate);
         setSubmissions(userSubmissions || []);
       } catch (error) {
         console.error('Error loading submissions:', error);
@@ -60,7 +61,7 @@ export default function StudentSubmissionsView({ student, onClose }: Props) {
 
         <div className="space-y-6">
           {/* Homework Progress Chart */}
-          <HomeworkProgress studentId={student.email.replace(/\./g, '_')} />
+          <HomeworkProgress email={student.email} />
 
           {/* Date Selection */}
           <div className="mb-6">
@@ -97,7 +98,7 @@ export default function StudentSubmissionsView({ student, onClose }: Props) {
                           </tr>
                         </thead>
                         <tbody>
-                          {typeSubmissions
+                          {(typeSubmissions as HomeworkSubmission[])
                             .sort((a, b) => a.questionNumber - b.questionNumber)
                             .map((submission) => (
                               <tr key={`${submission.type}_${submission.questionNumber}`} className="border-b">

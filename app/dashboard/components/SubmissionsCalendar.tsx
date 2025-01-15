@@ -15,6 +15,8 @@ export default function SubmissionsCalendar({ selectedDate, submissionDates, onD
     return date.toISOString().split('T')[0];
   });
 
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <div className="w-[280px]">
       <div className="flex justify-between items-center mb-4">
@@ -24,7 +26,8 @@ export default function SubmissionsCalendar({ selectedDate, submissionDates, onD
         <div className="flex gap-1">
           <button
             onClick={() => {
-              const prevMonth = new Date(currentDate.setMonth(currentDate.getMonth() - 1));
+              const prevMonth = new Date(currentDate);
+              prevMonth.setMonth(prevMonth.getMonth() - 1);
               onDateChange(prevMonth.toISOString().split('T')[0]);
             }}
             className="p-1 rounded hover:bg-[#fedac2] text-[#fc5d01]"
@@ -35,7 +38,8 @@ export default function SubmissionsCalendar({ selectedDate, submissionDates, onD
           </button>
           <button
             onClick={() => {
-              const nextMonth = new Date(currentDate.setMonth(currentDate.getMonth() + 1));
+              const nextMonth = new Date(currentDate);
+              nextMonth.setMonth(nextMonth.getMonth() + 1);
               onDateChange(nextMonth.toISOString().split('T')[0]);
             }}
             className="p-1 rounded hover:bg-[#fedac2] text-[#fc5d01]"
@@ -59,18 +63,21 @@ export default function SubmissionsCalendar({ selectedDate, submissionDates, onD
             <div key={`empty-${i}`} className="border-b border-r border-gray-200 aspect-square" />
           ))}
           {days.map(date => {
-            const hasSubmission = submissionDates[date];
+            const hasSubmission = submissionDates[date] > 0;
+            const isToday = date === today;
+            const isSelected = date === selectedDate;
+            
             return (
               <button
                 key={date}
-                onClick={() => hasSubmission && onDateChange(date)}
+                onClick={() => onDateChange(date)}
                 className={`border-b border-r border-gray-200 aspect-square relative transition-colors ${
-                  hasSubmission
-                    ? selectedDate === date
-                      ? 'bg-[#fc5d01] text-white hover:bg-[#fd7f33]'
-                      : 'hover:bg-[#fedac2]'
+                  isSelected
+                    ? 'bg-[#fc5d01] text-white hover:bg-[#fd7f33]'
+                    : hasSubmission
+                    ? 'hover:bg-[#fedac2]'
                     : 'text-gray-400'
-                }`}
+                } ${isToday ? 'font-bold' : ''}`}
               >
                 <span className="absolute top-1 left-1 text-xs">
                   {new Date(date).getDate()}
@@ -81,7 +88,7 @@ export default function SubmissionsCalendar({ selectedDate, submissionDates, onD
                       <span 
                         key={i} 
                         className={`w-1 h-1 rounded-full ${
-                          selectedDate === date ? 'bg-white' : 'bg-[#fc5d01]'
+                          isSelected ? 'bg-white' : 'bg-[#fc5d01]'
                         }`} 
                       />
                     ))}

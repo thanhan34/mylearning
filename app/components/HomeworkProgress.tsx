@@ -25,16 +25,16 @@ ChartJS.register(
 );
 
 interface HomeworkProgressProps {
-  studentId: string; // This is actually the email
+  email: string;
 }
 
-const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
+const HomeworkProgress = ({ email }: HomeworkProgressProps) => {
   const [progressData, setProgressData] = useState<{ date: string; completed: number }[]>([]);
 
   useEffect(() => {
     const fetchProgress = async () => {
       try {
-        const progress = await getHomeworkProgress(studentId);
+        const progress = await getHomeworkProgress(email);
         
         if (progress.length > 0) {
           // Sort by date and get last 7 days
@@ -53,7 +53,7 @@ const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
       }
     };
 
-    if (studentId) {
+    if (email) {
       // Initial fetch
       fetchProgress();
 
@@ -63,7 +63,7 @@ const HomeworkProgress = ({ studentId }: HomeworkProgressProps) => {
       // Cleanup
       return () => clearInterval(intervalId);
     }
-  }, [studentId]);
+  }, [email]);
 
   // Format dates for display
   const chartData = {

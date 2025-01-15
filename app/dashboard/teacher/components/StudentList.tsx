@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { User } from '../../../../types/admin';
-import { AssignmentSubmission } from '../../../../types/submission';
+import { getHomeworkSubmissions } from '@/app/firebase/services';
+import type { HomeworkSubmission } from '@/app/firebase/services/types';
 import { db } from '../../../../app/firebase/config';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, arrayUnion, CollectionReference, DocumentData } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useSession } from 'next-auth/react';
 import HomeworkProgress from '../../../components/HomeworkProgress';
 
-interface SubmissionWithId extends AssignmentSubmission {
+interface SubmissionWithId extends HomeworkSubmission {
   uniqueId: string;
 }
 
@@ -65,32 +66,24 @@ const StudentList = () => {
 
   const fetchStudentSubmissions = async (student: User) => {
     try {
-      // Format email for path (replace . with _)
-      const emailPath = student.email.replace(/\./g, '_');
-      
-      // Get the specific date document from homework collection
-      const dateDoc = doc(db, 'users', emailPath, 'homework', selectedDate);
-      const docSnapshot = await getDoc(dateDoc);
+      const userSubmissions = await getHomeworkSubmissions(student.email, selectedDate);
       
       let submissionsData: SubmissionWithId[] = [];
       
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
-        if (Array.isArray(data.submissions)) {
-          // Filter out submissions with empty links and add unique IDs
-          submissionsData = data.submissions
-            .filter((submission: AssignmentSubmission) => submission.link && submission.link.trim() !== '')
-            .map((submission: AssignmentSubmission) => ({
-              ...submission,
-              uniqueId: `${submission.type}_${submission.questionNumber}_${submission.date}` // Create unique ID from type, question number and date
-            }));
-          
-          // Filter by type if selected
-          if (selectedType) {
-            submissionsData = submissionsData.filter(
-              (submission: AssignmentSubmission) => submission.type === selectedType
-            );
-          }
+      if (userSubmissions) {
+        // Filter out submissions with empty links and add unique IDs
+        submissionsData = userSubmissions
+          .filter(submission => submission.link && submission.link.trim() !== '')
+          .map(submission => ({
+            ...submission,
+            uniqueId: `${submission.type}_${submission.questionNumber}_${submission.date}` // Create unique ID from type, question number and date
+          }));
+        
+        // Filter by type if selected
+        if (selectedType) {
+          submissionsData = submissionsData.filter(
+            submission => submission.type === selectedType
+          );
         }
       }
       
@@ -141,7 +134,7 @@ const StudentList = () => {
           {selectedStudent ? (
             <div className="space-y-6">
               {/* Homework Progress Chart */}
-              <HomeworkProgress studentId={selectedStudent.email.replace(/\./g, '_')} />
+              <HomeworkProgress email={selectedStudent.email} />
 
               {/* Submissions */}
               <div className="bg-white rounded-lg shadow p-4">
@@ -195,12 +188,6 @@ const StudentList = () => {
                             {submission.link.split('https://')[0].trim()}
                           </a>
                         </p>
-                        {submission.notes && (
-                          <p className="text-sm">
-                            <span className="font-medium text-black">Ghi chú:</span>{' '}
-                            <span className="text-gray-600">{submission.notes}</span>
-                          </p>
-                        )}
                         <div className="mt-2 border-t pt-2">
                           {editingSubmission === submission.uniqueId ? (
                             <div className="space-y-2">
@@ -225,12 +212,12 @@ const StudentList = () => {
                                   onClick={async () => {
                                     try {
                                       const emailPath = selectedStudent.email.replace(/\./g, '_');
-                                      const dateDoc = doc(db, 'users', emailPath, 'homework', selectedDate);
+                                      const dateDoc = doc(db, 'homework', emailPath, selectedDate);
                                       const docSnapshot = await getDoc(dateDoc);
                                       
                                       if (docSnapshot.exists()) {
                                         const data = docSnapshot.data();
-                                        const updatedSubmissions = data.submissions.map((s: AssignmentSubmission) => {
+                                        const updatedSubmissions = data.submissions.map((s: HomeworkSubmission) => {
                                           if (s.type === submission.type && 
                                               s.questionNumber === submission.questionNumber && 
                                               s.date === submission.date) {
