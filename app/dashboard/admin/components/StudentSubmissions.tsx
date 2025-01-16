@@ -90,7 +90,7 @@ const StudentSubmissions = ({ selectedStudentId, selectedStudentEmail }: Student
           <StudentInfo studentEmail={selectedStudentEmail} />
           
           {/* Homework Progress Chart */}
-          <HomeworkProgress studentId={selectedStudentEmail.replace(/\./g, '_')} />
+          <HomeworkProgress email={selectedStudentEmail} />
 
           {/* Date Selection */}
           {dates.length > 0 && (
