@@ -5,17 +5,39 @@ import { getUserByEmail } from './user';
 
 export const addNotification = async (studentEmail: string, message: string): Promise<boolean> => {
   try {
+    console.log('Adding notification for student:', studentEmail);
+    
     const userDoc = await getUserByEmail(studentEmail);
-    if (!userDoc || !userDoc.teacherId) {
-      throw new Error('No teacher assigned to student');
+    if (!userDoc) {
+      console.error('Student not found:', studentEmail);
+      return false;
+    }
+    
+    if (!userDoc.teacherId) {
+      console.error('No teacher assigned to student:', {
+        studentEmail,
+        studentId: userDoc.id
+      });
+      return false;
     }
 
+    console.log('Creating notification:', {
+      studentEmail,
+      teacherId: userDoc.teacherId,
+      message
+    });
+
     const notificationsRef = collection(db, 'notifications');
-    await addDoc(notificationsRef, {
+    const notificationDoc = await addDoc(notificationsRef, {
       teacher_id: userDoc.teacherId,
       message,
       created_at: Timestamp.now(),
       is_read: false
+    });
+
+    console.log('Notification created successfully:', {
+      notificationId: notificationDoc.id,
+      teacherId: userDoc.teacherId
     });
 
     return true;

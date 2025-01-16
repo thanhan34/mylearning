@@ -14,6 +14,7 @@ import {
 import { db } from '../config';
 
 import { HomeworkSubmission } from './types';
+import { addNotification } from './notification';
 
 export const getHomeworkSubmissions = async (userId: string, date?: string): Promise<HomeworkSubmission[]> => {
   try {
@@ -76,9 +77,17 @@ export const saveHomeworkSubmission = async (
       // Update existing submission
       const docRef = doc(db, 'homework', querySnapshot.docs[0].id);
       await updateDoc(docRef, submissionData);
+      
+      // Create notification for homework update
+      const message = `${userName} has updated their homework submission for ${date}`;
+      await addNotification(userId, message);
     } else {
       // Create new submission
       await addDoc(submissionsRef, submissionData);
+      
+      // Create notification for new submission
+      const message = `${userName} has submitted homework for ${date}`;
+      await addNotification(userId, message);
     }
     
     return true;

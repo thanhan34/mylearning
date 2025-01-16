@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { HomeworkSubmission } from '../../firebase/services/types';
 import { getHomeworkSubmissions, saveHomeworkSubmission, getUserByEmail } from '../../firebase/services';
+import { addNotification } from '../../firebase/services/notification';
 import type { User } from '../../firebase/services/user';
 
 // Default homework submissions template
@@ -159,9 +160,42 @@ export default function SubmitPage() {
       const updatedSubmissions = [...otherTypeSubmissions, ...typeSubmissions];
       
       const success = await saveHomeworkSubmission(user.id, updatedSubmissions, session.user.name);
-     
+      
       if (!success) {
         throw new Error('Failed to save submissions');
+      }
+
+      // Create notification after successful submission
+      try {
+        // Check if this is a new submission or update
+        const isNewSubmission = !existingSubmissions || existingSubmissions.length === 0;
+        const message = isNewSubmission
+          ? `${session.user.name} has submitted homework for ${selectedDate}`
+          : `${session.user.name} has updated their homework for ${selectedDate}`;
+        
+        console.log('Creating notification:', {
+          studentEmail: session.user.email,
+          studentName: session.user.name,
+          isNewSubmission,
+          date: selectedDate
+        });
+        
+        const notificationSuccess = await addNotification(session.user.email, message);
+        if (!notificationSuccess) {
+          console.error('Failed to create notification for submission:', {
+            studentEmail: session.user.email,
+            studentName: session.user.name,
+            isNewSubmission,
+            date: selectedDate
+          });
+        }
+      } catch (notificationError) {
+        console.error('Error creating notification:', {
+          error: notificationError,
+          studentEmail: session.user.email,
+          studentName: session.user.name,
+          date: selectedDate
+        });
       }
       setSaveStatus('saved');
       setTimeout(() => {
