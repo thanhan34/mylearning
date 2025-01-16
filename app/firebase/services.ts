@@ -5,6 +5,7 @@ export * from './services/class';
 export * from './services/user';
 export * from './services/progress';
 export * from './services/types';
+export * from './services/admin';
 
 import { 
   collection, 

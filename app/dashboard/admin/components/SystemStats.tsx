@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { SystemStats as SystemStatsType } from '../../../../types/admin';
-import { db } from '../../../firebase/config';
-import { collection, getDocs, query, where, DocumentData } from 'firebase/firestore';
+import { getAdminStats } from '@/app/firebase/services';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -27,19 +25,16 @@ ChartJS.register(
 import DailyHome from '../../components/DailyHome';
 import DailyTargetTable from '../../components/DailyTargetTable';
 
-interface FirebaseUser extends DocumentData {
-  role: 'admin' | 'teacher' | 'student';
-  id: string;
-}
-
 const SystemStats = () => {
-  const [stats, setStats] = useState<SystemStatsType>({
-    totalClasses: 0,
-    totalAssignments: 0,
-    totalUsers: 0,
-    totalTeachers: 0,
-    totalStudents: 0,
-    completionRate: 0,
+  const [stats, setStats] = useState({
+    studentCount: 0,
+    teacherCount: 0,
+    classCount: 0,
+    submissionCount: 0,
+    classProgress: [] as Array<{
+      name: string;
+      completionRate: number;
+    }>
   });
 
   useEffect(() => {
@@ -48,29 +43,10 @@ const SystemStats = () => {
 
   const fetchStats = async () => {
     try {
-      // Fetch total classes
-      const classesSnapshot = await getDocs(collection(db, 'classes'));
-      const totalClasses = classesSnapshot.size;
-
-      // Fetch users and count by role
-      const usersRef = collection(db, 'users');
-      const usersSnapshot = await getDocs(usersRef);
-      const totalUsers = usersSnapshot.size;
-      const users = usersSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      })) as FirebaseUser[];
-      const totalTeachers = users.filter(user => user.role === 'teacher').length;
-      const totalStudents = users.filter(user => user.role === 'student').length;
-
-      setStats({
-        totalClasses,
-        totalAssignments: 0,
-        totalUsers,
-        totalTeachers,
-        totalStudents,
-        completionRate: 0,
-      });
+      const data = await getAdminStats();
+      if (data) {
+        setStats(data);
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
@@ -81,7 +57,7 @@ const SystemStats = () => {
     datasets: [
       {
         label: 'Số lượng',
-        data: [stats.totalStudents, stats.totalTeachers, stats.totalClasses],
+        data: [stats.studentCount, stats.teacherCount, stats.classCount],
         backgroundColor: [
           '#fd7f33',
           '#fc5d01',
@@ -157,7 +133,7 @@ const SystemStats = () => {
             </div>
             <span className="text-sm font-medium text-gray-500">Tổng người dùng</span>
           </div>
-          <div className="text-3xl font-bold text-[#fc5d01]">{stats.totalUsers}</div>
+          <div className="text-3xl font-bold text-[#fc5d01]">{stats.studentCount + stats.teacherCount}</div>
           <div className="mt-2 text-sm text-gray-600">Tất cả người dùng trong hệ thống</div>
         </div>
 
@@ -170,7 +146,7 @@ const SystemStats = () => {
             </div>
             <span className="text-sm font-medium text-gray-500">Lớp học</span>
           </div>
-          <div className="text-3xl font-bold text-[#fc5d01]">{stats.totalClasses}</div>
+          <div className="text-3xl font-bold text-[#fc5d01]">{stats.classCount}</div>
           <div className="mt-2 text-sm text-gray-600">Lớp học đang hoạt động</div>
         </div>
 
@@ -183,7 +159,7 @@ const SystemStats = () => {
             </div>
             <span className="text-sm font-medium text-gray-500">Học viên</span>
           </div>
-          <div className="text-3xl font-bold text-[#fc5d01]">{stats.totalStudents}</div>
+          <div className="text-3xl font-bold text-[#fc5d01]">{stats.studentCount}</div>
           <div className="mt-2 text-sm text-gray-600">Tổng số học viên</div>
         </div>
 
@@ -196,7 +172,7 @@ const SystemStats = () => {
             </div>
             <span className="text-sm font-medium text-gray-500">Giảng viên</span>
           </div>
-          <div className="text-3xl font-bold text-[#fc5d01]">{stats.totalTeachers}</div>
+          <div className="text-3xl font-bold text-[#fc5d01]">{stats.teacherCount}</div>
           <div className="mt-2 text-sm text-gray-600">Tổng số giảng viên</div>
         </div>
       </div>

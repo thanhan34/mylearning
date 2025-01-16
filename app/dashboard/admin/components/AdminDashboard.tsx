@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DailyTargetTable from './DailyTargetTable';
-import DailyHome from './DailyHome';
+import DailyTargetTable from '../../components/DailyTargetTable';
+import DailyHome from '../../components/DailyHome';
 import { Bar } from 'react-chartjs-2';
 import { getAdminStats } from '@/app/firebase/services';
 
