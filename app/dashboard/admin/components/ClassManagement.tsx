@@ -7,6 +7,8 @@ import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, 
 import InlineStudentSubmissions from '../../class/components/InlineStudentSubmissions';
 import UnassignedStudentsList from '../../class/components/UnassignedStudentsList';
 import TeachersList from './TeachersList';
+import WeeklyHomeworkTable from '../../class/components/WeeklyHomeworkTable';
+import { getTeacherClasses, removeStudentFromClass, addStudentToClass, createClass } from '@/app/firebase/services/class';
 
 interface Student {
   id: string;
@@ -379,7 +381,7 @@ const ClassManagement = () => {
         </table>
       </div>
 
-      {/* Selected Class Students */}
+      {/* Weekly Homework Table */}
       {selectedClass && (
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
@@ -401,35 +403,18 @@ const ClassManagement = () => {
               </button>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow">
-            <table className="min-w-full text-black">
-              <thead className="bg-[#fc5d01]">
-                <tr className="text-white">
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Tên học viên</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {classStudents.length === 0 ? (
-                  <tr>
-                    <td colSpan={2} className="px-6 py-4 text-center text-gray-500">
-                      Chưa có học viên trong lớp này
-                    </td>
-                  </tr>
-                ) : (
-                  classStudents.map((student) => (
-                    <tr 
-                      key={student.id}
-                      onClick={() => handleStudentSelect(student)}
-                      className={`cursor-pointer hover:bg-[#fedac2] ${selectedStudent?.id === student.id ? 'bg-[#fdbc94]' : ''}`}
-                    >
-                      <td className="px-6 py-4">{student.name}</td>
-                      <td className="px-6 py-4">{student.email}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="bg-white rounded-lg shadow p-4">
+            <WeeklyHomeworkTable 
+              classId={selectedClass.id}
+              students={selectedClass.students}
+              onStudentSelect={handleStudentSelect}
+              onRemoveStudent={async (studentId) => {
+                if (selectedClass) {
+                  await removeStudentFromClass(selectedClass.id, studentId);
+                  fetchClasses();
+                }
+              }}
+            />
           </div>
         </div>
       )}

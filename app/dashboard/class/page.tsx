@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import UnassignedStudentsList from './components/UnassignedStudentsList';
 import InlineStudentSubmissions from './components/InlineStudentSubmissions';
+import WeeklyHomeworkTable from './components/WeeklyHomeworkTable';
 import { useSession } from 'next-auth/react';
 import { db } from '../../firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -91,37 +92,37 @@ export default function ClassManagement() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-[#fc5d01]">Class Management</h1>
+        <h1 className="text-2xl font-bold text-[#fc5d01]">Quản lý lớp học</h1>
         <button
           onClick={() => setShowNewClassForm(true)}
           className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
         >
-          Create New Class
+          Thêm lớp học
         </button>
       </div>
 
       {showNewClassForm && (
         <div className="mb-6 p-4 bg-[#fedac2] rounded-lg">
-          <h3 className="font-semibold mb-2">Create New Class</h3>
+          <h3 className="font-semibold mb-2">Thêm lớp học mới</h3>
           <div className="flex gap-2">
             <input
               type="text"
               value={newClassName}
               onChange={(e) => setNewClassName(e.target.value)}
-              placeholder="Enter class name..."
+              placeholder="Nhập tên lớp học..."
               className="flex-1 p-2 border rounded"
             />
             <button
               onClick={handleCreateClass}
               className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
             >
-              Create
+              Thêm
             </button>
             <button
               onClick={() => setShowNewClassForm(false)}
               className="px-4 py-2 rounded border border-[#fc5d01] text-[#fc5d01] hover:bg-[#fedac2]"
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </div>
@@ -140,7 +141,7 @@ export default function ClassManagement() {
             }`}
           >
             <h3 className="font-semibold">{cls.name}</h3>
-            <p>Students: {cls.students.length}</p>
+            <p>Học viên: {cls.students.length}</p>
           </div>
         ))}
       </div>
@@ -150,62 +151,27 @@ export default function ClassManagement() {
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-[#fc5d01]">
-              {selectedClass.name} Management
+              Quản lý lớp {selectedClass.name}
             </h2>
             <div className="space-x-2">
               <button
                 onClick={() => setShowUnassignedList(true)}
                 className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
               >
-                Add Student
+                Thêm học viên
               </button>
             </div>
           </div>
 
-          {/* Student List */}
+          {/* Weekly Homework Table */}
           <div className="mb-6">
-            <h3 className="font-semibold mb-2 text-black">Students</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-[#fc5d01] text-white">
-                  <tr>
-                    <th className="p-2 text-left">Name</th>                    
-                    <th className="p-2 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedClass.students.map(student => (
-                    <tr 
-                      key={student.id} 
-                      className="border-b text-black hover:bg-[#fedac2] cursor-pointer"
-                      onClick={(e) => {
-                        if (
-                          (e.target as HTMLElement).tagName === 'SELECT' ||
-                          (e.target as HTMLElement).tagName === 'BUTTON'
-                        ) {
-                          return;
-                        }
-                        setSelectedStudent({
-                          id: student.id,
-                          email: student.email,
-                          name: student.name
-                        });
-                      }}
-                    >
-                      <td className="p-2">{student.name}</td>                    
-                      <td className="p-2">
-                        <button 
-                          className="text-red-500 hover:text-red-700"
-                          onClick={() => handleRemoveStudent(student.id)}
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <h3 className="font-semibold mb-2 text-black">Bảng nộp bài tập tuần này</h3>
+            <WeeklyHomeworkTable 
+              classId={selectedClass.id}
+              students={selectedClass.students}
+              onStudentSelect={(student) => setSelectedStudent(student)}
+              onRemoveStudent={handleRemoveStudent}
+            />
           </div>
 
           {/* Student Submissions Section */}
