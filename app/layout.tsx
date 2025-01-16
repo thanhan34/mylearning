@@ -2,7 +2,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import ClientProviders from './providers/ClientProviders';
 import { getServerSession } from 'next-auth';
-import { authOptions } from './api/auth/[...nextauth]/route';
+import { authOptions } from './api/auth/config';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,7 +21,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-gray-50`}>
-        <ClientProviders>
+        <ClientProviders session={session}>
           {children}
         </ClientProviders>
         <script
