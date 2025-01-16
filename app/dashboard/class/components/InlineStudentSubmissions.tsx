@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { getHomeworkSubmissions, getHomeworkProgress } from '@/app/firebase/services';
 import type { HomeworkSubmission } from '@/app/firebase/services/types';
-import { doc, updateDoc } from 'firebase/firestore';
-import HomeworkProgress from '@/app/components/HomeworkProgress';
+import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import StudentInfo from '@/app/dashboard/admin/components/StudentInfo';
 import { db } from '@/app/firebase/config';
+import ProgressChart from '@/app/dashboard/components/ProgressChart';
 
 interface Props {
   student: {
@@ -30,6 +30,24 @@ export default function InlineStudentSubmissions({ student }: Props) {
   const [loading, setLoading] = useState(true);
   const [submissionDates, setSubmissionDates] = useState<{[key: string]: number}>({});
   const [editingFeedback, setEditingFeedback] = useState<EditingFeedback | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [homeworkProgressData, setHomeworkProgressData] = useState<{
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      borderColor: string;
+      tension: number;
+    }[];
+  }>({
+    labels: [],
+    datasets: [{
+      label: 'Tiến độ bài tập',
+      data: [],
+      borderColor: '#fc5d01',
+      tension: 0.4
+    }]
+  });
 
   // Group submissions by type
   const groupedSubmissions = submissions.reduce((acc, submission) => {
@@ -40,34 +58,82 @@ export default function InlineStudentSubmissions({ student }: Props) {
     return acc;
   }, {} as { [key: string]: HomeworkSubmission[] });
 
-  // Load submission dates
+  // Load homework progress
   useEffect(() => {
-    const loadSubmissionDates = async () => {
+    const loadHomeworkProgress = async () => {
       try {
-        const progress = await getHomeworkProgress(student.email);
-        const datesMap = progress.reduce((acc: {[key: string]: number}, {date, completed}: {date: string; completed: number}) => {
+        setError(null);
+        console.log('Loading progress for student:', student.id);
+        const progressData = await getHomeworkProgress(student.id);
+        console.log('Progress data:', progressData);
+
+        if (!progressData.length) {
+          console.log('No progress data found');
+          return;
+        }
+
+        // Sort progress data by date
+        const sortedData = [...progressData].sort((a, b) => 
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        console.log('Sorted data:', sortedData);
+
+        // Update submission dates for calendar
+        const datesMap = sortedData.reduce((acc: {[key: string]: number}, {date, completed}) => {
           if (completed > 0) {
             acc[date] = completed;
           }
           return acc;
-        }, {} as {[key: string]: number});
+        }, {});
         setSubmissionDates(datesMap);
+
+        // Update chart data
+        const labels = sortedData.map(d => {
+          const date = new Date(d.date);
+          return date.toLocaleDateString('vi-VN', { 
+            month: 'numeric', 
+            day: 'numeric' 
+          });
+        });
+        const data = sortedData.map(d => d.completed);
+        
+        console.log('Setting chart data:', { labels, data });
+
+        setHomeworkProgressData({
+          labels,
+          datasets: [{
+            label: 'Tiến độ bài tập',
+            data,
+            borderColor: '#fc5d01',
+            tension: 0.4
+          }]
+        });
       } catch (error) {
-        console.error('Error loading submission dates:', error);
+        console.error('Error loading homework progress:', error);
+        setError('Failed to load progress data');
       }
     };
-    loadSubmissionDates();
-  }, [student.email]);
+
+    if (student.id) {
+      loadHomeworkProgress();
+      const intervalId = setInterval(loadHomeworkProgress, 60000);
+      return () => clearInterval(intervalId);
+    }
+  }, [student.id]);
 
   // Load submissions for selected date
   useEffect(() => {
     const loadSubmissions = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const userSubmissions = await getHomeworkSubmissions(student.email, selectedDate);
+        const userSubmissions = await getHomeworkSubmissions(student.id, selectedDate);
+        console.log('User submissions:', userSubmissions);
         setSubmissions(userSubmissions || []);
       } catch (error) {
         console.error('Error loading submissions:', error);
+        setError('Failed to load submissions');
         setSubmissions([]);
       } finally {
         setLoading(false);
@@ -75,14 +141,25 @@ export default function InlineStudentSubmissions({ student }: Props) {
     };
 
     loadSubmissions();
-  }, [student.email, selectedDate]);
+  }, [student.id, selectedDate]);
 
   const handleSaveFeedback = async () => {
     if (!editingFeedback) return;
 
     try {
-      const sanitizedEmail = student.email.replace(/[.#$[\]]/g, '_');
-      const docRef = doc(db, 'homework', sanitizedEmail, selectedDate);
+      // Find the document with matching userId and date
+      const submissionsRef = collection(db, 'homework');
+      const q = query(
+        submissionsRef,
+        where('userId', '==', student.id),
+        where('date', '==', selectedDate)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        console.error('No document found for feedback update');
+        return;
+      }
 
       // Update the specific submission's feedback
       const updatedSubmissions = submissions.map(sub => {
@@ -92,6 +169,8 @@ export default function InlineStudentSubmissions({ student }: Props) {
         return sub;
       });
 
+      // Update the document
+      const docRef = doc(db, 'homework', querySnapshot.docs[0].id);
       await updateDoc(docRef, {
         submissions: updatedSubmissions,
         lastUpdated: new Date().toISOString()
@@ -125,7 +204,14 @@ export default function InlineStudentSubmissions({ student }: Props) {
         </div>
         
         {/* Homework Progress Chart */}
-        <HomeworkProgress email={student.email} />
+        <ProgressChart data={homeworkProgressData} />
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
 
         {/* Calendar and Submissions */}
         <div className="flex gap-8">

@@ -60,6 +60,24 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<string 
 
 export const addStudentToClass = async (classId: string, student: ClassStudent, teacherId: string): Promise<boolean> => {
   try {
+    // Get teacher's document ID first
+    let finalTeacherId = teacherId;
+    const teacherRef = doc(db, 'users', teacherId);
+    const teacherDoc = await getDoc(teacherRef);
+    
+    if (!teacherDoc.exists()) {
+      // Try to find teacher by email
+      const teachersRef = collection(db, 'users');
+      const teacherQuery = query(teachersRef, where('email', '==', teacherId));
+      const teacherSnapshot = await getDocs(teacherQuery);
+      
+      if (teacherSnapshot.empty) {
+        throw new Error('Teacher not found');
+      }
+      
+      finalTeacherId = teacherSnapshot.docs[0].id;
+    }
+
     const classRef = doc(db, 'classes', classId);
     const userRef = doc(db, 'users', student.id);
     
@@ -83,31 +101,11 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
           students: arrayUnion(student)
         });
         
-        // Get teacher's document ID
-        const teacherRef = doc(db, 'users', teacherId);
-        const teacherDoc = await transaction.get(teacherRef);
-        if (!teacherDoc.exists()) {
-          // Try to find teacher by email
-          const teachersRef = collection(db, 'users');
-          const teacherQuery = query(teachersRef, where('email', '==', teacherId));
-          const teacherSnapshot = await getDocs(teacherQuery);
-          
-          if (teacherSnapshot.empty) {
-            throw new Error('Teacher not found');
-          }
-          
-          // Use the actual document ID
-          transaction.update(userRef, { 
-            teacherId: teacherSnapshot.docs[0].id,
-            classId: classId 
-          });
-        } else {
-          // Use the document ID directly
-          transaction.update(userRef, { 
-            teacherId: teacherId,
-            classId: classId 
-          });
-        }
+        // Update user with teacher and class IDs
+        transaction.update(userRef, { 
+          teacherId: finalTeacherId,
+          classId: classId 
+        });
       }
     });
     

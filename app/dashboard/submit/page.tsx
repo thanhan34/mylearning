@@ -3,14 +3,15 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { HomeworkSubmission, getHomeworkSubmissions, saveHomeworkSubmission } from '../../firebase/services/homework';
-import { getUserByEmail } from '../../firebase/services/user';
+import { HomeworkSubmission } from '../../firebase/services/types';
+import { getHomeworkSubmissions, saveHomeworkSubmission, getUserByEmail } from '../../firebase/services';
+import type { User } from '../../firebase/services/user';
 
 // Default homework submissions template
 const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
   // Read aloud: 20 questions
   ...Array(20).fill(null).map((_, i) => ({ 
-    id: i + 1, 
+    id: (i + 1).toString(), 
     type: 'Read aloud', 
     questionNumber: i + 1, 
     link: '', 
@@ -18,7 +19,7 @@ const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
   })),
   // Repeat sentence: 20 questions
   ...Array(20).fill(null).map((_, i) => ({ 
-    id: i + 21, 
+    id: (i + 21).toString(), 
     type: 'Repeat sentence', 
     questionNumber: i + 1, 
     link: '', 
@@ -26,7 +27,7 @@ const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
   })),
   // Describe image: 5 questions
   ...Array(5).fill(null).map((_, i) => ({ 
-    id: i + 41, 
+    id: (i + 41).toString(), 
     type: 'Describe image', 
     questionNumber: i + 1, 
     link: '', 
@@ -34,7 +35,7 @@ const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
   })),
   // Retell lecture: 5 questions
   ...Array(5).fill(null).map((_, i) => ({ 
-    id: i + 46, 
+    id: (i + 46).toString(), 
     type: 'Retell lecture', 
     questionNumber: i + 1, 
     link: '', 
@@ -55,7 +56,7 @@ export default function SubmitPage() {
   useEffect(() => {
     const checkAssignment = async () => {
       if (session?.user?.email) {
-        const user = await getUserByEmail(session.user.email);
+        const user = await getUserByEmail(session.user.email) as User;
         if (user) {
           setIsAssigned(!!user.teacherId);
         }
@@ -72,7 +73,7 @@ export default function SubmitPage() {
       }
 
       try {
-        const user = await getUserByEmail(session.user.email);
+        const user = await getUserByEmail(session.user.email) as User;
         if (!user) {
           throw new Error('User not found');
         }
@@ -124,7 +125,7 @@ export default function SubmitPage() {
       return;
     }
 
-    const user = await getUserByEmail(session.user.email);
+    const user = await getUserByEmail(session.user.email) as User;
     if (!user) {
       throw new Error('User not found');
     }

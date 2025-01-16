@@ -1,6 +1,6 @@
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../config';
-import { HomeworkSubmission } from './homework';
+import { HomeworkSubmission } from './types';
 
 export interface ProgressData {
   date: string;
@@ -9,10 +9,10 @@ export interface ProgressData {
 
 export const getHomeworkProgress = async (userId: string): Promise<ProgressData[]> => {
   try {
-    // Get all submissions for the user
+    // Query homework collection for user's submissions
     const submissionsRef = collection(db, 'homework');
     const q = query(
-      submissionsRef, 
+      submissionsRef,
       where('userId', '==', userId)
     );
     
@@ -39,7 +39,9 @@ export const getHomeworkProgress = async (userId: string): Promise<ProgressData[
       
       // Count completed submissions (those with non-empty links)
       const completed = submissions.filter((s: any) => s.link && s.link.trim() !== '').length;
-      progressByDate.set(date, (progressByDate.get(date) || 0) + completed);
+      if (completed > 0) {
+        progressByDate.set(date, completed);
+      }
     });
 
     // Convert to array and sort by date
@@ -62,12 +64,13 @@ export const getWeeklyProgress = async (userId: string): Promise<ProgressData[]>
   try {
     const today = new Date();
     const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const lastWeekStr = lastWeek.toISOString().split('T')[0];
     
+    // Query homework collection for user's submissions
     const submissionsRef = collection(db, 'homework');
     const q = query(
       submissionsRef,
-      where('userId', '==', userId),
-      where('date', '>=', lastWeek.toISOString().split('T')[0])
+      where('userId', '==', userId)
     );
     
     const querySnapshot = await getDocs(q);
@@ -78,9 +81,14 @@ export const getWeeklyProgress = async (userId: string): Promise<ProgressData[]>
     querySnapshot.docs.forEach(doc => {
       const data = doc.data();
       const date = data.date;
-      const submissions = data.submissions || [];
-      const completed = submissions.filter((s: any) => s.link && s.link.trim() !== '').length;
-      progressByDate.set(date, (progressByDate.get(date) || 0) + completed);
+      // Only include dates from last week
+      if (date >= lastWeekStr) {
+        const submissions = data.submissions || [];
+        const completed = submissions.filter((s: any) => s.link && s.link.trim() !== '').length;
+        if (completed > 0) {
+          progressByDate.set(date, completed);
+        }
+      }
     });
 
     // Convert to array and sort by date
@@ -96,11 +104,12 @@ export const getWeeklyProgress = async (userId: string): Promise<ProgressData[]>
 export const getDailyProgress = async (userId: string): Promise<ProgressData | null> => {
   try {
     const today = new Date().toISOString().split('T')[0];
+    
+    // Query homework collection for user's submissions
     const submissionsRef = collection(db, 'homework');
     const q = query(
       submissionsRef,
-      where('userId', '==', userId),
-      where('date', '==', today)
+      where('userId', '==', userId)
     );
     
     const querySnapshot = await getDocs(q);
@@ -112,13 +121,15 @@ export const getDailyProgress = async (userId: string): Promise<ProgressData | n
       };
     }
     
-    // Combine all submissions for today
+    // Find today's submissions
     let totalCompleted = 0;
     querySnapshot.docs.forEach(doc => {
       const data = doc.data();
-      const submissions = data.submissions || [];
-      const completed = submissions.filter((s: any) => s.link && s.link.trim() !== '').length;
-      totalCompleted += completed;
+      if (data.date === today) {
+        const submissions = data.submissions || [];
+        const completed = submissions.filter((s: any) => s.link && s.link.trim() !== '').length;
+        totalCompleted += completed;
+      }
     });
     
     return {

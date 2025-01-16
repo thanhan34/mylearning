@@ -5,7 +5,25 @@ import type { SystemStats as SystemStatsType } from '../../../../types/admin';
 import { db } from '../../../firebase/config';
 import { collection, getDocs, query, where, DocumentData } from 'firebase/firestore';
 import { Bar } from 'react-chartjs-2';
-import type { ChartOptions } from 'chart.js';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartOptions
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 import DailyHome from '../../components/DailyHome';
 import DailyTargetTable from '../../components/DailyTargetTable';
 

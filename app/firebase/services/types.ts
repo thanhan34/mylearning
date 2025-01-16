@@ -2,15 +2,15 @@ import { Timestamp } from 'firebase/firestore';
 
 export interface HomeworkSubmission {
   id?: string;
-  date: string;
-  email: string;
-  links: string[];
-  exists: boolean;
-  timestamp?: Timestamp;
   type: string;
   questionNumber: number;
   link: string;
+  date: string;
   feedback?: string;
+}
+
+export interface SubmissionWithId extends HomeworkSubmission {
+  uniqueId: string;
 }
 
 export interface Class {
@@ -33,11 +33,10 @@ export interface ClassStudent {
 
 export interface Notification {
   id: string;
-  title: string;
   message: string;
-  timestamp: Timestamp;
+  created_at: Timestamp;
   teacher_id: string;
-  read: boolean;
+  is_read: boolean;
 }
 
 export interface DailyTarget {
@@ -47,10 +46,6 @@ export interface DailyTarget {
   completed: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-}
-
-export interface SubmissionWithId extends Omit<HomeworkSubmission, 'id'> {
-  id: string;
 }
 
 export interface CreateClassInput {

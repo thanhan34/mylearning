@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User } from '../../../../types/admin';
+import { User } from '@/app/firebase/services/user';
 import { getHomeworkSubmissions } from '@/app/firebase/services';
 import type { HomeworkSubmission } from '@/app/firebase/services/types';
 import { db } from '../../../../app/firebase/config';
@@ -9,9 +9,7 @@ import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'fireb
 import { useSession } from 'next-auth/react';
 import HomeworkProgress from '../../../components/HomeworkProgress';
 
-interface SubmissionWithId extends HomeworkSubmission {
-  uniqueId: string;
-}
+import { SubmissionWithId } from '@/app/firebase/services/types';
 
 const StudentList = () => {
   const { data: session } = useSession();

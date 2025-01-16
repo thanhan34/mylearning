@@ -1,3 +1,11 @@
+// Re-export functions from individual service files
+export * from './services/homework';
+export * from './services/notification';
+export * from './services/class';
+export * from './services/user';
+export * from './services/progress';
+export * from './services/types';
+
 import { 
   collection, 
   doc, 

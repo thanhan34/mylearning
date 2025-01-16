@@ -1,7 +1,7 @@
 'use client';
 
-import type { HomeworkSubmission } from '@/app/firebase/services/homework';
-import { getUserByEmail } from '@/app/firebase/services/user';
+import type { HomeworkSubmission } from '@/app/firebase/services/types';
+import { getUserByEmail, User } from '@/app/firebase/services/user';
 import DailyHome from './DailyHome';
 import DailyTargetTable from './DailyTargetTable';
 import { useRouter } from 'next/navigation';
@@ -26,17 +26,6 @@ interface StudentDashboardProps {
   homeworkSubmissions: HomeworkSubmission[];
   onDateChange: (date: string) => void;
   userRole?: string;
-}
-
-interface User {
-  id: string;
-  email: string;
-  role: "admin" | "teacher" | "student";
-  avatar?: string;
-  target?: string;
-  name?: string;
-  classId?: string;
-  teacherId?: string;
 }
 
 export default function StudentDashboard({

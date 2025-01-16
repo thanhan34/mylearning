@@ -1,6 +1,6 @@
 'use client';
 
-import { HomeworkSubmission } from '@/app/firebase/services/homework';
+import { HomeworkSubmission } from '@/app/firebase/services/types';
 
 interface SubmissionsListProps {
   selectedDate: string;

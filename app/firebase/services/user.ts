@@ -1,7 +1,7 @@
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { db } from '../config';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   role: "admin" | "teacher" | "student";
