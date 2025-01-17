@@ -4,6 +4,11 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { HomeworkSubmission } from '../../firebase/services/types';
+import ValidationErrorDialog from '../../components/ValidationErrorDialog';
+import MaxLinksErrorDialog from '../../components/MaxLinksErrorDialog';
+import AssignmentErrorDialog from '../../components/AssignmentErrorDialog';
+
+type HomeworkType = 'Read aloud' | 'Retell lecture' | 'Describe image' | 'Repeat sentence';
 import { getHomeworkSubmissions, saveHomeworkSubmission, getUserByEmail } from '../../firebase/services';
 import { addNotification } from '../../firebase/services/notification';
 import type { User } from '../../firebase/services/user';
@@ -45,11 +50,18 @@ const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
 ];
 
 export default function SubmitPage() {
-  const [selectedHomeworkType, setSelectedHomeworkType] = useState<string>('Read aloud');
+  const [selectedHomeworkType, setSelectedHomeworkType] = useState<HomeworkType>('Read aloud');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [existingLinks, setExistingLinks] = useState<string>('');
   const [isAssigned, setIsAssigned] = useState<boolean>(false);
+  const [showValidationError, setShowValidationError] = useState(false);
+  const [showMaxLinksError, setShowMaxLinksError] = useState(false);
+  const [showAssignmentError, setShowAssignmentError] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    invalidLinks: string[];
+    expectedFormat: string;
+  }>({ invalidLinks: [], expectedFormat: '' });
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -105,15 +117,20 @@ export default function SubmitPage() {
     }
 
     if (!isAssigned) {
-      alert('You must be assigned to a teacher before submitting homework');
+      setShowAssignmentError(true);
       setSaveStatus('error');
       return;
     }
 
     setSaveStatus('saving');
     const validateLink = (link: string) => {
-      const linkPattern = /^RA#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/;
-      return linkPattern.test(link);
+      const patterns: Record<HomeworkType, RegExp> = {
+        'Read aloud': /^RA#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+        'Retell lecture': /^RL#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+        'Describe image': /^DI#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+        'Repeat sentence': /^RS#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/
+      };
+      return patterns[selectedHomeworkType]?.test(link) || false;
     };
 
     const links = existingLinks.split('\n').filter(link => link.trim());
@@ -121,7 +138,17 @@ export default function SubmitPage() {
     // Validate link format
     const invalidLinks = links.filter(link => !validateLink(link));
     if (invalidLinks.length > 0) {
-      alert(`Some links are not in the correct format:\n${invalidLinks.join('\n')}\n\nFormat should be: RA#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...`);
+      const formatExamples: Record<HomeworkType, string> = {
+        'Read aloud': 'RA#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...',
+        'Retell lecture': 'RL#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...',
+        'Describe image': 'DI#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...',
+        'Repeat sentence': 'RS#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...'
+      };
+      setValidationErrors({
+        invalidLinks,
+        expectedFormat: formatExamples[selectedHomeworkType]
+      });
+      setShowValidationError(true);
       setSaveStatus('error');
       return;
     }
@@ -133,7 +160,7 @@ export default function SubmitPage() {
 
     const maxQuestions = selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5;
     if (links.length > maxQuestions) {
-      alert(`Maximum ${maxQuestions} links allowed for ${selectedHomeworkType}`);
+      setShowMaxLinksError(true);
       setSaveStatus('error');
       return;
     }
@@ -215,6 +242,23 @@ export default function SubmitPage() {
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
+      <AssignmentErrorDialog
+        isOpen={showAssignmentError}
+        onClose={() => setShowAssignmentError(false)}
+      />
+      <MaxLinksErrorDialog
+        isOpen={showMaxLinksError}
+        onClose={() => setShowMaxLinksError(false)}
+        maxQuestions={selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5}
+        homeworkType={selectedHomeworkType}
+      />
+      <ValidationErrorDialog
+        isOpen={showValidationError}
+        onClose={() => setShowValidationError(false)}
+        invalidLinks={validationErrors.invalidLinks}
+        expectedFormat={validationErrors.expectedFormat}
+        homeworkType={selectedHomeworkType}
+      />
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="bg-white p-6 rounded-lg shadow border border-[#fedac2]">
@@ -238,7 +282,7 @@ export default function SubmitPage() {
                 />
                 <select
                   value={selectedHomeworkType}
-                  onChange={(e) => setSelectedHomeworkType(e.target.value)}
+                  onChange={(e) => setSelectedHomeworkType(e.target.value as HomeworkType)}
                   className="border border-[#fedac2] rounded px-3 py-2 text-black"
                 >
                   <option value="Read aloud">Read aloud</option>
@@ -252,12 +296,12 @@ export default function SubmitPage() {
                   Paste your {selectedHomeworkType} links (One link per line)
                 </label>
                 <p className="text-gray-400 text-sm mb-2">
-                  Format: RA#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...
+                  Format: {selectedHomeworkType === 'Read aloud' ? 'RA' : selectedHomeworkType === 'Retell lecture' ? 'RL' : selectedHomeworkType === 'Describe image' ? 'DI' : 'RS'}#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...
                 </p>
                 <textarea
                   name="links"
                   className="w-full h-64 border border-[#fedac2] rounded px-3 py-2 text-black"
-                  placeholder={`Example:\nRA#1445 APEUni RA EN V2e AI Score 47/90 https://www.apeuni.com/practice/answer_item?model=read_alouds&answer_id=2937397445\n\nMaximum ${selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5} links`}
+                  placeholder={`Example:\n${selectedHomeworkType === 'Read aloud' ? 'RA' : selectedHomeworkType === 'Retell lecture' ? 'RL' : selectedHomeworkType === 'Describe image' ? 'DI' : 'RS'}#1445 APEUni ${selectedHomeworkType === 'Read aloud' ? 'RA' : selectedHomeworkType === 'Retell lecture' ? 'RL' : selectedHomeworkType === 'Describe image' ? 'DI' : 'RS'} EN V2e AI Score 47/90 https://www.apeuni.com/practice/answer_item?model=${selectedHomeworkType === 'Read aloud' ? 'read_alouds' : selectedHomeworkType === 'Retell lecture' ? 'retell_lectures' : selectedHomeworkType === 'Describe image' ? 'describe_images' : 'repeat_sentences'}&answer_id=2937397445\n\nMaximum ${selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5} links`}
                   value={existingLinks}
                   onChange={(e) => setExistingLinks(e.target.value)}
                 />
