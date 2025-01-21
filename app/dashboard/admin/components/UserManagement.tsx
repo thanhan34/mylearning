@@ -3,11 +3,15 @@
 import { useState, useEffect } from 'react';
 import { User } from '../../../../types/admin';
 import { db } from '../../../firebase/config';
+import { Switch } from '@headlessui/react';
 import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showUnassigned, setShowUnassigned] = useState(false);
+  const [showTeachers, setShowTeachers] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     name: '',
@@ -80,14 +84,68 @@ const UserManagement = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-[#fc5d01]">Quản lý tài khoản</h2>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-[#fc5d01] text-white px-4 py-2 rounded-lg hover:bg-[#fd7f33]"
-        >
-          Thêm tài khoản
-        </button>
+      <div className="flex flex-col space-y-4 mb-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-[#fc5d01]">Quản lý tài khoản</h2>
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-[#fc5d01] text-white px-4 py-2 rounded-lg hover:bg-[#fd7f33]"
+          >
+            Thêm tài khoản
+          </button>
+        </div>
+        
+        <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow">
+          <div className="flex items-center space-x-4">
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo tên..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fc5d01] text-black"
+            />
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={showUnassigned}
+                  onChange={(checked) => {
+                    setShowUnassigned(checked);
+                    if (checked) setShowTeachers(false);
+                  }}
+                  className={`${
+                    showUnassigned ? 'bg-[#fc5d01]' : 'bg-gray-200'
+                  } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
+                >
+                  <span
+                    className={`${
+                      showUnassigned ? 'translate-x-6' : 'translate-x-1'
+                    } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  />
+                </Switch>
+                <span className="text-sm text-gray-600">Chỉ hiện học viên chưa được phân công</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={showTeachers}
+                  onChange={(checked) => {
+                    setShowTeachers(checked);
+                    if (checked) setShowUnassigned(false);
+                  }}
+                  className={`${
+                    showTeachers ? 'bg-[#fc5d01]' : 'bg-gray-200'
+                  } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
+                >
+                  <span
+                    className={`${
+                      showTeachers ? 'translate-x-6' : 'translate-x-1'
+                    } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  />
+                </Switch>
+                <span className="text-sm text-gray-600">Chỉ hiện giáo viên</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {showForm && (
@@ -165,7 +223,18 @@ const UserManagement = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {users.map((user) => (
+            {users
+              .filter((user) => {
+                const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase());
+                if (showUnassigned) {
+                  return matchesSearch && user.role === 'student' && !user.teacherId;
+                }
+                if (showTeachers) {
+                  return matchesSearch && user.role === 'teacher';
+                }
+                return matchesSearch;
+              })
+              .map((user) => (
               <tr key={user.id}>
                 <td className="px-6 py-4">{user.email}</td>
                 <td className="px-6 py-4">{user.name}</td>

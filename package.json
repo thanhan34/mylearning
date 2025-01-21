@@ -10,6 +10,7 @@
     "create-admin": "ts-node --project tsconfig.json scripts/create-admin.ts"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.0",
     "@hookform/resolvers": "^3.3.4",
     "@splinetool/react-spline": "^4.0.0",
     "@splinetool/runtime": "^1.9.58",
