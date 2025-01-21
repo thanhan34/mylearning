@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import type { UserProfile } from '../../../types/profile';
+import { updateStudentName } from '../../firebase/services/class';
 
 export default function ProfilePage() {
   const { data: session } = useSession();
@@ -13,6 +14,7 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [avatar, setAvatar] = useState('');
   const [target, setTarget] = useState('');
+  const [classId, setClassId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
@@ -35,6 +37,7 @@ export default function ProfilePage() {
           setEmail(userData.email || '');
           setAvatar(userData.avatar || '');
           setTarget(userData.target || '');
+          setClassId(userData.classId || null);
           setLoading(false);
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -131,12 +134,19 @@ export default function ProfilePage() {
     if (session?.user?.id) {
       setUpdating(true);
       try {
-        const userRef = doc(db, 'users', session.user.id);
-        await updateDoc(userRef, {
-          name,
-          email,
-          target
-        });
+        if (session.user.role === 'student' && classId) {
+          // For students, update both collections atomically
+          await updateStudentName(session.user.id, classId, name, email, target);
+        } else {
+          // For non-students, just update user document
+          const userRef = doc(db, 'users', session.user.id);
+          await updateDoc(userRef, {
+            name,
+            email,
+            target
+          });
+        }
+
         setMessage({ type: 'success', content: 'Cập nhật thông tin thành công' });
       } catch (error: any) {
         console.error('Error updating profile:', error);

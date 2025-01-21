@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, where, runTransaction, arrayUnion, addDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, runTransaction, arrayUnion, addDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '../config';
 import { Class, ClassStudent } from './types';
 import { getUserByEmail } from './user';
@@ -146,6 +146,63 @@ export const removeStudentFromClass = async (classId: string, studentId: string)
   } catch (error) {
     console.error('Error removing student from class:', error);
     return false;
+  }
+};
+
+export const updateStudentName = async (
+  userId: string, 
+  classId: string, 
+  newName: string, 
+  email: string,
+  target: string
+): Promise<void> => {
+  try {
+    await runTransaction(db, async (transaction) => {
+      // Get references
+      const userRef = doc(db, 'users', userId);
+      const classRef = doc(db, 'classes', classId);
+
+      // Get current data
+      const userDoc = await transaction.get(userRef);
+      const classDoc = await transaction.get(classRef);
+
+      if (!userDoc.exists()) {
+        throw new Error('User not found');
+      }
+
+      if (!classDoc.exists()) {
+        throw new Error('Class not found');
+      }
+
+      // Get class data
+      const classData = classDoc.data() as Class;
+      const students = classData.students || [];
+
+      // Update the student in the class's students array
+      const updatedStudents = students.map(student => {
+        if (student.id === userId) {
+          return {
+            ...student,
+            name: newName
+          };
+        }
+        return student;
+      });
+
+      // Update both documents in a single transaction
+      transaction.update(userRef, {
+        name: newName,
+        email,
+        target
+      });
+
+      transaction.update(classRef, {
+        students: updatedStudents
+      });
+    });
+  } catch (error) {
+    console.error('Error updating student name:', error);
+    throw error;
   }
 };
 
