@@ -151,9 +151,14 @@ export default function ExamTrackingForm() {
       <div className="max-w-3xl mx-auto p-8">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="bg-[#fc5d01] p-6">
-            <h1 className="text-2xl font-bold text-white">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-4">
               PTE Exam Tracking Information
             </h1>
+            <p className="text-white/90 text-sm leading-relaxed">
+            Để theo dõi sát sao tiến độ ôn tập và nhận được sự hỗ trợ đặc biệt từ đội ngũ giảng viên dành riêng cho các bạn đã lên kế hoạch thi PTE trong thời gian tới, vui lòng điền đầy đủ thông tin cá nhân vào biểu mẫu dưới đây. Ngoài ra, nếu cần hỗ trợ đăng ký thi, các bạn có thể liên hệ trực tiếp với <b>An Doan</b>.
+            </p>
+          </div>
           </div>
           
           <form onSubmit={handleSubmit} className="p-6">
