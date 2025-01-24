@@ -1,4 +1,4 @@
-ưưimport { Assignment } from "./assignment";
+import { Assignment } from "./assignment";
 
 export interface AssignmentSubmission {
   id: string;
@@ -10,7 +10,7 @@ export interface AssignmentSubmission {
   link: string;
   notes?: string;
   status: 'submitted' | 'pending';
-  feedback?: string;ưư
+  feedback?: string;
   questionNumber?: number;
 }
 
