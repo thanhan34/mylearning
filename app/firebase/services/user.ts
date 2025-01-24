@@ -63,6 +63,32 @@ export const getUserRole = async (userId: string): Promise<"admin" | "teacher" |
   }
 };
 
+export const getUserById = async (userId: string): Promise<User | null> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      return {
+        id: userSnap.id,
+        email: data.email,
+        role: data.role as "admin" | "teacher" | "student",
+        avatar: data.avatar,
+        target: data.target,
+        name: data.name,
+        classId: data.classId,
+        teacherId: data.teacherId
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting user by ID:', error);
+    return null;
+  }
+};
+
 export const getUserByEmail = async (email: string): Promise<User | null> => {
   try {
     console.log('Getting user by email:', email);

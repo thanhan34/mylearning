@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { UserProfile } from "../../types/profile";
-import { RiDashboardLine, RiProfileLine, RiTeamLine, RiLogoutBoxRLine, RiFileList2Line } from "react-icons/ri";
+import { RiDashboardLine, RiProfileLine, RiTeamLine, RiLogoutBoxRLine, RiFileList2Line, RiFileTextLine } from "react-icons/ri";
 
 interface NavItem {
   href: string;
@@ -67,18 +67,21 @@ const Navigation = () => {
   const adminNavItems: NavItem[] = [
     { href: "/dashboard/admin", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> },       
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
+    { href: "/dashboard/mocktest/admin", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
   ];
 
   const teacherNavItems: NavItem[] = [     
     { href: "/dashboard/class", label: "Classes", icon: <RiTeamLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
+    { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
   ];
 
   const studentNavItems: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
+    { href: "/dashboard/mocktest", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
   ];
 

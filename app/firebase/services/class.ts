@@ -3,6 +3,42 @@ import { db } from '../config';
 import { Class, ClassStudent } from './types';
 import { getUserByEmail } from './user';
 
+export const getClassById = async (classId: string): Promise<Class | null> => {
+  try {
+    console.log("Getting class by ID:", classId);
+    const classRef = doc(db, 'classes', classId);
+    const classDoc = await getDoc(classRef);
+    
+    if (classDoc.exists()) {
+      const classData = classDoc.data();
+      console.log("Found class data:", {
+        id: classDoc.id,
+        name: classData.name,
+        teacherId: classData.teacherId,
+        studentCount: classData.students?.length || 0
+      });
+      return {
+        id: classDoc.id,
+        ...classData
+      } as Class;
+    }
+    
+    console.log("No class found with ID:", classId);
+    return null;
+  } catch (error) {
+    console.error('Error getting class by ID:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        classId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    return null;
+  }
+};
+
 export const getTeacherClasses = async (teacherEmail: string): Promise<Class[]> => {
   try {
     // Get teacher's document ID

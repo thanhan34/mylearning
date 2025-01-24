@@ -2,72 +2,77 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
     function isTeacher() {
-      return get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role == 'teacher';
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+    
+    function isStudent() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+    
+    function isTeacherOfClass(classId) {
+      return isTeacher() && get(/databases/$(database)/documents/classes/$(classId)).data.teacherId == request.auth.uid;
+    }
+    
+    function isStudentInClass(classId) {
+      return isStudent() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.classId == classId;
     }
 
-    function isTeacherOfStudent(studentEmail) {
-      let studentDoc = get(/databases/$(database)/documents/users/$(studentEmail));
-      return studentDoc.data.teacherId == get(/databases/$(database)/documents/users/$(request.auth.token.email)).id;
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+      allow update: if request.auth.uid == userId;
     }
 
-    match /users/{email} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-                  request.auth.token.email == email;
-      
-      match /homework/{date} {
-        allow read, write: if request.auth != null && 
-                          request.auth.token.email == email;
-      }
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+      allow update: if isTeacherOfClass(classId);
     }
-    
-    match /homework/{email}/{date} {
-      // Students can read/write their own homework
-      allow read, write: if request.auth != null && 
-                        request.auth.token.email == email;
-      
-      // Teachers can read homework of their assigned students
-      allow read: if request.auth != null && 
-                 isTeacher() && 
-                 isTeacherOfStudent(email);
-      
-      // Teachers can write feedback
-      allow write: if request.auth != null && 
-                  isTeacher() && 
-                  isTeacherOfStudent(email) &&
-                  request.resource.data.diff(resource.data).affectedKeys().hasOnly(['submissions']);
+
+    match /homework/{homeworkId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isTeacher();
     }
-    
-    match /dailyProgress/{document=**} {
-      allow read, write: if request.auth != null;
+
+    match /submissions/{submissionId} {
+      allow read: if isSignedIn();
+      allow create: if isStudent();
+      allow update, delete: if request.auth.uid == resource.data.studentId || isTeacherOfClass(resource.data.classId) || isAdmin();
     }
-    
-    match /assignments/{document=**} {
-      allow read, write: if request.auth != null;
+
+    match /mocktests/{mocktestId} {
+      allow read: if isSignedIn();
+      allow create: if isStudent() && request.resource.data.studentId == request.auth.uid;
+      allow update: if 
+        (isStudent() && resource.data.studentId == request.auth.uid) || 
+        (isTeacherOfClass(resource.data.classId)) || 
+        isAdmin();
+      allow delete: if 
+        (isStudent() && resource.data.studentId == request.auth.uid) || 
+        isAdmin();
     }
-    
-    match /classes/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /submissions/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-    
+
     match /notifications/{notificationId} {
-      allow read: if request.auth != null && 
-                 exists(/databases/$(database)/documents/users/$(request.auth.token.email)) &&
-                 get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role == 'teacher';
-      allow write: if request.auth != null;
-      allow delete: if request.auth != null && 
-                   resource.data.teacher_id == get(/databases/$(database)/documents/users/$(request.auth.token.email)).id;
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid ||
+        isAdmin()
+      );
+      allow write: if isAdmin() || isTeacher();
     }
 
-    match /examTracking/{docId} {
-      // Allow all authenticated users to read and write
-      allow read, write: if request.auth != null;
+    match /exam-tracking/{trackingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isTeacher();
     }
   }
 }
