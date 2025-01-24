@@ -12,7 +12,8 @@ export const authOptions: AuthOptions = {
         params: {
           prompt: "select_account", // Force account selection
           access_type: "offline",
-          response_type: "code"
+          response_type: "code",
+          scope: "openid email profile"
         }
       }
     }),
@@ -94,13 +95,23 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user, account }) {
       try {
         if (account && user) {
+          console.log('JWT callback - account:', {
+            access_token: account.access_token,
+            refresh_token: account.refresh_token,
+            token_type: account.token_type,
+            scope: account.scope
+          });
+          
           token.accessToken = account.access_token;
+          token.refreshToken = account.refresh_token;
           token.id = user.id;
           token.role = user.role;
           console.log('JWT token created:', {
             id: user.id,
             role: user.role,
-            email: user.email
+            email: user.email,
+            hasAccessToken: !!token.accessToken,
+            hasRefreshToken: !!token.refreshToken
           });
         }
         return token;
@@ -115,10 +126,13 @@ export const authOptions: AuthOptions = {
           session.user.id = token.id as string;
           session.user.role = token.role as "admin" | "teacher" | "student";
           session.accessToken = token.accessToken;
+          session.refreshToken = token.refreshToken;
           console.log('Session created:', {
             id: session.user.id,
             role: session.user.role,
-            email: session.user.email
+            email: session.user.email,
+            hasAccessToken: !!session.accessToken,
+            hasRefreshToken: !!session.refreshToken
           });
         }
         return session;

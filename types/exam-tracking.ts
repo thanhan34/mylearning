@@ -1,4 +1,10 @@
-export interface ExamTrackingInfo {
+// Base interface for exam tracking data
+interface ExamTrackingMetadata {
+  _createdBy?: string;
+  _updatedBy?: string;
+}
+
+export interface ExamTrackingBase extends ExamTrackingMetadata {
   id?: string;
   studentId: string;
   examLocation: string;
@@ -12,6 +18,14 @@ export interface ExamTrackingInfo {
   // Class data
   className?: string;
   teacherName?: string;
+}
+
+export interface ExamTrackingInfo extends ExamTrackingBase {
+  calendarEventId?: string;
+}
+
+export interface ExamTrackingWithCalendar extends ExamTrackingBase {
+  calendarEventId?: string;
 }
 
 export interface ExamTrackingFormData {

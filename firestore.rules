@@ -66,25 +66,8 @@ service cloud.firestore {
     }
 
     match /examTracking/{docId} {
-      // Helper function to check if user is admin
-      function isAdmin() {
-        return get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role == 'admin';
-      }
-
-      // Students can read/write only their own exam tracking info
-      allow read, write: if request.auth != null && 
-                        resource.data.studentId == get(/databases/$(database)/documents/users/$(request.auth.token.email)).id;
-      
-      // Teachers can read exam tracking info of their students
-      allow read: if request.auth != null && 
-                 isTeacher() && 
-                 resource.data.mainTrainer == get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.name;
-      
-      // Admins can read all exam tracking info
-      allow read: if request.auth != null && isAdmin();
-
-      // Allow creation of new exam tracking info by any authenticated user
-      allow create: if request.auth != null;
+      // Allow all authenticated users to read and write
+      allow read, write: if request.auth != null;
     }
   }
 }

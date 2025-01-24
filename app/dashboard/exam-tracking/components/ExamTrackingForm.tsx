@@ -18,10 +18,11 @@ export default function ExamTrackingForm() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [examInfo, setExamInfo] = useState<ExamTrackingInfo | null>(null);
   const [formData, setFormData] = useState<ExamTrackingFormData>({
     examLocation: "",
-    examDate: "",
+    examDate: new Date().toISOString().split('T')[0], // Default to today's date in YYYY-MM-DD format
   });
   const [userData, setUserData] = useState<UserProfile | null>(null);
   const [classData, setClassData] = useState<ClassInfo | null>(null);
@@ -48,25 +49,24 @@ export default function ExamTrackingForm() {
                 
                 if (classSnapshot.exists()) {
                   const classData = classSnapshot.data() as Class;
+                  // Get teacher name first
+                  const teacherRef = doc(db, 'users', classData.teacherId);
+                  const teacherSnapshot = await getDoc(teacherRef);
+                  let teacherName = "";
+                  
+                  if (teacherSnapshot.exists()) {
+                    const teacherData = teacherSnapshot.data() as UserProfile;
+                    teacherName = teacherData.name;
+                  }
+
                   const classInfo: ClassInfo = {
                     id: classSnapshot.id,
                     name: classData.name,
-                    teacherName: "", // We'll update this with teacher name
+                    teacherName: teacherName,
                     schedule: classData.schedule,
                     description: classData.description
                   };
                   setClassData(classInfo);
-
-                  // Get teacher name
-                  const teacherRef = doc(db, 'users', classData.teacherId);
-                  const teacherSnapshot = await getDoc(teacherRef);
-                  if (teacherSnapshot.exists()) {
-                    const teacherData = teacherSnapshot.data() as UserProfile;
-                    setClassData(prev => ({
-                      ...prev!,
-                      teacherName: teacherData.name
-                    }));
-                  }
                 } else {
                   console.log('No class found for ID:', data.classId);
                 }
@@ -107,32 +107,42 @@ export default function ExamTrackingForm() {
 
     try {
       setLoading(true);
-      
+      setErrorMessage(null);
+
       // Check if exam info already exists for this student
       const existingInfo = await getStudentExamInfo(session.user.email);
       
+      let newInfo;
       if (existingInfo?.id) {
         // Update existing record
         await updateExamTrackingInfo(existingInfo.id, formData);
+        console.log('Updated existing exam tracking info');
       } else {
         // Create new record only if none exists
-        await createExamTrackingInfo(formData, session.user.email);
+        const newId = await createExamTrackingInfo(formData, session.user.email);
+        console.log('Created new exam tracking info with ID:', newId);
       }
 
-      // Refresh exam info after saving
-      const info = await getStudentExamInfo(session.user.email);
-      if (info) {
-        setExamInfo(info);
+      // Fetch the updated info
+      newInfo = await getStudentExamInfo(session.user.email);
+      if (newInfo) {
+        setExamInfo(newInfo);
         setFormData({
-          examLocation: info.examLocation,
-          examDate: info.examDate,
+          examLocation: newInfo.examLocation,
+          examDate: newInfo.examDate,
         });
+        setShowSuccess(true);
+        console.log('Successfully saved exam tracking info');
       }
-
-      setShowSuccess(true);
     } catch (error) {
       console.error("Error saving exam info:", error);
-      alert("Error saving exam information. Please try again.");
+      console.error("Error saving exam info:", error);
+      const errorMsg = error instanceof Error 
+        ? error.message 
+        : "Error saving exam information. Please try again later.";
+      setErrorMessage(errorMsg);
+      // Show error for 5 seconds
+      setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setLoading(false);
     }
@@ -251,11 +261,16 @@ export default function ExamTrackingForm() {
                   <input
                     type="date"
                     value={formData.examDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, examDate: e.target.value })
-                    }
+                    min={new Date().toISOString().split('T')[0]} // Can't select past dates
+                    onChange={(e) => {
+                      const date = e.target.value;
+                      if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                        setFormData({ ...formData, examDate: date });
+                      }
+                    }}
                     required
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-[#fd7f33] focus:border-transparent hover:border-[#fd7f33] transition-colors"
+                    placeholder="Select exam date"
                   />
                 </div>
               </div>
@@ -290,9 +305,21 @@ export default function ExamTrackingForm() {
       </div>
       {showSuccess && (
         <SuccessNotification
-          message="Exam information saved successfully!"
+          message="Exam information saved successfully! A calendar event has been created."
           onClose={handleCloseSuccess}
         />
+      )}
+      {errorMessage && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error! </strong>
+          <span className="block sm:inline">{errorMessage}</span>
+          <span className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setErrorMessage(null)}>
+            <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <title>Close</title>
+              <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+            </svg>
+          </span>
+        </div>
       )}
     </>
   );

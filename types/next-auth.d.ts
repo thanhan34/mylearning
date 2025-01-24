@@ -8,6 +8,7 @@ declare module "next-auth" {
       role?: "admin" | "teacher" | "student";
     } & DefaultSession["user"];
     accessToken?: string;
+    refreshToken?: string;
   }
 
   interface User {
@@ -23,5 +24,6 @@ declare module "next-auth/jwt" {
     email?: string;
     role?: "admin" | "teacher" | "student";
     accessToken?: string;
+    refreshToken?: string;
   }
 }
