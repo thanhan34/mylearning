@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/app/firebase/config';
 import { User } from '@/types/admin';
 
@@ -15,39 +15,37 @@ export default function UnassignedStudentsList({ onSelect, onClose }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUnassignedStudents = async () => {
-      try {
-        const studentsRef = collection(db, 'users');
-        // Query for students with role 'student' and no teacherId
-        // First, get all users with role 'student'
-        const q = query(
-          studentsRef,
-          where('role', '==', 'student'),
-          where('teacherId', '==', '')
-        );
-        
-        const querySnapshot = await getDocs(q);
-        const students = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            email: data.email,
-            name: data.name,
-            role: data.role as 'student',
-            createdAt: data.createdAt,
-            teacherId: data.teacherId
-          } as User;
-        });
-        
-        setUnassignedStudents(students);
-      } catch (error) {
-        console.error('Error fetching unassigned students:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const studentsRef = collection(db, 'users');
+    const q = query(
+      studentsRef,
+      where('role', '==', 'student'),
+      where('teacherId', 'in', ['', null])
+    );
 
-    fetchUnassignedStudents();
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const students = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          email: data.email,
+          name: data.name,
+          role: data.role as 'student',
+          createdAt: data.createdAt,
+          teacherId: data.teacherId,
+          classId: data.classId
+        } as User;
+      });
+      
+      setUnassignedStudents(students);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching unassigned students:', error);
+      setLoading(false);
+    });
+
+    // Clean up subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   if (loading) {

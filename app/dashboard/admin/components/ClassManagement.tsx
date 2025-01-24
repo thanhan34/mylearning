@@ -3,12 +3,14 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Class, User } from '../../../../types/admin';
 import { db } from '../../../firebase/config';
-import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, where, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, where, DocumentData, QueryDocumentSnapshot, onSnapshot, QuerySnapshot } from 'firebase/firestore';
 import InlineStudentSubmissions from '../../class/components/InlineStudentSubmissions';
 import UnassignedStudentsList from '../../class/components/UnassignedStudentsList';
 import TeachersList from './TeachersList';
 import WeeklyHomeworkTable from '../../class/components/WeeklyHomeworkTable';
 import { getTeacherClasses, removeStudentFromClass, addStudentToClass, createClass } from '@/app/firebase/services/class';
+import { addNotification } from '@/app/firebase/services/notification';
+import SuccessNotification from '@/app/components/SuccessNotification';
 
 interface Student {
   id: string;
@@ -43,6 +45,7 @@ const ClassManagement = () => {
   const [showUnassignedList, setShowUnassignedList] = useState(false);
   const [showTeacherForm, setShowTeacherForm] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<User | null>(null);
+  const [notification, setNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
 
   const fetchClasses = async () => {
     try {
@@ -84,8 +87,52 @@ const ClassManagement = () => {
   };
 
   useEffect(() => {
-    fetchClasses();
-  }, []);
+    // Set up real-time listener for classes
+    const classesRef = collection(db, 'classes');
+    const unsubscribe = onSnapshot(classesRef, async (snapshot: QuerySnapshot<DocumentData>) => {
+      const classesData = await Promise.all(snapshot.docs.map(async (docSnapshot: QueryDocumentSnapshot<DocumentData>) => {
+        const classData = docSnapshot.data() as DocumentData;
+        // Fetch teacher info
+        const teachersRef = collection(db, 'users');
+        const q = query(teachersRef, where('role', '==', 'teacher'));
+        const teacherSnapshot = await getDocs(q);
+        let teacherName = classData.teacherId;
+        
+        const teacher = teacherSnapshot.docs.find(doc => doc.id === classData.teacherId);
+        if (teacher) {
+          const teacherData = teacher.data();
+          teacherName = teacherData.name;
+        }
+
+        const students = classData.students || [];
+
+        return {
+          id: docSnapshot.id,
+          name: classData.name,
+          teacherId: classData.teacherId,
+          description: classData.description || '',
+          schedule: classData.schedule || '',
+          studentCount: students.length,
+          createdAt: classData.createdAt || new Date().toISOString(),
+          teacherName,
+          students: students
+        };
+      }));
+
+      setClasses(classesData);
+      
+      // Update selected class if it exists
+      if (selectedClass) {
+        const updatedClass = classesData.find(c => c.id === selectedClass.id);
+        if (updatedClass) {
+          setSelectedClass(updatedClass);
+          setClassStudents(updatedClass.students);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [selectedClass?.id]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -185,38 +232,29 @@ const ClassManagement = () => {
     if (!selectedClass) return;
 
     try {
-      // Update class document to add student
-      const classRef = doc(db, 'classes', selectedClass.id);
-      const classDoc = await getDoc(classRef);
-      
-      if (!classDoc.exists()) return;
-      
-      const classData = classDoc.data();
-      const students = classData.students || [];
-      
-      // Check if student is already in class
-      const isStudentInClass = students.some((s: any) => s.email === student.email);
-      if (isStudentInClass) {
-        console.log('Student already in class');
+      // Add student to class using service function
+      const success = await addStudentToClass(
+        selectedClass.id,
+        {
+          id: student.id,
+          name: student.name,
+          email: student.email
+        },
+        selectedClass.teacherId
+      );
+
+      if (!success) {
+        console.error('Failed to add student to class');
         return;
       }
-      
-      const updatedStudents = [...students, {
-        id: student.id,
-        name: student.name,
-        email: student.email
-      }];
-      
-      // Add student to class
-      await updateDoc(classRef, {
-        students: updatedStudents,
-        studentCount: updatedStudents.length // Update the count
-      });
 
-      // Update student's teacherId
-      const userRef = doc(db, 'users', student.id);
-      await updateDoc(userRef, {
-        teacherId: selectedClass.teacherId
+      // Add notification
+      await addNotification(student.email, `Bạn đã được thêm vào lớp ${selectedClass.name}`);
+      
+      // Show success notification
+      setNotification({
+        message: `Đã thêm học viên ${student.name} vào lớp ${selectedClass.name}`,
+        show: true
       });
 
       // Refresh data
@@ -410,8 +448,16 @@ const ClassManagement = () => {
               onStudentSelect={handleStudentSelect}
               onRemoveStudent={async (studentId) => {
                 if (selectedClass) {
-                  await removeStudentFromClass(selectedClass.id, studentId);
-                  fetchClasses();
+                  const student = selectedClass.students.find(s => s.id === studentId);
+                  if (student) {
+                    await removeStudentFromClass(selectedClass.id, studentId);
+                    await addNotification(student.email, `Bạn đã được xóa khỏi lớp ${selectedClass.name}`);
+                    setNotification({
+                      message: `Đã xóa học viên ${student.name} khỏi lớp ${selectedClass.name}`,
+                      show: true
+                    });
+                    fetchClasses();
+                  }
                 }
               }}
             />
@@ -455,6 +501,14 @@ const ClassManagement = () => {
             setShowTeacherForm(false);
           }}
           onClose={() => setShowTeacherForm(false)}
+        />
+      )}
+
+      {/* Success Notification */}
+      {notification.show && (
+        <SuccessNotification
+          message={notification.message}
+          onClose={() => setNotification({message: '', show: false})}
         />
       )}
     </div>

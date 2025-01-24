@@ -96,16 +96,24 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
       const isDuplicate = students.some((s: ClassStudent) => s.email === student.email);
       
       if (!isDuplicate) {
-        // Only add if not already in class
-        transaction.update(classRef, {
-          students: arrayUnion(student)
-        });
-        
-        // Update user with teacher and class IDs
-        transaction.update(userRef, { 
-          teacherId: finalTeacherId,
-          classId: classId 
-        });
+        // Get user data to check current status
+        const userData = userDoc.data();
+        const currentTeacherId = userData.teacherId;
+        const currentClassId = userData.classId;
+
+        // Only add if not already in a class
+        if (!currentClassId || currentClassId === '') {
+          // Only add if not already in class
+          transaction.update(classRef, {
+            students: [...students, student]
+          });
+          
+          // Update user with teacher and class IDs
+          transaction.update(userRef, { 
+            teacherId: finalTeacherId || '',
+            classId: classId
+          });
+        }
       }
     });
     
