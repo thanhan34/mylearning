@@ -154,6 +154,24 @@ export async function PUT(req: NextRequest) {
     const { eventId, ...data } = await req.json();
     console.log('Calendar API: Updating event:', { eventId, data });
 
+    // Validate required fields
+    if (!data.name || !data.examLocation || !data.examDate) {
+      console.error('Calendar API: Missing required fields');
+      return NextResponse.json(
+        { error: 'Missing required fields: name, examLocation, examDate' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data.examDate)) {
+      console.error('Calendar API: Invalid date format');
+      return NextResponse.json(
+        { error: 'Invalid date format. Expected YYYY-MM-DD' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     // Format event times
     const startTime = new Date(data.examDate + 'T09:00:00+07:00');
     const endTime = new Date(data.examDate + 'T12:00:00+07:00');

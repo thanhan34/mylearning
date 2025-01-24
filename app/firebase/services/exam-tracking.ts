@@ -184,10 +184,10 @@ export const updateExamTrackingInfo = async (
     // Update calendar event if it exists
     if (currentData.calendarEventId) {
       const calendarData: CalendarEventData = {
-        name: currentData.name,
+        name: userData.name,
         examLocation: data.examLocation,
         examDate: data.examDate,
-        target: currentData.target,
+        target: userData.target,
         className: className || currentData.className,
         teacherName: teacherName || currentData.teacherName,
       };
