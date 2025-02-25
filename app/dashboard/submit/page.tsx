@@ -207,7 +207,7 @@ export default function SubmitPage() {
           date: selectedDate
         });
         
-        const notificationSuccess = await addNotification(session.user.email, message);
+        const notificationSuccess = await addNotification(session.user.email, message, 'teacher');
         if (!notificationSuccess) {
           console.error('Failed to create notification for submission:', {
             studentEmail: session.user.email,

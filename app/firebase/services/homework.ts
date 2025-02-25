@@ -130,14 +130,14 @@ export const saveHomeworkSubmission = async (
       
       // Create notification for homework update
       const message = `${userName} has updated their homework submission for ${date}`;
-      await addNotification(userId, message);
+      await addNotification(userId, message, 'teacher');
     } else {
       // Create new submission
       await addDoc(submissionsRef, submissionData);
       
       // Create notification for new submission
       const message = `${userName} has submitted homework for ${date}`;
-      await addNotification(userId, message);
+      await addNotification(userId, message, 'teacher');
     }
     
     return true;

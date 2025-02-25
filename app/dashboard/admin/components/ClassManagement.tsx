@@ -249,7 +249,7 @@ const ClassManagement = () => {
       }
 
       // Add notification
-      await addNotification(student.email, `Bạn đã được thêm vào lớp ${selectedClass.name}`);
+      await addNotification(student.email, `Bạn đã được thêm vào lớp ${selectedClass.name}`, 'teacher');
       
       // Show success notification
       setNotification({
@@ -451,7 +451,7 @@ const ClassManagement = () => {
                   const student = selectedClass.students.find(s => s.id === studentId);
                   if (student) {
                     await removeStudentFromClass(selectedClass.id, studentId);
-                    await addNotification(student.email, `Bạn đã được xóa khỏi lớp ${selectedClass.name}`);
+                    await addNotification(student.email, `Bạn đã được xóa khỏi lớp ${selectedClass.name}`, 'teacher');
                     setNotification({
                       message: `Đã xóa học viên ${student.name} khỏi lớp ${selectedClass.name}`,
                       show: true
