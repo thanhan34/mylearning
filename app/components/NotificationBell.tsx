@@ -49,7 +49,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
         isTeacher: userRole === 'teacher'
       });
 
-      if (!session?.user?.email || userRole !== 'teacher') {
+      if (!session?.user?.email || (userRole !== 'teacher' && userRole !== 'admin')) {
         console.log('NotificationBell: Conditions not met for notifications');
         setNotifications([]);
         setIsLoading(false);
@@ -63,7 +63,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
         setNotifications([]);
 
         // Get initial notifications
-        const initialNotifications = await getUnreadNotifications(session.user.email);
+        const initialNotifications = await getUnreadNotifications(session.user.email, userRole);
         console.log('Initial notifications:', {
           count: initialNotifications.length,
           notifications: initialNotifications.map(n => ({
@@ -83,6 +83,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
         console.log('Setting up notifications subscription for:', session.user.email);
         const unsubscribe = await subscribeToNotifications(
           session.user.email,
+          userRole,
           (newNotifications) => {
             console.log('Received notifications update:', {
               count: newNotifications.length,

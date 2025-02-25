@@ -63,11 +63,16 @@ service cloud.firestore {
 
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && (
-        resource.data.userId == request.auth.uid ||
-        resource.data.teacherId == request.auth.uid ||
+        resource.data.teacher_id == request.auth.uid ||
+        resource.data.admin_id == request.auth.uid ||
         isAdmin()
       );
       allow write: if isAdmin() || isTeacher();
+      allow delete: if isSignedIn() && (
+        resource.data.teacher_id == request.auth.uid ||
+        resource.data.admin_id == request.auth.uid ||
+        isAdmin()
+      );
     }
 
     match /exam-tracking/{trackingId} {

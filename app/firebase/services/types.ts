@@ -35,7 +35,8 @@ export interface Notification {
   id: string;
   message: string;
   created_at: Timestamp;
-  teacher_id: string;
+  teacher_id?: string;
+  admin_id?: string;
   is_read: boolean;
 }
 

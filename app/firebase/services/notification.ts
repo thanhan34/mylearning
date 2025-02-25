@@ -3,41 +3,45 @@ import { db } from '../config';
 import { Notification } from './types';
 import { getUserByEmail } from './user';
 
-export const addNotification = async (studentEmail: string, message: string): Promise<boolean> => {
+export const addNotification = async (
+  recipientEmail: string, 
+  message: string, 
+  type: 'teacher' | 'admin'
+): Promise<boolean> => {
   try {
-    console.log('Adding notification for student:', studentEmail);
+    console.log('Adding notification:', { recipientEmail, type });
     
-    const userDoc = await getUserByEmail(studentEmail);
+    const userDoc = await getUserByEmail(recipientEmail);
     if (!userDoc) {
-      console.error('Student not found:', studentEmail);
+      console.error('User not found:', recipientEmail);
       return false;
     }
-    
-    if (!userDoc.teacherId) {
-      console.error('No teacher assigned to student:', {
-        studentEmail,
-        studentId: userDoc.id
-      });
-      return false;
-    }
-
-    console.log('Creating notification:', {
-      studentEmail,
-      teacherId: userDoc.teacherId,
-      message
-    });
 
     const notificationsRef = collection(db, 'notifications');
-    const notificationDoc = await addDoc(notificationsRef, {
-      teacher_id: userDoc.teacherId,
+    const notificationData: any = {
       message,
       created_at: Timestamp.now(),
       is_read: false
-    });
+    };
+
+    if (type === 'teacher') {
+      if (!userDoc.teacherId) {
+        console.error('No teacher assigned to student:', {
+          studentEmail: recipientEmail,
+          studentId: userDoc.id
+        });
+        return false;
+      }
+      notificationData.teacher_id = userDoc.teacherId;
+    } else {
+      notificationData.admin_id = userDoc.id;
+    }
+
+    const notificationDoc = await addDoc(notificationsRef, notificationData);
 
     console.log('Notification created successfully:', {
       notificationId: notificationDoc.id,
-      teacherId: userDoc.teacherId
+      recipientId: type === 'teacher' ? userDoc.teacherId : userDoc.id
     });
 
     return true;
@@ -47,25 +51,25 @@ export const addNotification = async (studentEmail: string, message: string): Pr
   }
 };
 
-export const getUnreadNotifications = async (teacherEmail: string): Promise<Notification[]> => {
+export const getUnreadNotifications = async (userEmail: string, type: 'teacher' | 'admin'): Promise<Notification[]> => {
   try {
     const notificationsRef = collection(db, 'notifications');
     
-    // Get the teacher's ID from their email
-    const teacherDoc = await getUserByEmail(teacherEmail);
-    if (!teacherDoc) {
-      console.error('Teacher not found:', teacherEmail);
+    const userDoc = await getUserByEmail(userEmail);
+    if (!userDoc) {
+      console.error('User not found:', userEmail);
       return [];
     }
     
-    console.log('Getting unread notifications for teacher:', {
-      email: teacherEmail,
-      id: teacherDoc.id
+    console.log('Getting unread notifications:', {
+      email: userEmail,
+      id: userDoc.id,
+      type
     });
     
     const q = query(
       notificationsRef,
-      where('teacher_id', '==', teacherDoc.id),
+      where(type === 'teacher' ? 'teacher_id' : 'admin_id', '==', userDoc.id),
       where('is_read', '==', false),
       orderBy('created_at', 'desc')
     );
@@ -82,54 +86,44 @@ export const getUnreadNotifications = async (teacherEmail: string): Promise<Noti
 };
 
 export const subscribeToNotifications = async (
-  teacherEmail: string,
+  userEmail: string,
+  type: 'teacher' | 'admin',
   callback: (notifications: Notification[]) => void,
   onError?: (error: Error) => void
 ): Promise<() => void> => {
   try {
-    console.log('Subscribing to notifications for:', teacherEmail);
+    console.log('Subscribing to notifications:', { userEmail, type });
     
     const notificationsRef = collection(db, 'notifications');
-    // Get the teacher's ID from their email
-    const teacherDoc = await getUserByEmail(teacherEmail);
-    if (!teacherDoc) {
-      throw new Error('Teacher not found');
+    const userDoc = await getUserByEmail(userEmail);
+    if (!userDoc) {
+      throw new Error('User not found');
     }
     
-    console.log('Found teacher:', {
-      email: teacherEmail,
-      id: teacherDoc.id
+    console.log('Found user:', {
+      email: userEmail,
+      id: userDoc.id,
+      type
     });
     
-    // Create the query with proper index usage
     const q = query(
       notificationsRef,
-      where('teacher_id', '==', teacherDoc.id),
+      where(type === 'teacher' ? 'teacher_id' : 'admin_id', '==', userDoc.id),
       where('is_read', '==', false),
       orderBy('created_at', 'desc')
     );
 
-    // Log query parameters for debugging
-    console.log('Setting up notifications query:', {
-      teacherEmail,
-      teacherId: teacherDoc.id,
-      timestamp: new Date().toISOString()
-    });
-
     try {
-      // First, get initial notifications
       const initialSnapshot = await getDocs(q);
       console.log('Initial notifications:', {
         count: initialSnapshot.size,
         notifications: initialSnapshot.docs.map(doc => ({
           id: doc.id,
-          teacher_id: doc.data().teacher_id,
           message: doc.data().message,
           created_at: doc.data().created_at?.toDate()?.toISOString()
         }))
       });
 
-      // If we got initial notifications, call the callback
       if (initialSnapshot.size > 0) {
         const notifications = initialSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -150,7 +144,6 @@ export const subscribeToNotifications = async (
           empty: snapshot.empty,
           docs: snapshot.docs.map(doc => ({
             id: doc.id,
-            teacher_id: doc.data().teacher_id,
             message: doc.data().message,
             is_read: doc.data().is_read,
             created_at: doc.data().created_at?.toDate()?.toISOString()
@@ -167,19 +160,20 @@ export const subscribeToNotifications = async (
       (error) => {
         console.error('Error in notifications subscription:', {
           error,
-          email: teacherEmail,
-          teacherId: teacherDoc.id,
+          email: userEmail,
+          userId: userDoc.id,
+          type,
           timestamp: new Date().toISOString()
         });
         if (onError) onError(error);
       }
     );
 
-    // Return unsubscribe function
     return () => {
       console.log('Unsubscribing from notifications:', {
-        email: teacherEmail,
-        teacherId: teacherDoc.id,
+        email: userEmail,
+        userId: userDoc.id,
+        type,
         timestamp: new Date().toISOString()
       });
       unsubscribe();
@@ -187,11 +181,12 @@ export const subscribeToNotifications = async (
   } catch (error) {
     console.error('Error setting up notification subscription:', {
       error,
-      email: teacherEmail,
+      email: userEmail,
+      type,
       timestamp: new Date().toISOString()
     });
     if (onError && error instanceof Error) onError(error);
-    return () => {}; // Return empty cleanup function
+    return () => {};
   }
 };
 

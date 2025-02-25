@@ -63,7 +63,7 @@ export default function WelcomeHeader() {
             Quản lý hệ thống và theo dõi hoạt động của giảng viên và học viên. Xem thống kê, quản lý tài khoản và cài đặt hệ thống.
           </p>
         </div>
-        <div className="text-right">
+        <div className="flex items-center space-x-4">
           <p className="text-[#fc5d01] font-medium">
             {new Date().toLocaleDateString('vi-VN', {
               weekday: 'long',

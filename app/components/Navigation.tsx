@@ -144,7 +144,7 @@ const Navigation = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {userData?.role === "teacher" && session?.user?.email && (
+            {(userData?.role === "teacher" || userData?.role === "admin") && session?.user?.email && (
               <NotificationBell 
                 userRole={userData.role} 
                 key={`${session.user.email}-${userData.role}`} 
