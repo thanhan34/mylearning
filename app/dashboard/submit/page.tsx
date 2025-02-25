@@ -8,7 +8,7 @@ import ValidationErrorDialog from '../../components/ValidationErrorDialog';
 import MaxLinksErrorDialog from '../../components/MaxLinksErrorDialog';
 import AssignmentErrorDialog from '../../components/AssignmentErrorDialog';
 
-type HomeworkType = 'Read aloud' | 'Retell lecture' | 'Describe image' | 'Repeat sentence';
+type HomeworkType = 'Read aloud' | 'Retell lecture' | 'Describe image' | 'Repeat sentence' | 'Summarize Written Text' | 'Write Essay' | 'Summarize Spoken Text';
 import { getHomeworkSubmissions, saveHomeworkSubmission, getUserByEmail } from '../../firebase/services';
 import { addNotification } from '../../firebase/services/notification';
 import type { User } from '../../firebase/services/user';
@@ -45,6 +45,30 @@ const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
     type: 'Retell lecture', 
     questionNumber: i + 1, 
     link: '', 
+    date
+  })),
+  // Summarize Written Text: 3 questions
+  ...Array(3).fill(null).map((_, i) => ({
+    id: (i + 51).toString(),
+    type: 'Summarize Written Text',
+    questionNumber: i + 1,
+    link: '',
+    date
+  })),
+  // Write Essay: 2 questions
+  ...Array(2).fill(null).map((_, i) => ({
+    id: (i + 54).toString(),
+    type: 'Write Essay',
+    questionNumber: i + 1,
+    link: '',
+    date
+  })),
+  // Summarize Spoken Text: 2 questions
+  ...Array(2).fill(null).map((_, i) => ({
+    id: (i + 56).toString(),
+    type: 'Summarize Spoken Text',
+    questionNumber: i + 1,
+    link: '',
     date
   }))
 ];
@@ -124,13 +148,37 @@ export default function SubmitPage() {
 
     setSaveStatus('saving');
     const validateLink = (link: string) => {
-      const patterns: Record<HomeworkType, RegExp> = {
-        'Read aloud': /^RA#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-        'Retell lecture': /^RL#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-        'Describe image': /^DI#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-        'Repeat sentence': /^RS#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/
+      const patterns: Record<HomeworkType, RegExp[]> = {
+        'Read aloud': [
+          /^RA#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+          /^RA#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/
+        ],
+        'Retell lecture': [
+          /^RL#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+          /^RL#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/
+        ],
+        'Describe image': [
+          /^DI#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+          /^DI#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/
+        ],
+        'Repeat sentence': [
+          /^RS#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+          /^RS#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/
+        ],
+        'Summarize Written Text': [
+          /^SWT#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+          /^SWT#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/
+        ],
+        'Write Essay': [
+          /^WE#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+          /^WE#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/
+        ],
+        'Summarize Spoken Text': [
+          /^SST#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
+          /^SST#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/
+        ]
       };
-      return patterns[selectedHomeworkType]?.test(link) || false;
+      return patterns[selectedHomeworkType]?.some(pattern => pattern.test(link)) || false;
     };
 
     const links = existingLinks.split('\n').filter(link => link.trim());
@@ -142,7 +190,10 @@ export default function SubmitPage() {
         'Read aloud': 'RA#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...',
         'Retell lecture': 'RL#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...',
         'Describe image': 'DI#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...',
-        'Repeat sentence': 'RS#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...'
+        'Repeat sentence': 'RS#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...',
+        'Summarize Written Text': 'SWT#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...',
+        'Write Essay': 'WE#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...',
+        'Summarize Spoken Text': 'SST#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...'
       };
       setValidationErrors({
         invalidLinks,
@@ -158,7 +209,9 @@ export default function SubmitPage() {
       throw new Error('User not found');
     }
 
-    const maxQuestions = selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5;
+    const maxQuestions = selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 
+                        selectedHomeworkType === 'Describe image' || selectedHomeworkType === 'Retell lecture' ? 5 :
+                        selectedHomeworkType === 'Summarize Written Text' ? 3 : 2;
     if (links.length > maxQuestions) {
       setShowMaxLinksError(true);
       setSaveStatus('error');
@@ -249,7 +302,11 @@ export default function SubmitPage() {
       <MaxLinksErrorDialog
         isOpen={showMaxLinksError}
         onClose={() => setShowMaxLinksError(false)}
-        maxQuestions={selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5}
+        maxQuestions={
+          selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 
+          selectedHomeworkType === 'Describe image' || selectedHomeworkType === 'Retell lecture' ? 5 :
+          selectedHomeworkType === 'Summarize Written Text' ? 3 : 2
+        }
         homeworkType={selectedHomeworkType}
       />
       <ValidationErrorDialog
@@ -289,6 +346,9 @@ export default function SubmitPage() {
                   <option value="Repeat sentence">Repeat sentence</option>
                   <option value="Describe image">Describe image</option>
                   <option value="Retell lecture">Retell lecture</option>
+                  <option value="Summarize Written Text">Summarize Written Text</option>
+                  <option value="Write Essay">Write Essay</option>
+                  <option value="Summarize Spoken Text">Summarize Spoken Text</option>
                 </select>
               </div>
               <div>
@@ -296,12 +356,37 @@ export default function SubmitPage() {
                   Paste your {selectedHomeworkType} links (One link per line)
                 </label>
                 <p className="text-gray-400 text-sm mb-2">
-                  Format: {selectedHomeworkType === 'Read aloud' ? 'RA' : selectedHomeworkType === 'Retell lecture' ? 'RL' : selectedHomeworkType === 'Describe image' ? 'DI' : 'RS'}#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...
+                  Format: {
+                    selectedHomeworkType === 'Read aloud' ? 'RA' : 
+                    selectedHomeworkType === 'Retell lecture' ? 'RL' : 
+                    selectedHomeworkType === 'Describe image' ? 'DI' : 
+                    selectedHomeworkType === 'Repeat sentence' ? 'RS' :
+                    selectedHomeworkType === 'Summarize Written Text' ? 'SWT' :
+                    selectedHomeworkType === 'Write Essay' ? 'WE' : 'SST'
+                  }#[số] APEUni AI Score https://www.apeuni.com/practice/answer_item?...
                 </p>
                 <textarea
                   name="links"
                   className="w-full h-64 border border-[#fedac2] rounded px-3 py-2 text-black"
-                  placeholder={`Example:\n${selectedHomeworkType === 'Read aloud' ? 'RA' : selectedHomeworkType === 'Retell lecture' ? 'RL' : selectedHomeworkType === 'Describe image' ? 'DI' : 'RS'}#1445 APEUni ${selectedHomeworkType === 'Read aloud' ? 'RA' : selectedHomeworkType === 'Retell lecture' ? 'RL' : selectedHomeworkType === 'Describe image' ? 'DI' : 'RS'} EN V2e AI Score 47/90 https://www.apeuni.com/practice/answer_item?model=${selectedHomeworkType === 'Read aloud' ? 'read_alouds' : selectedHomeworkType === 'Retell lecture' ? 'retell_lectures' : selectedHomeworkType === 'Describe image' ? 'describe_images' : 'repeat_sentences'}&answer_id=2937397445\n\nMaximum ${selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 5} links`}
+                  placeholder={`Example:\n${
+                    selectedHomeworkType === 'Read aloud' ? 'RA' : 
+                    selectedHomeworkType === 'Retell lecture' ? 'RL' : 
+                    selectedHomeworkType === 'Describe image' ? 'DI' : 
+                    selectedHomeworkType === 'Repeat sentence' ? 'RS' :
+                    selectedHomeworkType === 'Summarize Written Text' ? 'SWT' :
+                    selectedHomeworkType === 'Write Essay' ? 'WE' : 'SST'
+                  }#1445 APEUni AI Score https://www.apeuni.com/practice/answer_item?model=${
+                    selectedHomeworkType === 'Read aloud' ? 'read_alouds' : 
+                    selectedHomeworkType === 'Retell lecture' ? 'retell_lectures' : 
+                    selectedHomeworkType === 'Describe image' ? 'describe_images' : 
+                    selectedHomeworkType === 'Repeat sentence' ? 'repeat_sentences' :
+                    selectedHomeworkType === 'Summarize Written Text' ? 'summarize_written_texts' :
+                    selectedHomeworkType === 'Write Essay' ? 'write_essays' : 'summarize_spoken_texts'
+                  }&answer_id=2937397445\n\nMaximum ${
+                    selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 
+                    selectedHomeworkType === 'Describe image' || selectedHomeworkType === 'Retell lecture' ? 5 :
+                    selectedHomeworkType === 'Summarize Written Text' ? 3 : 2
+                  } links`}
                   value={existingLinks}
                   onChange={(e) => setExistingLinks(e.target.value)}
                 />
