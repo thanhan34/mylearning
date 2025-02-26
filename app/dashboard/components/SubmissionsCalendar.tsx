@@ -8,14 +8,42 @@ interface SubmissionsCalendarProps {
 
 export default function SubmissionsCalendar({ selectedDate, submissionDates, onDateChange }: SubmissionsCalendarProps) {
   const currentDate = new Date(selectedDate);
-  const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-  const days = Array.from({ length: lastDay.getDate() }, (_, i) => {
-    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1);
-    return date.toISOString().split('T')[0];
-  });
-
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  
+  // Get the number of days in the current month
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  // Function to format a date as YYYY-MM-DD
+  const formatDate = (year: number, month: number, day: number) => {
+    const monthStr = String(month + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    return `${year}-${monthStr}-${dayStr}`;
+  };
+  
+  // Generate dates for the current month
+  const generateDates = () => {
+    const dates = [];
+    for (let i = 1; i <= daysInMonth; i++) {
+      dates.push(formatDate(year, month, i));
+    }
+    return dates;
+  };
+  
+  const dates = generateDates();
   const today = new Date().toISOString().split('T')[0];
+  
+  // Day headers starting with Monday (T2)
+  const dayHeaders = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  
+  // Calculate empty days for the first row (Monday-based)
+  // Convert Sunday (0) to 6, and other days to day-1
+  const getEmptyDays = (date: Date) => {
+    const day = date.getDay();
+    return day === 0 ? 6 : day - 1;
+  };
+  
+  const emptyDays = getEmptyDays(new Date(year, month, 1));
 
   return (
     <div className="w-[280px]">
@@ -52,17 +80,21 @@ export default function SubmissionsCalendar({ selectedDate, submissionDates, onD
       </div>
       <div className="border border-gray-200 rounded-lg overflow-hidden">
         <div className="grid grid-cols-7 border-b border-gray-200">
-          {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(day => (
+          {dayHeaders.map(day => (
             <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
               {day}
             </div>
           ))}
         </div>
+        
         <div className="grid grid-cols-7">
-          {Array.from({ length: firstDay.getDay() }, (_, i) => (
+          {/* Calculate empty cells for the first row (Monday-based) */}
+          {Array.from({ length: emptyDays }, (_, i) => (
             <div key={`empty-${i}`} className="border-b border-r border-gray-200 aspect-square" />
           ))}
-          {days.map(date => {
+          
+          {/* Render the dates */}
+          {dates.map(date => {
             const hasSubmission = submissionDates[date] > 0;
             const isToday = date === today;
             const isSelected = date === selectedDate;
