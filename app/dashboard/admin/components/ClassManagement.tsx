@@ -650,6 +650,7 @@ const ClassManagement = () => {
             <WeeklyHomeworkTable 
               classId={selectedClass.id}
               students={selectedClass.students}
+              showPassedStudents={true}
               onStudentSelect={handleStudentSelect}
               onRemoveStudent={async (studentId) => {
                 if (selectedClass) {
@@ -665,6 +666,7 @@ const ClassManagement = () => {
                   }
                 }
               }}
+              onStudentPassedChange={fetchClasses}
             />
           </div>
         </div>
