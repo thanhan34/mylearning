@@ -16,6 +16,7 @@ import {
 import type { Class, ClassStudent } from '@/app/firebase/services/types';
 import AssignmentForm from '../components/AssignmentForm';
 import { Assignment } from '@/types/assignment';
+import { getUserById, markClassAsPassed } from '@/app/firebase/services/user';
 
 interface Student {
   id: string;
@@ -31,10 +32,68 @@ export default function ClassManagement() {
   const [showNewClassForm, setShowNewClassForm] = useState(false);
   const [showUnassignedList, setShowUnassignedList] = useState(false); 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [showPassedStudents, setShowPassedStudents] = useState(true);
+  const [showPassedClasses, setShowPassedClasses] = useState(true);
+  const [classPassedStatus, setClassPassedStatus] = useState<Record<string, boolean>>({});
+
+  // Handle marking the entire class as passed
+  const handleMarkClassAsPassed = async () => {
+    if (!selectedClass) return;
+    
+    try {
+      const success = await markClassAsPassed(selectedClass.id);
+      if (success) {
+        // Refresh class data
+        if (session?.user?.email) {
+          getTeacherClasses(session.user.email).then(async (fetchedClasses) => {
+            setClasses(fetchedClasses);
+            
+            // Check passed status for each class
+            const passedStatus: Record<string, boolean> = {};
+            for (const cls of fetchedClasses) {
+              passedStatus[cls.id] = await isClassAllPassed(cls);
+            }
+            setClassPassedStatus(passedStatus);
+            
+            // Update selected class
+            const updatedClass = fetchedClasses.find(c => c.id === selectedClass.id);
+            if (updatedClass) {
+              setSelectedClass(updatedClass);
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error marking class as passed:', error);
+    }
+  };
+
+  // Check if a class has all passed students
+  const isClassAllPassed = async (classObj: Class): Promise<boolean> => {
+    if (classObj.students.length === 0) return false;
+    
+    for (const student of classObj.students) {
+      const user = await getUserById(student.id);
+      if (!user?.passed) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
 
   useEffect(() => {
     if (session?.user?.email) {
-      getTeacherClasses(session.user.email).then(setClasses);
+      getTeacherClasses(session.user.email).then(async (fetchedClasses) => {
+        setClasses(fetchedClasses);
+        
+        // Check passed status for each class
+        const passedStatus: Record<string, boolean> = {};
+        for (const cls of fetchedClasses) {
+          passedStatus[cls.id] = await isClassAllPassed(cls);
+        }
+        setClassPassedStatus(passedStatus);
+      });
     }
   }, [session]);
 
@@ -93,12 +152,27 @@ export default function ClassManagement() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-[#fc5d01]">Quản lý lớp học</h1>
-        <button
-          onClick={() => setShowNewClassForm(true)}
-          className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
-        >
-          Thêm lớp học
-        </button>
+        <div className="flex items-center space-x-4">
+          <label className="flex items-center cursor-pointer">
+            <span className="mr-2 text-sm">Hiển thị lớp đã đậu</span>
+            <div className="relative">
+              <input 
+                type="checkbox" 
+                checked={showPassedClasses} 
+                onChange={() => setShowPassedClasses(!showPassedClasses)} 
+                className="sr-only" 
+              />
+              <div className={`block w-10 h-6 rounded-full ${showPassedClasses ? 'bg-[#fc5d01]' : 'bg-gray-400'}`}></div>
+              <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${showPassedClasses ? 'transform translate-x-4' : ''}`}></div>
+            </div>
+          </label>
+          <button
+            onClick={() => setShowNewClassForm(true)}
+            className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
+          >
+            Thêm lớp học
+          </button>
+        </div>
       </div>
 
       {showNewClassForm && (
@@ -130,7 +204,9 @@ export default function ClassManagement() {
 
       {/* Class List */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {classes.map(cls => (
+        {classes
+          .filter(cls => showPassedClasses || !classPassedStatus[cls.id])
+          .map(cls => (
           <div 
             key={cls.id}
             onClick={() => setSelectedClass(cls)}
@@ -153,7 +229,26 @@ export default function ClassManagement() {
             <h2 className="text-xl font-bold text-[#fc5d01]">
               Quản lý lớp {selectedClass.name}
             </h2>
-            <div className="space-x-2">
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center cursor-pointer">
+                <span className="mr-2 text-sm">Hiển thị học viên đã đậu</span>
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    checked={showPassedStudents} 
+                    onChange={() => setShowPassedStudents(!showPassedStudents)} 
+                    className="sr-only" 
+                  />
+                  <div className={`block w-10 h-6 rounded-full ${showPassedStudents ? 'bg-[#fc5d01]' : 'bg-gray-400'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${showPassedStudents ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+              </label>
+              <button
+                onClick={handleMarkClassAsPassed}
+                className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
+              >
+                Đánh dấu lớp đã đậu
+              </button>
               <button
                 onClick={() => setShowUnassignedList(true)}
                 className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
@@ -169,8 +264,24 @@ export default function ClassManagement() {
             <WeeklyHomeworkTable 
               classId={selectedClass.id}
               students={selectedClass.students}
+              showPassedStudents={showPassedStudents}
               onStudentSelect={(student) => setSelectedStudent(student)}
               onRemoveStudent={handleRemoveStudent}
+              onStudentPassedChange={() => {
+                // Refresh class data to update passed status
+                if (session?.user?.email) {
+                  getTeacherClasses(session.user.email).then(async (fetchedClasses) => {
+                    setClasses(fetchedClasses);
+                    
+                    // Check passed status for each class
+                    const passedStatus: Record<string, boolean> = {};
+                    for (const cls of fetchedClasses) {
+                      passedStatus[cls.id] = await isClassAllPassed(cls);
+                    }
+                    setClassPassedStatus(passedStatus);
+                  });
+                }
+              }}
             />
           </div>
 

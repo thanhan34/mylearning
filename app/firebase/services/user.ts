@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { db } from '../config';
 
 export interface User {
@@ -89,6 +89,42 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   } catch (error) {
     console.error('Error getting user by ID:', error);
     return null;
+  }
+};
+
+export const updateUserPassedStatus = async (userId: string, passed: boolean): Promise<boolean> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { passed });
+    return true;
+  } catch (error) {
+    console.error('Error updating user passed status:', error);
+    return false;
+  }
+};
+
+export const markClassAsPassed = async (classId: string): Promise<boolean> => {
+  try {
+    // Get class document
+    const classRef = doc(db, 'classes', classId);
+    const classDoc = await getDoc(classRef);
+    
+    if (!classDoc.exists()) {
+      throw new Error('Class not found');
+    }
+    
+    const classData = classDoc.data();
+    const students = classData.students || [];
+    
+    // Update passed status for all students in the class
+    for (const student of students) {
+      await updateUserPassedStatus(student.id, true);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error marking class as passed:', error);
+    return false;
   }
 };
 
