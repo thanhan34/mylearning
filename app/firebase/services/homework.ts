@@ -78,15 +78,20 @@ export const getStudentWeeklyStatus = async (
       const data = doc.data();
       const userId = data.userId;
       const date = new Date(data.date + 'T00:00:00');
-      const dayIndex = (date.getDay() + 6) % 7; // Convert to Monday = 0, Sunday = 6
+      
+      // Calculate days since Monday of the week
+      const daysSinceMonday = Math.floor((date.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Only process submissions that fall within the current week (0-6 days from Monday)
+      if (daysSinceMonday >= 0 && daysSinceMonday <= 6) {
+        // Initialize user's submissions record if not exists
+        if (!submissions[userId]) {
+          submissions[userId] = {};
+        }
 
-      // Initialize user's submissions record if not exists
-      if (!submissions[userId]) {
-        submissions[userId] = {};
+        // Mark this day as submitted using the correct index (0 for Monday, 6 for Sunday)
+        submissions[userId][daysSinceMonday] = true;
       }
-
-      // Mark this day as submitted
-      submissions[userId][dayIndex] = true;
     });
 
     return submissions;

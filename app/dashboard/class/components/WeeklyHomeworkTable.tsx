@@ -181,7 +181,7 @@ const WeeklyHomeworkTable = ({
               <th className="px-6 py-3 text-center text-sm font-semibold">Đã đậu</th>
               {DAYS.map((day, index) => (
                 <th key={day} className="px-6 py-3 text-center text-sm font-semibold w-24">
-                  <div>{day}</div>
+                  {day}
                   <div className="text-sm">{dates[index]}</div>
                 </th>
               ))}
