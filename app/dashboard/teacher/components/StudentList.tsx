@@ -11,10 +11,16 @@ import HomeworkProgress from '../../../components/HomeworkProgress';
 
 import { SubmissionWithId } from '@/app/firebase/services/types';
 
+interface ExtendedUser extends User {
+  passed?: boolean;
+}
+
 const StudentList = () => {
   const { data: session } = useSession();
-  const [students, setStudents] = useState<User[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
+  const [students, setStudents] = useState<ExtendedUser[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<ExtendedUser[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<ExtendedUser | null>(null);
+  const [hidePassedStudents, setHidePassedStudents] = useState(false);
   const [submissions, setSubmissions] = useState<SubmissionWithId[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [selectedType, setSelectedType] = useState<string>('');
@@ -55,14 +61,60 @@ const StudentList = () => {
           id: doc.id,
           ...doc.data()
         } as User));
-        setStudents(assignedStudentsData);
+        
+        // Filter out students from completed classes and add passed status
+        const activeStudents = [];
+        
+        for (const student of assignedStudentsData) {
+          // Add passed status if it exists, default to false
+          const extendedStudent: ExtendedUser = {
+            ...student,
+            passed: student.passed || false
+          };
+          
+          if (student.classId) {
+            // Check if the student's class is not completed
+            const classRef = doc(db, 'classes', student.classId);
+            const classDoc = await getDoc(classRef);
+            
+            if (classDoc.exists()) {
+              const classData = classDoc.data();
+              if (classData.status !== 'completed') {
+                activeStudents.push(extendedStudent);
+              }
+            } else {
+              // If class doesn't exist, still include the student
+              activeStudents.push(extendedStudent);
+            }
+          } else {
+            // If student doesn't have a class, include them
+            activeStudents.push(extendedStudent);
+          }
+        }
+        
+        setStudents(activeStudents);
+        applyPassedFilter(activeStudents);
       }
     } catch (error) {
       console.error('Error fetching students:', error);
     }
   };
 
-  const fetchStudentSubmissions = async (student: User) => {
+  // Apply filter based on hidePassedStudents state
+  const applyPassedFilter = (studentsList: ExtendedUser[]) => {
+    if (hidePassedStudents) {
+      setFilteredStudents(studentsList.filter(student => !student.passed));
+    } else {
+      setFilteredStudents(studentsList);
+    }
+  };
+  
+  // Update filtered students when hidePassedStudents changes
+  useEffect(() => {
+    applyPassedFilter(students);
+  }, [hidePassedStudents, students]);
+
+  const fetchStudentSubmissions = async (student: ExtendedUser) => {
     try {
       const userSubmissions = await getHomeworkSubmissions(student.email, selectedDate);
       
@@ -97,20 +149,71 @@ const StudentList = () => {
     }
   }, [selectedDate, selectedType, selectedStudent]);
 
-  const handleStudentClick = (student: User) => {
+  const handleStudentClick = (student: ExtendedUser) => {
     setSelectedStudent(student);
+  };
+
+  // Toggle student passed status
+  const toggleStudentPassedStatus = async (studentId: string, currentStatus: boolean) => {
+    try {
+      // Update in Firestore
+      const studentRef = doc(db, 'users', studentId);
+      await updateDoc(studentRef, {
+        passed: !currentStatus
+      });
+      
+      // Update local state
+      const updatedStudents = students.map(s => 
+        s.id === studentId ? {...s, passed: !currentStatus} : s
+      );
+      
+      setStudents(updatedStudents);
+      
+      // If the selected student is being updated, update that too
+      if (selectedStudent && selectedStudent.id === studentId) {
+        setSelectedStudent({...selectedStudent, passed: !currentStatus});
+      }
+    } catch (error) {
+      console.error('Error updating student status:', error);
+    }
   };
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold text-[#fc5d01] mb-6">Danh sách học viên</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-[#fc5d01]">Danh sách học viên</h2>
+        <div className="flex items-center">
+          <label htmlFor="hidePassedStudents" className="mr-2 text-sm font-medium">
+            Ẩn học viên đã pass
+          </label>
+          <button 
+            onClick={() => setHidePassedStudents(!hidePassedStudents)}
+            className="relative inline-block w-10 mr-2 align-middle select-none"
+          >
+            <input
+              type="checkbox"
+              id="hidePassedStudents"
+              checked={hidePassedStudents}
+              onChange={() => {}}
+              className="sr-only"
+            />
+            <div className={`block h-6 rounded-full w-10 ${hidePassedStudents ? 'bg-[#fc5d01]' : 'bg-gray-300'}`}></div>
+            <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${hidePassedStudents ? 'transform translate-x-4' : ''}`}></div>
+          </button>
+          <span className="text-sm text-gray-600">
+            {hidePassedStudents 
+              ? `Đang ẩn ${students.filter(s => s.passed).length} học viên đã pass` 
+              : `Hiển thị tất cả học viên (${students.filter(s => s.passed).length} đã pass)`}
+          </span>
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Students List */}
         <div className="bg-white rounded-lg shadow p-4">
           <h3 className="text-lg font-medium text-[#fc5d01] mb-4">Học viên của bạn</h3>
           <div className="space-y-2">
-            {students.map((student) => (
+            {filteredStudents.map((student) => (
               <div
                 key={student.id}
                 onClick={() => handleStudentClick(student)}
@@ -120,8 +223,25 @@ const StudentList = () => {
                     : 'hover:bg-[#ffac7b]'
                 }`}
               >
-                <p className="font-medium text-black">{student.name}</p>
-                <p className="text-sm text-gray-600">{student.email}</p>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-black">{student.name}</p>
+                    <p className="text-sm text-gray-600">{student.email}</p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleStudentPassedStatus(student.id, student.passed || false);
+                    }}
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      student.passed 
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    }`}
+                  >
+                    {student.passed ? 'Đã pass' : 'Chưa pass'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

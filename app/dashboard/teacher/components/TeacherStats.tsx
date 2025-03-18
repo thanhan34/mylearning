@@ -50,9 +50,13 @@ export default function TeacherStats() {
         const teacherDoc = teacherSnapshot.docs[0];
         const teacherData = teacherDoc.data();
 
-        // Get classes for this teacher
+        // Get active classes for this teacher (exclude completed classes)
         const classesRef = collection(db, 'classes');
-        const classesQuery = query(classesRef, where('teacherId', '==', teacherDoc.id));
+        const classesQuery = query(
+          classesRef, 
+          where('teacherId', '==', teacherDoc.id),
+          where('status', '!=', 'completed')
+        );
         const classesSnapshot = await getDocs(classesQuery);
         const totalClasses = classesSnapshot.size;
 

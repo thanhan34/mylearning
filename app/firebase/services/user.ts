@@ -10,6 +10,7 @@ export interface User {
   name?: string;
   classId?: string;
   teacherId?: string;
+  passed?: boolean;
 }
 
 export const createUser = async (userData: {
@@ -35,7 +36,8 @@ export const createUser = async (userData: {
       createdAt: new Date().toISOString(),
       avatar: null,
       target: null,
-      teacherId: ''
+      teacherId: '',
+      passed: false
     };
     
     await setDoc(doc(usersRef, sanitizedEmail), newUser);
@@ -78,7 +80,8 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         target: data.target,
         name: data.name,
         classId: data.classId,
-        teacherId: data.teacherId
+        teacherId: data.teacherId,
+        passed: data.passed
       };
     }
     
@@ -102,7 +105,8 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
       console.log('Found user by direct lookup:', {
         id: userDoc.id,
         email: data.email,
-        teacherId: data.teacherId
+        teacherId: data.teacherId,
+        passed: data.passed
       });
       return {
         id: userDoc.id,
@@ -112,7 +116,8 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
         target: data.target,
         name: data.name,
         classId: data.classId,
-        teacherId: data.teacherId
+        teacherId: data.teacherId,
+        passed: data.passed
       };
     }
 
@@ -128,7 +133,8 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
       console.log('Found user by query:', {
         id: doc.id,
         email: data.email,
-        teacherId: data.teacherId
+        teacherId: data.teacherId,
+        passed: data.passed
       });
       return {
         id: doc.id,
@@ -138,7 +144,8 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
         target: data.target,
         name: data.name,
         classId: data.classId,
-        teacherId: data.teacherId
+        teacherId: data.teacherId,
+        passed: data.passed
       };
     }
 
