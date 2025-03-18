@@ -1,5 +1,7 @@
 'use client';
 
+import { format, startOfMonth, getDay, getDaysInMonth } from 'date-fns';
+
 interface SubmissionsCalendarProps {
   selectedDate: string;
   submissionDates: { [key: string]: number };
@@ -11,39 +13,33 @@ export default function SubmissionsCalendar({ selectedDate, submissionDates, onD
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   
-  // Get the number of days in the current month
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // Get the number of days in the current month using date-fns
+  const daysInMonth = getDaysInMonth(currentDate);
   
   // Function to format a date as YYYY-MM-DD
   const formatDate = (year: number, month: number, day: number) => {
-    const monthStr = String(month + 1).padStart(2, '0');
-    const dayStr = String(day).padStart(2, '0');
-    return `${year}-${monthStr}-${dayStr}`;
+    const date = new Date(year, month, day);
+    return format(date, 'yyyy-MM-dd');
   };
   
   // Generate dates for the current month
-  const generateDates = () => {
-    const dates = [];
-    for (let i = 1; i <= daysInMonth; i++) {
-      dates.push(formatDate(year, month, i));
-    }
-    return dates;
-  };
+  const dates = Array.from({ length: daysInMonth }, (_, i) => {
+    return formatDate(year, month, i + 1);
+  });
   
-  const dates = generateDates();
-  const today = new Date().toISOString().split('T')[0];
+  const today = format(new Date(), 'yyyy-MM-dd');
   
-  // Day headers starting with Monday (T2)
-  const dayHeaders = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  // Day headers in Vietnamese format
+  const dayHeaders = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   
-  // Calculate empty days for the first row (Monday-based)
-  // Convert Sunday (0) to 6, and other days to day-1
-  const getEmptyDays = (date: Date) => {
-    const day = date.getDay();
-    return day === 0 ? 6 : day - 1;
-  };
+  // Calculate the first day of the month using date-fns
+  const firstDayOfMonth = startOfMonth(currentDate);
   
-  const emptyDays = getEmptyDays(new Date(year, month, 1));
+  // Get the day of week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = getDay(firstDayOfMonth);
+  
+  // Calculate empty days based on the day headers
+  const emptyDays = dayOfWeek;
 
   return (
     <div className="w-[280px]">
@@ -88,7 +84,7 @@ export default function SubmissionsCalendar({ selectedDate, submissionDates, onD
         </div>
         
         <div className="grid grid-cols-7">
-          {/* Calculate empty cells for the first row (Monday-based) */}
+          {/* Calculate empty cells for the first row (Sunday-based) */}
           {Array.from({ length: emptyDays }, (_, i) => (
             <div key={`empty-${i}`} className="border-b border-r border-gray-200 aspect-square" />
           ))}
@@ -112,7 +108,7 @@ export default function SubmissionsCalendar({ selectedDate, submissionDates, onD
                 } ${isToday ? 'font-bold' : ''}`}
               >
                 <span className="absolute top-1 left-1 text-xs">
-                  {new Date(date).getDate()}
+                  {parseInt(date.split('-')[2], 10)}
                 </span>
                 {hasSubmission && (
                   <span className="absolute bottom-1 right-1 flex gap-0.5">

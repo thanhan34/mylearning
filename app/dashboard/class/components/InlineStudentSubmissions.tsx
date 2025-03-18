@@ -7,6 +7,7 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/fire
 import StudentInfo from '@/app/dashboard/admin/components/StudentInfo';
 import { db } from '@/app/firebase/config';
 import ProgressChart from '@/app/dashboard/components/ProgressChart';
+import { format, startOfMonth, getDay, getDaysInMonth } from 'date-fns';
 
 interface Props {
   student: {
@@ -183,14 +184,23 @@ export default function InlineStudentSubmissions({ student }: Props) {
     }
   };
 
-  // Get current month's dates
+  // Get current month's dates using date-fns
   const currentDate = new Date(selectedDate);
-  const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-  const days = Array.from({ length: lastDay.getDate() }, (_, i) => {
-    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1);
-    return date.toISOString().split('T')[0];
+  const daysInMonth = getDaysInMonth(currentDate);
+  
+  // Function to format a date as YYYY-MM-DD
+  const formatDate = (year: number, month: number, day: number) => {
+    const date = new Date(year, month, day);
+    return format(date, 'yyyy-MM-dd');
+  };
+  
+  // Generate dates for the current month
+  const days = Array.from({ length: daysInMonth }, (_, i) => {
+    return formatDate(currentDate.getFullYear(), currentDate.getMonth(), i + 1);
   });
+  
+  // Calculate the first day of the month using date-fns
+  const firstDayOfMonth = startOfMonth(currentDate);
 
   return (
     <div className="mt-8 bg-white p-6 rounded-lg shadow-lg">
@@ -255,7 +265,7 @@ export default function InlineStudentSubmissions({ student }: Props) {
                 ))}
               </div>
               <div className="grid grid-cols-7">
-                {Array.from({ length: firstDay.getDay() }, (_, i) => (
+                {Array.from({ length: getDay(firstDayOfMonth) }, (_, i) => (
                   <div key={`empty-${i}`} className="border-b border-r border-gray-200 aspect-square" />
                 ))}
                 {days.map(date => {
@@ -273,7 +283,7 @@ export default function InlineStudentSubmissions({ student }: Props) {
                       }`}
                     >
                       <span className="absolute top-1 left-1 text-xs">
-                        {new Date(date).getDate()}
+                        {parseInt(date.split('-')[2], 10)}
                       </span>
                       {hasSubmission && (
                         <span className="absolute bottom-1 right-1 flex gap-0.5">
