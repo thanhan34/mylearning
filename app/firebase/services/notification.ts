@@ -33,7 +33,7 @@ export const addNotification = async (
         return false;
       }
       notificationData.teacher_id = userDoc.teacherId;
-    } else {
+    } else if (type === 'admin') {
       notificationData.admin_id = userDoc.id;
     }
 
@@ -41,7 +41,8 @@ export const addNotification = async (
 
     console.log('Notification created successfully:', {
       notificationId: notificationDoc.id,
-      recipientId: type === 'teacher' ? userDoc.teacherId : userDoc.id
+      recipientId: type === 'teacher' ? userDoc.teacherId : userDoc.id,
+      type
     });
 
     return true;
@@ -64,17 +65,23 @@ export const getUnreadNotifications = async (userEmail: string, type: 'teacher' 
     console.log('Getting unread notifications:', {
       email: userEmail,
       id: userDoc.id,
-      type
+      type,
+      role: userDoc.role
     });
+    
+    // Determine the field to query based on user role
+    const fieldName = type === 'teacher' ? 'teacher_id' : 'admin_id';
     
     const q = query(
       notificationsRef,
-      where(type === 'teacher' ? 'teacher_id' : 'admin_id', '==', userDoc.id),
+      where(fieldName, '==', userDoc.id),
       where('is_read', '==', false),
       orderBy('created_at', 'desc')
     );
     
     const querySnapshot = await getDocs(q);
+    console.log(`Found ${querySnapshot.size} unread notifications for ${type} ${userEmail}`);
+    
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -103,12 +110,16 @@ export const subscribeToNotifications = async (
     console.log('Found user:', {
       email: userEmail,
       id: userDoc.id,
-      type
+      type,
+      role: userDoc.role
     });
+    
+    // Determine the field to query based on user role
+    const fieldName = type === 'teacher' ? 'teacher_id' : 'admin_id';
     
     const q = query(
       notificationsRef,
-      where(type === 'teacher' ? 'teacher_id' : 'admin_id', '==', userDoc.id),
+      where(fieldName, '==', userDoc.id),
       where('is_read', '==', false),
       orderBy('created_at', 'desc')
     );
@@ -117,10 +128,13 @@ export const subscribeToNotifications = async (
       const initialSnapshot = await getDocs(q);
       console.log('Initial notifications:', {
         count: initialSnapshot.size,
+        fieldName,
+        userId: userDoc.id,
         notifications: initialSnapshot.docs.map(doc => ({
           id: doc.id,
           message: doc.data().message,
-          created_at: doc.data().created_at?.toDate()?.toISOString()
+          created_at: doc.data().created_at?.toDate()?.toISOString(),
+          [fieldName]: doc.data()[fieldName]
         }))
       });
 
@@ -142,11 +156,14 @@ export const subscribeToNotifications = async (
         console.log('Snapshot received:', {
           size: snapshot.size,
           empty: snapshot.empty,
+          fieldName,
+          userId: userDoc.id,
           docs: snapshot.docs.map(doc => ({
             id: doc.id,
             message: doc.data().message,
             is_read: doc.data().is_read,
-            created_at: doc.data().created_at?.toDate()?.toISOString()
+            created_at: doc.data().created_at?.toDate()?.toISOString(),
+            [fieldName]: doc.data()[fieldName]
           }))
         });
         

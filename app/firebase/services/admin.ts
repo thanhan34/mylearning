@@ -12,65 +12,95 @@ export interface AdminStats {
   }>;
 }
 
+// Cache for admin stats to prevent frequent refetching
+let statsCache: {
+  data: AdminStats | null;
+  timestamp: number;
+} = {
+  data: null,
+  timestamp: 0
+};
+
+// Cache expiration time in milliseconds (5 minutes)
+const CACHE_EXPIRATION = 5 * 60 * 1000;
+
 export const getAdminStats = async (): Promise<AdminStats> => {
+  // Check if we have cached data that's not expired
+  const now = Date.now();
+  if (statsCache.data && (now - statsCache.timestamp) < CACHE_EXPIRATION) {
+    console.log('Using cached admin stats');
+    return statsCache.data;
+  }
+
   try {
+    console.log('Fetching fresh admin stats');
     // Get users collection
     const usersRef = collection(db, 'users');
     
-    // Query for students
-    const studentsQuery = query(usersRef, where('role', '==', 'student'));
-    const studentsSnapshot = await getDocs(studentsQuery);
-    
-    // Query for teachers
-    const teachersQuery = query(usersRef, where('role', '==', 'teacher'));
-    const teachersSnapshot = await getDocs(teachersQuery);
-    
     // Get classes collection
     const classesRef = collection(db, 'classes');
-    const classesSnapshot = await getDocs(classesRef);
     
     // Get homework collection
     const homeworkRef = collection(db, 'homework');
-    const homeworkSnapshot = await getDocs(homeworkRef);
-
-    // Calculate class progress
-    const classProgress = await Promise.all(
-      classesSnapshot.docs.map(async (classDoc) => {
-        const classData = classDoc.data();
-        const students = classData.students || [];
-        
-        // Get homework submissions for each student in the class
-        let totalSubmissions = 0;
-        let totalRequired = students.length * 5; // Assuming 5 homework assignments per student
-
-        for (const student of students) {
-          const studentHomeworkQuery = query(
-            homeworkRef,
-            where('userId', '==', student.id)
-          );
-          const studentHomeworkSnapshot = await getDocs(studentHomeworkQuery);
-          totalSubmissions += studentHomeworkSnapshot.size;
-        }
-
-        // Calculate completion rate
-        const completionRate = totalRequired > 0 
-          ? Math.round((totalSubmissions / totalRequired) * 100)
-          : 0;
-
-        return {
-          name: classData.name || `Class ${classDoc.id}`,
-          completionRate
-        };
-      })
-    );
     
-    return {
+    // Run queries in parallel for better performance
+    const [studentsSnapshot, teachersSnapshot, classesSnapshot, homeworkSnapshot] = await Promise.all([
+      getDocs(query(usersRef, where('role', '==', 'student'))),
+      getDocs(query(usersRef, where('role', '==', 'teacher'))),
+      getDocs(classesRef),
+      getDocs(homeworkRef)
+    ]);
+
+    // Prepare a map of user IDs to their homework submissions count for faster lookup
+    const userSubmissionsMap = new Map();
+    homeworkSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const userId = data.userId;
+      if (userId) {
+        userSubmissionsMap.set(userId, (userSubmissionsMap.get(userId) || 0) + 1);
+      }
+    });
+
+    // Calculate class progress more efficiently
+    const classProgress = classesSnapshot.docs.map((classDoc) => {
+      const classData = classDoc.data();
+      const students = classData.students || [];
+      
+      // Calculate submissions using the map instead of additional queries
+      let totalSubmissions = 0;
+      let totalRequired = students.length * 5; // Assuming 5 homework assignments per student
+
+      students.forEach((student: { id: string }) => {
+        totalSubmissions += userSubmissionsMap.get(student.id) || 0;
+      });
+
+      // Calculate completion rate
+      const completionRate = totalRequired > 0 
+        ? Math.round((totalSubmissions / totalRequired) * 100)
+        : 0;
+
+      return {
+        name: classData.name || `Class ${classDoc.id}`,
+        completionRate
+      };
+    });
+    
+    // Create the stats object
+    const stats = {
       studentCount: studentsSnapshot.size,
       teacherCount: teachersSnapshot.size,
       classCount: classesSnapshot.size,
       submissionCount: homeworkSnapshot.size,
       classProgress
     };
+
+    // Update the cache
+    statsCache = {
+      data: stats,
+      timestamp: now
+    };
+    
+    return stats;
   } catch (error) {
     console.error('Error getting admin stats:', error);
     return {

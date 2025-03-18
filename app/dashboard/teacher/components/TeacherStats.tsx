@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { db } from '../../../firebase/config';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Line } from 'react-chartjs-2';
+import TeacherDailyHomework from './TeacherDailyHomework';
 
 export default function TeacherStats() {
   const { data: session } = useSession();
@@ -234,10 +235,10 @@ export default function TeacherStats() {
   }
 
   if (isLoading) {
-    return (
-      <div className="space-y-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+  return (
+    <div className="space-y-8">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white p-6 rounded-xl shadow-lg animate-pulse">
               <div className="flex items-center justify-between mb-4">
@@ -379,6 +380,9 @@ export default function TeacherStats() {
           />
         </div>
       </div>
+      
+      {/* Daily Homework and Targets */}
+      <TeacherDailyHomework />
     </div>
   );
 }
