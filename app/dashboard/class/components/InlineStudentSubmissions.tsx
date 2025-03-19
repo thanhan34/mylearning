@@ -8,6 +8,7 @@ import StudentInfo from '@/app/dashboard/admin/components/StudentInfo';
 import { db } from '@/app/firebase/config';
 import ProgressChart from '@/app/dashboard/components/ProgressChart';
 import { format, startOfMonth, getDay, getDaysInMonth } from 'date-fns';
+import { convertUrlsToLinks } from '@/app/utils/textFormatting';
 
 interface Props {
   student: {
@@ -373,9 +374,14 @@ export default function InlineStudentSubmissions({ student }: Props) {
                                     </div>
                                   ) : (
                                     <div className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-500">
-                                        {submission.feedback || 'Chưa có nhận xét'}
-                                      </span>
+                                      <div className="text-sm text-gray-500 text-left break-words w-full">
+                                        <span className="block text-left">
+                                          {submission.feedback ? 
+                                            convertUrlsToLinks(submission.feedback) : 
+                                            'Chưa có nhận xét'
+                                          }
+                                        </span>
+                                      </div>
                                       <button
                                         onClick={() => setEditingFeedback({
                                           type: submission.type,

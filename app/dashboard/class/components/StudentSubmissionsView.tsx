@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getHomeworkSubmissions } from '@/app/firebase/services';
 import type { HomeworkSubmission } from '@/app/firebase/services/types';
 import HomeworkProgress from '@/app/components/HomeworkProgress';
+import { convertUrlsToLinks } from '@/app/utils/textFormatting';
 
 interface Props {
   student: {
@@ -89,7 +90,7 @@ export default function StudentSubmissionsView({ student, onClose }: Props) {
                       {type}
                     </div>
                     <div className="p-4">
-                      <table className="min-w-full">
+                      <table className="min-w-full table-fixed">
                         <thead>
                           <tr className="border-b">
                             <th className="text-left py-2 text-gray-600">Question</th>
@@ -118,9 +119,11 @@ export default function StudentSubmissionsView({ student, onClose }: Props) {
                                     <span className="text-gray-400">No submission</span>
                                   )}
                                 </td>
-                                <td className="py-2">
+                                <td className="py-2 text-left">
                                   {submission.feedback ? (
-                                    <span className="text-gray-700">{submission.feedback}</span>
+                                    <div className="text-gray-700 break-words">
+                                      {convertUrlsToLinks(submission.feedback)}
+                                    </div>
                                   ) : (
                                     <span className="text-gray-400">No feedback yet</span>
                                   )}

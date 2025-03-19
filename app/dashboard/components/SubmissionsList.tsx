@@ -1,6 +1,7 @@
 'use client';
 
 import { HomeworkSubmission } from '@/app/firebase/services/types';
+import { convertUrlsToLinks } from '@/app/utils/textFormatting';
 
 interface SubmissionsListProps {
   selectedDate: string;
@@ -42,26 +43,30 @@ export default function SubmissionsList({ selectedDate, submissionDates, submiss
                   .sort((a, b) => a.questionNumber - b.questionNumber)
                   .slice(0, type === 'Read aloud' || type === 'Repeat sentence' ? 20 : 5)
                   .map((submission) => (
-                    <div key={`${submission.type}_${submission.questionNumber}`} className="flex items-center gap-4">
-                      <div className="w-16 text-sm">Câu {submission.questionNumber}</div>
-                      <div className="flex-1">
-                        {submission.link ? (
-                          <a
-                            href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#fc5d01] hover:text-[#fd7f33] text-sm truncate block"
-                            title={submission.link}
-                          >
-                            {submission.link.split('https://')[0].trim() || 'Xem bài làm'}
-                          </a>
-                        ) : (
-                          <span className="text-gray-400 text-sm">Chưa nộp bài</span>
-                        )}
+                    <div key={`${submission.type}_${submission.questionNumber}`} className="flex flex-col gap-2 py-2 border-b border-gray-100">
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 text-sm">Câu {submission.questionNumber}</div>
+                        <div className="flex-1">
+                          {submission.link ? (
+                            <a
+                              href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#fc5d01] hover:text-[#fd7f33] text-sm truncate block"
+                              title={submission.link}
+                            >
+                              {submission.link.split('https://')[0].trim() || 'Xem bài làm'}
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 text-sm">Chưa nộp bài</span>
+                          )}
+                        </div>
                       </div>
+                      
                       {submission.feedback && (
-                        <div className="text-sm text-gray-500 truncate max-w-[200px]" title={submission.feedback}>
-                          {submission.feedback}
+                        <div className="text-sm text-gray-500 break-words text-left ml-16">
+                          <span className="font-medium text-[#fc5d01]">Feedback: </span>
+                          {convertUrlsToLinks(submission.feedback)}
                         </div>
                       )}
                     </div>

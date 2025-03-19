@@ -6,6 +6,7 @@ import { db } from '../../../firebase/config';
 import { HomeworkSubmission } from '../../../firebase/services';
 import HomeworkProgress from '../../../components/HomeworkProgress';
 import StudentInfo from './StudentInfo';
+import { convertUrlsToLinks } from '@/app/utils/textFormatting';
 
 interface StudentSubmissionsProps {
   selectedStudentId: string;
@@ -121,7 +122,7 @@ const StudentSubmissions = ({ selectedStudentId, selectedStudentEmail }: Student
                       {type}
                     </div>
                     <div className="p-4">
-                      <table className="min-w-full">
+                      <table className="min-w-full table-fixed">
                         <thead>
                           <tr className="border-b">
                             <th className="text-left py-2 text-gray-600">Câu số</th>
@@ -150,9 +151,11 @@ const StudentSubmissions = ({ selectedStudentId, selectedStudentEmail }: Student
                                     <span className="text-gray-400">No submission yet</span>
                                   )}
                                 </td>
-                                <td className="py-2">
+                                <td className="py-2 text-left">
                                   {submission.feedback ? (
-                                    <span className="text-gray-700">{submission.feedback}</span>
+                                    <div className="text-gray-700 break-words">
+                                      {convertUrlsToLinks(submission.feedback)}
+                                    </div>
                                   ) : (
                                     <span className="text-gray-400">No submission yet</span>
                                   )}
