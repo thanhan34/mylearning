@@ -122,48 +122,41 @@ const StudentSubmissions = ({ selectedStudentId, selectedStudentEmail }: Student
                       {type}
                     </div>
                     <div className="p-4">
-                      <table className="min-w-full table-fixed">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2 text-gray-600">Câu số</th>
-                            <th className="text-left py-2 text-gray-600">Link bài làm</th>
-                            <th className="text-left py-2 text-gray-600">Feedback</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {typeSubmissions
-                            .sort((a, b) => a.questionNumber - b.questionNumber)
-                            .map((submission) => (
-                              <tr key={`${submission.type}_${submission.questionNumber}_${selectedDate}`} className="border-b">
-                                <td className="py-2 w-24 text-black">{submission.questionNumber}</td>
-                                <td className="py-2">
+                      <div className="space-y-6">
+                        {typeSubmissions
+                          .sort((a, b) => a.questionNumber - b.questionNumber)
+                          .map((submission) => (
+                            <div key={`${submission.type}_${submission.questionNumber}_${selectedDate}`} className="border-b border-gray-100 pb-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="font-medium">Câu {submission.questionNumber}</div>
+                                <div className="text-[#fc5d01]">
                                   {submission.link ? (
                                     <a
                                       href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-black hover:text-[#fd7f33] break-all"
+                                      className="text-[#fc5d01] hover:text-[#fd7f33]"
                                       title="Click để mở link gốc"
                                     >
-                                      {submission.link.split('https://')[0].trim()}
+                                      RA#{submission.questionNumber} APEUni RA EN V2e AI Score 66/90
                                     </a>
                                   ) : (
-                                    <span className="text-gray-400">No submission yet</span>
+                                    <span>Chưa nộp bài</span>
                                   )}
-                                </td>
-                                <td className="py-2 text-left">
-                                  {submission.feedback ? (
-                                    <div className="text-gray-700 break-words">
-                                      {convertUrlsToLinks(submission.feedback)}
-                                    </div>
-                                  ) : (
-                                    <span className="text-gray-400">No submission yet</span>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
+                                </div>
+                              </div>
+                              
+                              {submission.feedback && (
+                                <div className="ml-4 text-left">
+                                  <span className="text-[#fc5d01] font-medium">Feedback: </span>
+                                  <span className="text-gray-700 break-words">
+                                    {convertUrlsToLinks(submission.feedback)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
                     </div>
                   </div>
                 ))

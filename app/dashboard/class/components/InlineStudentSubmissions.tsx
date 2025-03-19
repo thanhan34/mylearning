@@ -326,75 +326,82 @@ export default function InlineStudentSubmissions({ student }: Props) {
                           {(typeSubmissions as HomeworkSubmission[])
                             .sort((a, b) => a.questionNumber - b.questionNumber)
                             .map((submission) => (
-                              <div key={`${submission.type}_${submission.questionNumber}`} className="flex items-center gap-4">
-                                <div className="w-16 text-sm">Câu {submission.questionNumber}</div>
-                                <div className="flex-1">
-                                  {submission.link ? (
-                                    <a
-                                      href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-[#fc5d01] hover:text-[#fd7f33] text-sm"
-                                      title="Click để mở link gốc"
-                                    >
-                                      {submission.link.split('https://')[0].trim() || 'Xem bài làm'}
-                                    </a>
-                                  ) : (
-                                    <span className="text-gray-400 text-sm">Chưa nộp bài</span>
-                                  )}
+                              <div key={`${submission.type}_${submission.questionNumber}`} className="border-b border-gray-100 pb-4 mb-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="font-medium">Câu {submission.questionNumber}</div>
+                                  <div className="text-[#fc5d01]">
+                                    {submission.link ? (
+                                      <a
+                                        href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[#fc5d01] hover:text-[#fd7f33]"
+                                        title="Click để mở link gốc"
+                                      >
+                                        RA#{submission.questionNumber} APEUni RA EN V2e AI Score 66/90
+                                      </a>
+                                    ) : (
+                                      <span>Chưa nộp bài</span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex-1">
-                                  {editingFeedback?.type === submission.type && 
-                                   editingFeedback?.questionNumber === submission.questionNumber ? (
-                                    <div className="flex gap-2">
-                                      {editingFeedback && (
-                                        <input
-                                          type="text"
+                                
+                                {editingFeedback?.type === submission.type && 
+                                 editingFeedback?.questionNumber === submission.questionNumber ? (
+                                  <div className="ml-4 mt-2">
+                                    <div className="flex items-start gap-2">
+                                      <span className="text-[#fc5d01] font-medium whitespace-nowrap mt-1">Feedback: </span>
+                                      <div className="flex-1 flex gap-2">
+                                        <textarea
                                           value={editingFeedback.feedback}
                                           onChange={(e) => setEditingFeedback({
                                             type: editingFeedback.type,
                                             questionNumber: editingFeedback.questionNumber,
                                             feedback: e.target.value
                                           })}
-                                          className="flex-1 p-1 border rounded text-black"
+                                          className="flex-1 p-2 border rounded text-black min-h-[80px] w-full"
+                                          placeholder="Enter feedback here..."
                                         />
-                                      )}
-                                      <button
-                                        onClick={handleSaveFeedback}
-                                        className="px-2 py-1 bg-[#fc5d01] text-white rounded hover:bg-[#fd7f33]"
-                                      >
-                                        Save
-                                      </button>
-                                      <button
-                                        onClick={() => setEditingFeedback(null)}
-                                        className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center justify-between">
-                                      <div className="text-sm text-gray-500 text-left break-words w-full">
-                                        <span className="block text-left">
-                                          {submission.feedback ? 
-                                            convertUrlsToLinks(submission.feedback) : 
-                                            'Chưa có nhận xét'
-                                          }
-                                        </span>
+                                        <div className="flex gap-1">
+                                          <button
+                                            onClick={handleSaveFeedback}
+                                            className="px-2 py-1 bg-[#fc5d01] text-white rounded hover:bg-[#fd7f33]"
+                                          >
+                                            Save
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingFeedback(null)}
+                                            className="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
                                       </div>
-                                      <button
-                                        onClick={() => setEditingFeedback({
-                                          type: submission.type,
-                                          questionNumber: submission.questionNumber,
-                                          feedback: submission.feedback || ''
-                                        })}
-                                        className="text-[#fc5d01] hover:text-[#fd7f33] text-sm"
-                                      >
-                                        Edit
-                                      </button>
                                     </div>
-                                  )}
-                                </div>
+                                  </div>
+                                ) : (
+                                  <div className="ml-4 flex justify-between items-start">
+                                    <div className="text-left">
+                                      <span className="text-[#fc5d01] font-medium">Feedback: </span>
+                                      <span className="text-gray-700 break-words">
+                                        {submission.feedback ? 
+                                          convertUrlsToLinks(submission.feedback) : 
+                                          'Chưa có nhận xét'
+                                        }
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => setEditingFeedback({
+                                        type: submission.type,
+                                        questionNumber: submission.questionNumber,
+                                        feedback: submission.feedback || ''
+                                      })}
+                                      className="text-[#fc5d01] hover:text-[#fd7f33] text-sm ml-2"
+                                    >
+                                      Edit
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             ))}
                         </div>
