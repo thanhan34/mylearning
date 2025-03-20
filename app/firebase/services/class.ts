@@ -7,7 +7,9 @@ export const getClassById = async (classId: string): Promise<Class | null> => {
   try {
     console.log("Getting class by ID:", classId);
     const classRef = doc(db, 'classes', classId);
-    const classDoc = await getDoc(classRef);
+    
+    // Get class document with retry logic
+    const classDoc = await retryOperation(() => getDoc(classRef));
     
     if (classDoc.exists()) {
       const classData = classDoc.data();
@@ -50,14 +52,27 @@ export const getTeacherClasses = async (teacherEmail: string): Promise<Class[]> 
 
     const classesRef = collection(db, 'classes');
     const q = query(classesRef, where('teacherId', '==', teacherDoc.id));
-    const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
+    // Get classes with retry logic
+    const querySnapshot = await retryOperation(() => getDocs(q));
+    
+    const classes = querySnapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data()
     } as Class));
+    
+    console.log(`Retrieved ${classes.length} classes for teacher: ${teacherEmail}`);
+    return classes;
   } catch (error) {
     console.error('Error getting teacher classes:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        teacherEmail,
+        timestamp: new Date().toISOString()
+      });
+    }
     return [];
   }
 };
@@ -66,16 +81,21 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<string 
   try {
     // Get teacher's document ID
     const teacherRef = doc(db, 'users', classData.teacherId);
-    const teacherDoc = await getDoc(teacherRef);
+    
+    // Get teacher document with retry logic
+    const teacherDoc = await retryOperation(() => getDoc(teacherRef));
     
     if (!teacherDoc.exists()) {
       // Try to find teacher by email
       const teachersRef = collection(db, 'users');
       const teacherQuery = query(teachersRef, where('email', '==', classData.teacherId));
-      const teacherSnapshot = await getDocs(teacherQuery);
+      
+      // Get teacher by email with retry logic
+      const teacherSnapshot = await retryOperation(() => getDocs(teacherQuery));
       
       if (teacherSnapshot.empty) {
-        throw new Error('Teacher not found');
+        console.error('Teacher not found:', classData.teacherId);
+        return null;
       }
       
       // Use the actual document ID
@@ -86,10 +106,23 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<string 
     }
     
     const classesRef = collection(db, 'classes');
-    const docRef = await addDoc(classesRef, classData);
+    
+    // Add document with retry logic
+    const docRef = await retryOperation(() => addDoc(classesRef, classData));
+    
+    console.log(`Successfully created class: ${docRef.id} (${classData.name})`);
     return docRef.id;
   } catch (error) {
     console.error('Error creating class:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        className: classData.name,
+        teacherId: classData.teacherId,
+        timestamp: new Date().toISOString()
+      });
+    }
     return null;
   }
 };
@@ -99,16 +132,21 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
     // Get teacher's document ID first
     let finalTeacherId = teacherId;
     const teacherRef = doc(db, 'users', teacherId);
-    const teacherDoc = await getDoc(teacherRef);
+    
+    // Get teacher document with retry logic
+    const teacherDoc = await retryOperation(() => getDoc(teacherRef));
     
     if (!teacherDoc.exists()) {
       // Try to find teacher by email
       const teachersRef = collection(db, 'users');
       const teacherQuery = query(teachersRef, where('email', '==', teacherId));
-      const teacherSnapshot = await getDocs(teacherQuery);
+      
+      // Get teacher by email with retry logic
+      const teacherSnapshot = await retryOperation(() => getDocs(teacherQuery));
       
       if (teacherSnapshot.empty) {
-        throw new Error('Teacher not found');
+        console.error('Teacher not found:', teacherId);
+        return false;
       }
       
       finalTeacherId = teacherSnapshot.docs[0].id;
@@ -117,78 +155,156 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
     const classRef = doc(db, 'classes', classId);
     const userRef = doc(db, 'users', student.id);
     
-    await runTransaction(db, async (transaction) => {
-      // Get class document
-      const classDoc = await transaction.get(classRef);
-      if (!classDoc.exists()) throw new Error('Class not found');
-      
-      // Get user document
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists()) throw new Error('User not found');
-      
-      // Get current students array and check for duplicates
-      const classData = classDoc.data();
-      const students = classData.students || [];
-      const isDuplicate = students.some((s: ClassStudent) => s.email === student.email);
-      
-      if (!isDuplicate) {
-        // Get user data to check current status
-        const userData = userDoc.data();
-        const currentTeacherId = userData.teacherId;
-        const currentClassId = userData.classId;
+    // Get class document with retry logic
+    const classDoc = await retryOperation(() => getDoc(classRef));
+    if (!classDoc.exists()) {
+      console.error('Class not found:', classId);
+      return false;
+    }
+    
+    // Get user document with retry logic
+    const userDoc = await retryOperation(() => getDoc(userRef));
+    if (!userDoc.exists()) {
+      console.error('User not found:', student.id);
+      return false;
+    }
+    
+    // Get current students array and check for duplicates
+    const classData = classDoc.data();
+    const students = classData.students || [];
+    const isDuplicate = students.some((s: ClassStudent) => s.email === student.email);
+    
+    if (isDuplicate) {
+      console.log(`Student ${student.email} is already in class ${classId}`);
+      return true; // Already in class, consider it a success
+    }
+    
+    // Get user data to check current status
+    const userData = userDoc.data();
+    const currentClassId = userData.classId;
 
-        // Only add if not already in a class
-        if (!currentClassId || currentClassId === '') {
-          // Only add if not already in class
-          transaction.update(classRef, {
-            students: [...students, student]
-          });
-          
-          // Update user with teacher and class IDs
-          transaction.update(userRef, { 
-            teacherId: finalTeacherId || '',
-            classId: classId
-          });
-        }
-      }
+    // Only add if not already in a class
+    if (currentClassId && currentClassId !== '') {
+      console.log(`Student ${student.id} is already in another class: ${currentClassId}`);
+      return false;
+    }
+    
+    // Create a batch for the updates
+    const batch = writeBatch(db);
+    
+    // Add updates to batch
+    batch.update(classRef, {
+      students: [...students, student]
     });
     
+    // Update user with teacher and class IDs
+    batch.update(userRef, { 
+      teacherId: finalTeacherId || '',
+      classId: classId
+    });
+    
+    // Commit the batch with retry logic
+    await retryOperation(() => batch.commit());
+    
+    console.log(`Successfully added student ${student.id} to class ${classId}`);
     return true;
   } catch (error) {
     console.error('Error adding student to class:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        classId,
+        studentId: student.id,
+        timestamp: new Date().toISOString()
+      });
+    }
     return false;
+  }
+};
+
+// Helper function to delay execution (for rate limiting)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to implement exponential backoff
+const retryOperation = async (
+  operation: () => Promise<any>,
+  maxRetries = 5,
+  initialDelay = 1000
+): Promise<any> => {
+  let retries = 0;
+  
+  while (true) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      retries++;
+      
+      // If we've reached max retries or it's not a resource exhausted error, throw
+      if (retries >= maxRetries || 
+          !(error?.code === 'resource-exhausted' || 
+            (error?.name === 'FirebaseError' && error?.message?.includes('resource-exhausted')))) {
+        throw error;
+      }
+      
+      // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, etc.)
+      const waitTime = initialDelay * Math.pow(2, retries - 1);
+      console.log(`Retrying operation after ${waitTime}ms (attempt ${retries})`);
+      await delay(waitTime);
+    }
   }
 };
 
 export const removeStudentFromClass = async (classId: string, studentId: string): Promise<boolean> => {
   try {
+    // Get references
     const classRef = doc(db, 'classes', classId);
     const userRef = doc(db, 'users', studentId);
     
-    await runTransaction(db, async (transaction) => {
-      // Get class document
-      const classDoc = await transaction.get(classRef);
-      if (!classDoc.exists()) throw new Error('Class not found');
-      
-      // Get user document
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists()) throw new Error('User not found');
-      
-      // Update class students array
-      const classData = classDoc.data() as Class;
-      const updatedStudents = classData.students.filter(student => student.id !== studentId);
-      transaction.update(classRef, { students: updatedStudents });
-      
-      // Update user's teacherId and classId to empty
-      transaction.update(userRef, { 
-        teacherId: '',
-        classId: '' 
-      });
+    // First, get the class document to check if it exists and get current students
+    const classDoc = await retryOperation(() => getDoc(classRef));
+    if (!classDoc.exists()) {
+      console.error('Class not found:', classId);
+      return false;
+    }
+    
+    // Get the user document to check if it exists
+    const userDoc = await retryOperation(() => getDoc(userRef));
+    if (!userDoc.exists()) {
+      console.error('User not found:', studentId);
+      return false;
+    }
+    
+    // Update class students array
+    const classData = classDoc.data() as Class;
+    const updatedStudents = classData.students.filter(student => student.id !== studentId);
+    
+    // Create a batch for the updates
+    const batch = writeBatch(db);
+    
+    // Add updates to batch
+    batch.update(classRef, { students: updatedStudents });
+    batch.update(userRef, { 
+      teacherId: '',
+      classId: '' 
     });
     
+    // Commit the batch with retry logic
+    await retryOperation(() => batch.commit());
+    
+    console.log(`Successfully removed student ${studentId} from class ${classId}`);
     return true;
   } catch (error) {
     console.error('Error removing student from class:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        classId,
+        studentId,
+        timestamp: new Date().toISOString()
+      });
+    }
     return false;
   }
 };
@@ -199,54 +315,71 @@ export const updateStudentName = async (
   newName: string, 
   email: string,
   target: string
-): Promise<void> => {
+): Promise<boolean> => {
   try {
-    await runTransaction(db, async (transaction) => {
-      // Get references
-      const userRef = doc(db, 'users', userId);
-      const classRef = doc(db, 'classes', classId);
+    // Get references
+    const userRef = doc(db, 'users', userId);
+    const classRef = doc(db, 'classes', classId);
 
-      // Get current data
-      const userDoc = await transaction.get(userRef);
-      const classDoc = await transaction.get(classRef);
+    // Get current data with retry logic
+    const userDoc = await retryOperation(() => getDoc(userRef));
+    if (!userDoc.exists()) {
+      console.error('User not found:', userId);
+      return false;
+    }
 
-      if (!userDoc.exists()) {
-        throw new Error('User not found');
+    const classDoc = await retryOperation(() => getDoc(classRef));
+    if (!classDoc.exists()) {
+      console.error('Class not found:', classId);
+      return false;
+    }
+
+    // Get class data
+    const classData = classDoc.data() as Class;
+    const students = classData.students || [];
+
+    // Update the student in the class's students array
+    const updatedStudents = students.map(student => {
+      if (student.id === userId) {
+        return {
+          ...student,
+          name: newName
+        };
       }
-
-      if (!classDoc.exists()) {
-        throw new Error('Class not found');
-      }
-
-      // Get class data
-      const classData = classDoc.data() as Class;
-      const students = classData.students || [];
-
-      // Update the student in the class's students array
-      const updatedStudents = students.map(student => {
-        if (student.id === userId) {
-          return {
-            ...student,
-            name: newName
-          };
-        }
-        return student;
-      });
-
-      // Update both documents in a single transaction
-      transaction.update(userRef, {
-        name: newName,
-        email,
-        target
-      });
-
-      transaction.update(classRef, {
-        students: updatedStudents
-      });
+      return student;
     });
+
+    // Create a batch for the updates
+    const batch = writeBatch(db);
+    
+    // Add updates to batch
+    batch.update(userRef, {
+      name: newName,
+      email,
+      target
+    });
+
+    batch.update(classRef, {
+      students: updatedStudents
+    });
+    
+    // Commit the batch with retry logic
+    await retryOperation(() => batch.commit());
+    
+    console.log(`Successfully updated student ${userId} name to ${newName}`);
+    return true;
   } catch (error) {
     console.error('Error updating student name:', error);
-    throw error;
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        userId,
+        classId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    return false;
   }
 };
 
@@ -254,8 +387,12 @@ export const cleanupClassStudents = async (classId: string): Promise<boolean> =>
   try {
     const classRef = doc(db, 'classes', classId);
     
-    const classDoc = await getDoc(classRef);
-    if (!classDoc.exists()) return false;
+    // Get class document with retry logic
+    const classDoc = await retryOperation(() => getDoc(classRef));
+    if (!classDoc.exists()) {
+      console.error('Class not found:', classId);
+      return false;
+    }
     
     const classData = classDoc.data();
     const students = classData.students || [];
@@ -274,18 +411,33 @@ export const cleanupClassStudents = async (classId: string): Promise<boolean> =>
     
     // Only update if we found duplicates
     if (uniqueStudentsArray.length !== students.length) {
-      await runTransaction(db, async (transaction) => {
-        transaction.update(classRef, {
-          students: uniqueStudentsArray,
-          studentCount: uniqueStudentsArray.length
-        });
+      // Create a batch for the update
+      const batch = writeBatch(db);
+      
+      // Add update to batch
+      batch.update(classRef, {
+        students: uniqueStudentsArray,
+        studentCount: uniqueStudentsArray.length
       });
+      
+      // Commit the batch with retry logic
+      await retryOperation(() => batch.commit());
+      
+      console.log(`Successfully cleaned up class ${classId}, removed ${students.length - uniqueStudentsArray.length} duplicate students`);
       return true;
     }
     
     return false;
   } catch (error) {
     console.error('Error cleaning up class students:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        classId,
+        timestamp: new Date().toISOString()
+      });
+    }
     return false;
   }
 };
