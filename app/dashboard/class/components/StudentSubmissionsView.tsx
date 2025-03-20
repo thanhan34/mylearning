@@ -106,7 +106,7 @@ export default function StudentSubmissionsView({ student, onClose }: Props) {
                                       className="text-[#fc5d01] hover:text-[#fd7f33]"
                                       title="Click to open original link"
                                     >
-                                      RA#{submission.questionNumber} APEUni RA EN V2e AI Score 66/90
+                                      {submission.link.split('https://')[0].trim() || 'Xem bài làm'}
                                     </a>
                                   ) : (
                                     <span>No submission</span>

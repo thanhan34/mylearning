@@ -338,7 +338,7 @@ export default function InlineStudentSubmissions({ student }: Props) {
                                         className="text-[#fc5d01] hover:text-[#fd7f33]"
                                         title="Click để mở link gốc"
                                       >
-                                        RA#{submission.questionNumber} APEUni RA EN V2e AI Score 66/90
+                                        {submission.link.split('https://')[0].trim() || 'Xem bài làm'}
                                       </a>
                                     ) : (
                                       <span>Chưa nộp bài</span>
