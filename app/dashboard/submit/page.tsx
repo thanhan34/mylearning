@@ -209,14 +209,7 @@ export default function SubmitPage() {
       throw new Error('User not found');
     }
 
-    const maxQuestions = selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 
-                        selectedHomeworkType === 'Describe image' || selectedHomeworkType === 'Retell lecture' ? 5 :
-                        selectedHomeworkType === 'Summarize Written Text' ? 3 : 2;
-    if (links.length > maxQuestions) {
-      setShowMaxLinksError(true);
-      setSaveStatus('error');
-      return;
-    }
+    // Removed submission limit check to allow unlimited submissions for all homework types
 
     try {
       // Get existing submissions
@@ -226,14 +219,13 @@ export default function SubmitPage() {
       // Keep existing submissions for other types
       const otherTypeSubmissions = existingSubmissions.filter(s => s.type !== selectedHomeworkType);
       
-      // Get template submissions for current type
-      const typeTemplate = getDefaultHomeworkSubmissions(selectedDate)
-        .filter(s => s.type === selectedHomeworkType);
-      
-      // Map new links to template
-      const typeSubmissions = typeTemplate.map((template, index) => ({
-        ...template,
-        link: links[index] || ''
+      // Create new submissions for each link
+      const typeSubmissions = links.map((link, index) => ({
+        id: `${selectedHomeworkType}_${index + 1}`,
+        type: selectedHomeworkType,
+        questionNumber: index + 1,
+        link: link,
+        date: selectedDate
       }));
 
       // Combine both arrays
@@ -382,11 +374,7 @@ export default function SubmitPage() {
                     selectedHomeworkType === 'Repeat sentence' ? 'repeat_sentences' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'summarize_written_texts' :
                     selectedHomeworkType === 'Write Essay' ? 'write_essays' : 'summarize_spoken_texts'
-                  }&answer_id=2937397445\n\nMaximum ${
-                    selectedHomeworkType === 'Read aloud' || selectedHomeworkType === 'Repeat sentence' ? 20 : 
-                    selectedHomeworkType === 'Describe image' || selectedHomeworkType === 'Retell lecture' ? 5 :
-                    selectedHomeworkType === 'Summarize Written Text' ? 3 : 2
-                  } links`}
+                  }&answer_id=2937397445\n\nNo limit on number of submissions`}
                   value={existingLinks}
                   onChange={(e) => setExistingLinks(e.target.value)}
                 />

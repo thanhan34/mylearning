@@ -20,7 +20,7 @@ export default function MaxLinksErrorDialog({
       <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-xl">
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-lg font-medium text-[#fc5d01]">
-            Vượt quá số lượng cho phép
+            Thông báo về số lượng bài nộp
           </h3>
           <button
             onClick={onClose}
@@ -35,7 +35,7 @@ export default function MaxLinksErrorDialog({
         
         <div className="mb-6">
           <p className="text-gray-600">
-            Bài tập {homeworkType} chỉ cho phép tối đa {maxQuestions} liên kết.
+            Bài tập {homeworkType} không giới hạn số lượng bài nộp.
           </p>
         </div>
 

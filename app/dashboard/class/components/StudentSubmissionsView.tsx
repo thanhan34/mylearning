@@ -92,6 +92,7 @@ export default function StudentSubmissionsView({ student, onClose }: Props) {
                     <div className="p-4">
                       <div className="space-y-6">
                         {(typeSubmissions as HomeworkSubmission[])
+                          .filter(submission => submission.link) // Only show submissions with links
                           .sort((a, b) => a.questionNumber - b.questionNumber)
                           .map((submission) => (
                             <div key={`${submission.type}_${submission.questionNumber}`} className="border-b border-gray-100 pb-4">

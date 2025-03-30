@@ -124,6 +124,7 @@ const StudentSubmissions = ({ selectedStudentId, selectedStudentEmail }: Student
                     <div className="p-4">
                       <div className="space-y-6">
                         {typeSubmissions
+                          .filter(submission => submission.link) // Only show submissions with links
                           .sort((a, b) => a.questionNumber - b.questionNumber)
                           .map((submission) => (
                             <div key={`${submission.type}_${submission.questionNumber}_${selectedDate}`} className="border-b border-gray-100 pb-4">

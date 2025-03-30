@@ -40,8 +40,8 @@ export default function SubmissionsList({ selectedDate, submissionDates, submiss
             <div className="p-4">
               <div className="grid gap-2">
                 {typeSubmissions
+                  .filter(submission => submission.link) // Only show submissions with links
                   .sort((a, b) => a.questionNumber - b.questionNumber)
-                  .slice(0, type === 'Read aloud' || type === 'Repeat sentence' ? 20 : 5)
                   .map((submission) => (
                     <div key={`${submission.type}_${submission.questionNumber}`} className="flex flex-col gap-2 py-2 border-b border-gray-100">
                       <div className="flex items-center gap-4">
