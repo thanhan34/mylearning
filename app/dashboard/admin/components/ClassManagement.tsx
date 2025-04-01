@@ -465,7 +465,7 @@ const ClassManagement = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full p-2 border rounded-lg"
-                  required
+                  
                 />
               </div>
               <div className="mb-4">
@@ -489,7 +489,7 @@ const ClassManagement = () => {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full p-2 border rounded-lg"
                   rows={3}
-                  required
+                  
                 />
               </div>
               <div className="mb-4">
@@ -499,7 +499,7 @@ const ClassManagement = () => {
                   value={formData.schedule}
                   onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
                   className="w-full p-2 border rounded-lg"
-                  required
+                  
                   placeholder="VD: Thứ 2,4,6 - 18:00-20:00"
                 />
               </div>
@@ -510,7 +510,7 @@ const ClassManagement = () => {
                   value={formData.studentCount}
                   onChange={(e) => setFormData({ ...formData, studentCount: parseInt(e.target.value) })}
                   className="w-full p-2 border rounded-lg"
-                  required
+                  
                   min={0}
                 />
               </div>

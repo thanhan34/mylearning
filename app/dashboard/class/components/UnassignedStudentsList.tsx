@@ -57,8 +57,8 @@ export default function UnassignedStudentsList({ onSelect, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[80vh] overflow-y-auto relative z-60">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-[#fc5d01]">Unassigned Students</h3>
           <button

@@ -55,8 +55,8 @@ export default function TeachersList({ onSelect, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 1000 }}>
+      <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[80vh] overflow-y-auto relative" style={{ zIndex: 1001 }}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-[#fc5d01]">Danh sách giáo viên</h3>
           <button
