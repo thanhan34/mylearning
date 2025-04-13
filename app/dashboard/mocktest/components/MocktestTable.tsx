@@ -153,14 +153,29 @@ export default function MocktestTable({
                     <div className="text-sm text-gray-900">
                       {mocktest.link.includes("APEUni Mock Test Result:") ? (
                         <div className="flex items-center">
-                          <span className="mr-1">{mocktest.link.split(": ")[0]}: </span>
+                          <span className="mr-1">{mocktest.link.split("APEUni Mock Test Result:")[0]}APEUni Mock Test Result: </span>
                           <a 
-                            href={mocktest.link.split(": ")[1]} 
+                            href={mocktest.link.match(/https?:\/\/(?:www\.)?apeuni\.com\/[^\s]+/)?.[0] || mocktest.link} 
                             target="_blank" 
                             rel="noopener noreferrer" 
                             className="text-[#fc5d01] hover:text-[#fd7f33] hover:underline flex items-center group-hover:opacity-75 transition-opacity duration-150"
                           >
-                            <span className="truncate max-w-xs">{mocktest.link.split(": ")[1]}</span>
+                            <span className="truncate max-w-xs">{mocktest.link.match(/https?:\/\/(?:www\.)?apeuni\.com\/[^\s]+/)?.[0] || mocktest.link.split("APEUni Mock Test Result:")[1]}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        </div>
+                      ) : mocktest.link.includes("shared a answer from PTE APEUni") ? (
+                        <div className="flex items-center">
+                          <span className="mr-1">{mocktest.link.split("https://")[0]}</span>
+                          <a 
+                            href={mocktest.link.match(/https:\/\/www\.apeuni\.com\/(en\/)?practice\/answer_item\?[^\s]+/)?.[0] || mocktest.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-[#fc5d01] hover:text-[#fd7f33] hover:underline flex items-center group-hover:opacity-75 transition-opacity duration-150"
+                          >
+                            <span className="truncate max-w-xs">https://{mocktest.link.split("https://")[1]}</span>
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
@@ -168,7 +183,7 @@ export default function MocktestTable({
                         </div>
                       ) : (
                         <a 
-                          href={mocktest.link} 
+                          href={mocktest.link.match(/https:\/\/www\.apeuni\.com\/(en\/)?practice\/answer_item\?[^\s]+/)?.[0] || mocktest.link} 
                           target="_blank" 
                           rel="noopener noreferrer" 
                           className="text-[#fc5d01] hover:text-[#fd7f33] hover:underline flex items-center group-hover:opacity-75 transition-opacity duration-150"

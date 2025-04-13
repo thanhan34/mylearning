@@ -82,7 +82,7 @@ export default function FeedbackDetailsModal({
                       <div className="bg-gray-50 p-3 rounded border border-gray-200 whitespace-pre-wrap">
                         {submission.link ? (
                           <a 
-                            href={submission.link} 
+                            href={submission.link.match(/https?:\/\/(?:www\.)?apeuni\.com\/[^\s]+/)?.[0] || submission.link} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:underline"

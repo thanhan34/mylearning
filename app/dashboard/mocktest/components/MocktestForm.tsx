@@ -38,7 +38,11 @@ export default function MocktestForm({
 
     // APEUni format
     const apeuniPattern = /^.+'s APEUni Mock Test Result: https:\/\/www\.apeuni\.com\/.+$/;
-    return apeuniPattern.test(link);
+    
+    // Mobile APEUni format
+    const mobileApeuniPattern = /^[A-Z]+#\d+ shared a answer from PTE APEUni[\s\S]*https:\/\/www\.apeuni\.com\/(en\/)?practice\/answer_item\?.+$/;
+    
+    return apeuniPattern.test(link) || mobileApeuniPattern.test(link);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,7 +116,7 @@ export default function MocktestForm({
                 setError("");
               }}
               className={`pl-10 block w-full rounded-md border ${error ? 'border-red-300' : 'border-gray-300'} px-3 py-2 focus:border-[#fc5d01] focus:outline-none focus:ring-1 focus:ring-[#fc5d01] transition-colors duration-200`}
-              placeholder="https://... hoặc [Tên]'s APEUni Mock Test Result: https://..."
+              placeholder="https://... hoặc [Tên]'s APEUni Mock Test Result: https://... hoặc RA#338 shared a answer from PTE APEUni..."
             />
           </div>
           {error && (
@@ -122,11 +126,12 @@ export default function MocktestForm({
           )}
           <div className="mt-2 space-y-1">
             <p className="text-sm text-gray-500">
-              Chấp nhận 2 định dạng:
+              Chấp nhận các định dạng:
             </p>
             <ul className="text-sm text-gray-500 list-disc list-inside pl-1 space-y-1">
               <li>Link thông thường (Google Drive, v.v.)</li>
               <li>Link APEUni theo định dạng: "Tên học viên's APEUni Mock Test Result: https://www.apeuni.com/..."</li>
+              <li>Link APEUni từ điện thoại: "RA#338 shared a answer from PTE APEUni APEUni AI Score 67/90 https://www.apeuni.com/en/practice/answer_item?..."</li>
             </ul>
           </div>
         </div>

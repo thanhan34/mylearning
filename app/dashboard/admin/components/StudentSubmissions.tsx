@@ -133,7 +133,7 @@ const StudentSubmissions = ({ selectedStudentId, selectedStudentEmail }: Student
                                 <div className="text-[#fc5d01]">
                                   {submission.link ? (
                                     <a
-                                      href={submission.link.match(/https:\/\/www\.apeuni\.com\/practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
+                                      href={submission.link.match(/https:\/\/www\.apeuni\.com\/(en\/)?practice\/answer_item\?[^\s]+/)?.[0] || submission.link}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-[#fc5d01] hover:text-[#fd7f33]"

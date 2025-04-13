@@ -80,7 +80,7 @@ export default function MocktestFeedbackDetailsModal({
                 {mocktest.link ? (
                   <div className="bg-gray-50 p-3 rounded border border-gray-200">
                     <a 
-                      href={mocktest.link} 
+                      href={mocktest.link.match(/https?:\/\/(?:www\.)?apeuni\.com\/[^\s]+/)?.[0] || mocktest.link} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline break-all"
