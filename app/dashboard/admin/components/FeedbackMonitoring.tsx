@@ -9,6 +9,13 @@ import { Class } from '@/app/firebase/services/types';
 import { Mocktest } from '@/types/mocktest';
 import { User } from '@/app/firebase/services/user';
 
+// Import sub-components
+import MocktestFilterBar from './feedback/MocktestFilterBar';
+import MocktestStatsOverview from './feedback/MocktestStatsOverview';
+import MocktestTeacherStatsTable from './feedback/MocktestTeacherStatsTable';
+import MocktestClassStatsTable from './feedback/MocktestClassStatsTable';
+import MocktestRecentTable from './feedback/MocktestRecentTable';
+
 interface FeedbackStats {
   totalMocktests: number;
   mocktestsWithFeedback: number;
@@ -325,340 +332,40 @@ export default function FeedbackMonitoring() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h2 className="text-xl font-bold text-gray-900">Theo dõi Feedback Mocktest</h2>
-        
-        <div className="flex flex-wrap gap-3">
-          {/* Timeframe filter */}
-          <select
-            value={selectedTimeframe}
-            onChange={(e) => setSelectedTimeframe(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#fc5d01] focus:outline-none focus:ring-1 focus:ring-[#fc5d01]"
-          >
-            <option value="7">7 ngày qua</option>
-            <option value="30">30 ngày qua</option>
-            <option value="90">90 ngày qua</option>
-            <option value="365">365 ngày qua</option>
-          </select>
-          
-          {/* Teacher filter */}
-          <select
-            value={selectedTeacher}
-            onChange={(e) => setSelectedTeacher(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#fc5d01] focus:outline-none focus:ring-1 focus:ring-[#fc5d01]"
-          >
-            <option value="all">Tất cả giảng viên</option>
-            {teachers.map(teacher => (
-              <option key={teacher.id} value={teacher.id}>
-                {teacher.name || teacher.email}
-              </option>
-            ))}
-          </select>
-          
-          {/* Class filter */}
-          <select
-            value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#fc5d01] focus:outline-none focus:ring-1 focus:ring-[#fc5d01]"
-          >
-            <option value="all">Tất cả lớp học</option>
-            {classes.map(classData => (
-              <option key={classData.id} value={classData.id}>
-                {classData.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <MocktestFilterBar 
+        selectedTimeframe={selectedTimeframe}
+        setSelectedTimeframe={setSelectedTimeframe}
+        selectedTeacher={selectedTeacher}
+        setSelectedTeacher={setSelectedTeacher}
+        selectedClass={selectedClass}
+        setSelectedClass={setSelectedClass}
+        teachers={teachers}
+        classes={classes}
+      />
 
-      {/* Overview stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#fc5d01]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-500">Tổng số mocktest</span>
-          </div>
-          <div className="text-3xl font-bold text-[#fc5d01]">{stats.totalMocktests}</div>
-          <div className="mt-2 text-sm text-gray-600">Trong khoảng thời gian đã chọn</div>
-        </div>
+      <MocktestStatsOverview 
+        totalMocktests={stats.totalMocktests}
+        mocktestsWithFeedback={stats.mocktestsWithFeedback}
+        mocktestsWithoutFeedback={stats.mocktestsWithoutFeedback}
+        feedbackPercentage={stats.feedbackPercentage}
+      />
 
-        <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#fc5d01]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-500">Đã có feedback</span>
-          </div>
-          <div className="text-3xl font-bold text-[#fc5d01]">{stats.mocktestsWithFeedback}</div>
-          <div className="mt-2 text-sm text-gray-600">
-            {stats.feedbackPercentage}% tổng số mocktest
-          </div>
-        </div>
+      <MocktestTeacherStatsTable 
+        teachers={teachers}
+        teacherStats={sortedTeachers}
+        sendingReminder={sendingReminder}
+        onSendReminder={sendReminder}
+        formatDate={formatDate}
+      />
 
-        <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#fc5d01]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-500">Chưa có feedback</span>
-          </div>
-          <div className="text-3xl font-bold text-[#fc5d01]">{stats.mocktestsWithoutFeedback}</div>
-          <div className="mt-2 text-sm text-gray-600">
-            {stats.totalMocktests > 0 ? (100 - stats.feedbackPercentage) : 0}% tổng số mocktest
-          </div>
-        </div>
-      </div>
+      <MocktestClassStatsTable 
+        classStats={sortedClasses}
+      />
 
-      {/* Teacher feedback stats */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-[#fc5d01]">Thống kê feedback theo giảng viên</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giảng viên
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tổng mocktest
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Đã feedback
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Chưa feedback
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tỷ lệ
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Feedback gần nhất
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sortedTeachers.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                    Không có dữ liệu
-                  </td>
-                </tr>
-              ) : (
-                sortedTeachers.map(teacher => {
-                  const teacherData = teachers.find(t => t.id === teacher.id);
-                  return (
-                    <tr key={teacher.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{teacher.teacherName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{teacher.totalMocktests}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{teacher.providedFeedback}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className={`flex-shrink-0 h-2 w-2 rounded-full mr-2 ${
-                            teacher.pendingFeedback > 0 ? 'bg-yellow-400' : 'bg-green-400'
-                          }`}></div>
-                          <span className="text-sm text-gray-900">{teacher.pendingFeedback}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{teacher.feedbackPercentage}%</div>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                          <div 
-                            className={`h-2 rounded-full ${
-                              teacher.feedbackPercentage < 50 ? 'bg-red-500' : 
-                              teacher.feedbackPercentage < 80 ? 'bg-yellow-500' : 
-                              'bg-green-500'
-                            }`} 
-                            style={{ width: `${teacher.feedbackPercentage}%` }}
-                          ></div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{formatDate(teacher.lastFeedbackDate)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        {teacher.pendingFeedback > 0 && teacherData?.email && (
-                          <button
-                            onClick={() => sendReminder(teacher.id, teacherData.email)}
-                            disabled={sendingReminder === teacher.id}
-                            className="inline-flex items-center px-3 py-1.5 border border-[#fc5d01] text-[#fc5d01] hover:bg-[#fc5d01] hover:text-white rounded-md transition-all duration-200 hover:shadow-md active:transform active:scale-95 disabled:opacity-50"
-                          >
-                            {sendingReminder === teacher.id ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Đang gửi...
-                              </>
-                            ) : (
-                              <>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                </svg>
-                                Nhắc nhở
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Class feedback stats */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-[#fc5d01]">Thống kê feedback theo lớp học</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Lớp học
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tổng mocktest
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Đã có feedback
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tỷ lệ
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sortedClasses.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
-                    Không có dữ liệu
-                  </td>
-                </tr>
-              ) : (
-                sortedClasses.map(classData => (
-                  <tr key={classData.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{classData.className}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{classData.totalMocktests}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{classData.mocktestsWithFeedback}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{classData.feedbackPercentage}%</div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            classData.feedbackPercentage < 50 ? 'bg-red-500' : 
-                            classData.feedbackPercentage < 80 ? 'bg-yellow-500' : 
-                            'bg-green-500'
-                          }`} 
-                          style={{ width: `${classData.feedbackPercentage}%` }}
-                        ></div>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      {/* Recent mocktests */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-[#fc5d01]">Mocktest gần đây</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Học viên
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Lớp học
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giảng viên
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày nộp
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {stats.recentMocktests.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                    Không có dữ liệu
-                  </td>
-                </tr>
-              ) : (
-                stats.recentMocktests.map(mocktest => (
-                  <tr key={mocktest.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{mocktest.studentName}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{mocktest.className}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{mocktest.teacherName}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatDate(mocktest.submittedAt.toDate())}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className={`flex-shrink-0 h-2 w-2 rounded-full mr-2 ${
-                          mocktest.feedback ? 'bg-green-400' : 'bg-yellow-400'
-                        }`}></div>
-                        <span className={`text-sm ${
-                          mocktest.feedback ? 'text-green-600' : 'text-yellow-600'
-                        }`}>
-                          {mocktest.feedback ? 'Đã có feedback' : 'Chưa có feedback'}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <MocktestRecentTable 
+        mocktests={stats.recentMocktests}
+        formatDate={formatDate}
+      />
     </div>
   );
 }
