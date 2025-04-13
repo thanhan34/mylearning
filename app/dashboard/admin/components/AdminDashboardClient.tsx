@@ -7,6 +7,8 @@ import UserManagement from './UserManagement';
 import ClassManagement from './ClassManagement';
 import DailyTargetSettings from './DailyTargetSettings';
 import SystemStats from './SystemStats';
+import FeedbackMonitoring from './FeedbackMonitoring';
+import HomeworkFeedbackMonitoring from './HomeworkFeedbackMonitoring';
 import WelcomeHeader from './WelcomeHeader';
 
 export default function AdminDashboardClient() {
@@ -24,6 +26,24 @@ export default function AdminDashboardClient() {
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      )
+    },
+    {
+      id: 'feedback',
+      name: 'Theo dõi Feedback',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+        </svg>
+      )
+    },
+    {
+      id: 'homework-feedback',
+      name: 'Feedback Bài tập',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       )
     },
@@ -88,6 +108,8 @@ export default function AdminDashboardClient() {
         <div className="p-6 bg-gradient-to-br from-white to-[#fedac2]/5">
           <div className="animate-fadeIn">
             {activeTab === 'stats' && <SystemStats />}
+            {activeTab === 'feedback' && <FeedbackMonitoring />}
+            {activeTab === 'homework-feedback' && <HomeworkFeedbackMonitoring />}
             {activeTab === 'users' && <UserManagement />}
             {activeTab === 'classes' && <ClassManagement />}
             {activeTab === 'daily-targets' && <DailyTargetSettings />}
