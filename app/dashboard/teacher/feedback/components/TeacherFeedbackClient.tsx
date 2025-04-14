@@ -56,80 +56,81 @@ export default function TeacherFeedbackClient() {
     fetchClasses();
   }, [session]);
 
-  // Fetch homework submissions for selected class
-  useEffect(() => {
-    const fetchHomeworkSubmissions = async () => {
-      if (!selectedClass) return;
+  // Function to fetch homework submissions for a class
+  const fetchHomeworkSubmissions = async (classData: Class | null) => {
+    if (!classData) return;
 
-      setLoading(true);
-      try {
-        // Get all student IDs from the selected class
-        const studentIds = selectedClass.students.map(student => student.id);
-        console.log('Fetching homework for students:', studentIds);
-        
-        if (studentIds.length === 0) {
-          console.log('No students in class');
-          setHomeworkSubmissions([]);
-          setLoading(false);
-          return;
-        }
-        
-        // Firestore has a limit of 10 values in an 'in' query
-        // So we need to batch the queries if there are more than 10 students
-        const submissions: HomeworkData[] = [];
-        const batchSize = 10;
-        
-        for (let i = 0; i < studentIds.length; i += batchSize) {
-          const batchIds = studentIds.slice(i, i + batchSize);
-          console.log(`Processing batch ${i / batchSize + 1}, students:`, batchIds);
-          
-          // Fetch homework submissions for this batch of students
-          const submissionsRef = collection(db, 'homework');
-          const q = query(
-            submissionsRef,
-            where('userId', 'in', batchIds)
-          );
-          
-          const querySnapshot = await getDocs(q);
-          console.log(`Batch ${i / batchSize + 1} results:`, querySnapshot.size);
-          
-          querySnapshot.forEach(doc => {
-            const data = doc.data() as HomeworkData;
-            
-            // Calculate feedback stats
-            const totalCount = data.submissions?.length || 0;
-            const feedbackCount = data.submissions?.filter(sub => 
-              sub.feedback && sub.feedback.trim() !== ''
-            ).length || 0;
-            
-            // Only include submissions that need feedback (not all submissions have feedback)
-            if (feedbackCount < totalCount) {
-              submissions.push({
-                ...data,
-                id: doc.id,
-                feedbackCount,
-                totalCount
-              });
-            }
-          });
-        }
-        
-        // Sort submissions by date (most recent first)
-        submissions.sort((a, b) => {
-          if (!a.timestamp || !b.timestamp) return 0;
-          return b.timestamp.seconds - a.timestamp.seconds;
-        });
-        
-        console.log('Total submissions found:', submissions.length);
-        setHomeworkSubmissions(submissions);
-      } catch (error) {
-        console.error('Error fetching homework submissions:', error);
-      } finally {
+    setLoading(true);
+    try {
+      // Get all student IDs from the selected class
+      const studentIds = classData.students.map(student => student.id);
+      console.log('Fetching homework for students:', studentIds);
+      
+      if (studentIds.length === 0) {
+        console.log('No students in class');
+        setHomeworkSubmissions([]);
         setLoading(false);
+        return;
       }
-    };
+      
+      // Firestore has a limit of 10 values in an 'in' query
+      // So we need to batch the queries if there are more than 10 students
+      const submissions: HomeworkData[] = [];
+      const batchSize = 10;
+      
+      for (let i = 0; i < studentIds.length; i += batchSize) {
+        const batchIds = studentIds.slice(i, i + batchSize);
+        console.log(`Processing batch ${i / batchSize + 1}, students:`, batchIds);
+        
+        // Fetch homework submissions for this batch of students
+        const submissionsRef = collection(db, 'homework');
+        const q = query(
+          submissionsRef,
+          where('userId', 'in', batchIds)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        console.log(`Batch ${i / batchSize + 1} results:`, querySnapshot.size);
+        
+        querySnapshot.forEach(doc => {
+          const data = doc.data() as HomeworkData;
+          
+          // Calculate feedback stats
+          const totalCount = data.submissions?.length || 0;
+          const feedbackCount = data.submissions?.filter(sub => 
+            sub.feedback && sub.feedback.trim() !== ''
+          ).length || 0;
+          
+          // Only include submissions that need feedback (not all submissions have feedback)
+          if (feedbackCount < totalCount) {
+            submissions.push({
+              ...data,
+              id: doc.id,
+              feedbackCount,
+              totalCount
+            });
+          }
+        });
+      }
+      
+      // Sort submissions by date (most recent first)
+      submissions.sort((a, b) => {
+        if (!a.timestamp || !b.timestamp) return 0;
+        return b.timestamp.seconds - a.timestamp.seconds;
+      });
+      
+      console.log('Total submissions found:', submissions.length);
+      setHomeworkSubmissions(submissions);
+    } catch (error) {
+      console.error('Error fetching homework submissions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchHomeworkSubmissions();
+  // Fetch homework submissions when selected class changes
+  useEffect(() => {
+    fetchHomeworkSubmissions(selectedClass);
   }, [selectedClass]);
 
   const handleViewDetails = (submission: HomeworkData) => {
@@ -142,12 +143,8 @@ export default function TeacherFeedbackClient() {
     setSelectedSubmission(null);
     
     // Refresh the submissions list after providing feedback
-    if (selectedClass) {
-      // Trigger a refetch by setting selectedClass again
-      const currentClass = selectedClass;
-      setSelectedClass(null);
-      setTimeout(() => setSelectedClass(currentClass), 100);
-    }
+    // This directly fetches the submissions without resetting the selected class
+    fetchHomeworkSubmissions(selectedClass);
   };
 
   const formatDate = (timestamp: any) => {
