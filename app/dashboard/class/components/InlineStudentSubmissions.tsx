@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getHomeworkSubmissions, getHomeworkProgress } from '@/app/firebase/services';
+import { getHomeworkSubmissions, getHomeworkProgress, updateHomeworkFeedback } from '@/app/firebase/services';
 import type { HomeworkSubmission } from '@/app/firebase/services/types';
-import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import StudentInfo from '@/app/dashboard/admin/components/StudentInfo';
-import { db } from '@/app/firebase/config';
 import ProgressChart from '@/app/dashboard/components/ProgressChart';
 import { format, startOfMonth, getDay, getDaysInMonth } from 'date-fns';
 import { convertUrlsToLinks } from '@/app/utils/textFormatting';
@@ -149,37 +147,29 @@ export default function InlineStudentSubmissions({ student }: Props) {
     if (!editingFeedback) return;
 
     try {
-      // Find the document with matching userId and date
-      const submissionsRef = collection(db, 'homework');
-      const q = query(
-        submissionsRef,
-        where('userId', '==', student.id),
-        where('date', '==', selectedDate)
+      // Use the updateHomeworkFeedback function
+      const success = await updateHomeworkFeedback(
+        student.name,
+        selectedDate,
+        editingFeedback.type,
+        editingFeedback.questionNumber,
+        editingFeedback.feedback
       );
-      const querySnapshot = await getDocs(q);
 
-      if (querySnapshot.empty) {
-        console.error('No document found for feedback update');
-        return;
+      if (success) {
+        // Update local state to reflect the changes
+        const updatedSubmissions = submissions.map(sub => {
+          if (sub.type === editingFeedback.type && sub.questionNumber === editingFeedback.questionNumber) {
+            return { ...sub, feedback: editingFeedback.feedback };
+          }
+          return sub;
+        });
+        
+        setSubmissions(updatedSubmissions);
+        setEditingFeedback(null);
+      } else {
+        console.error('Failed to update feedback');
       }
-
-      // Update the specific submission's feedback
-      const updatedSubmissions = submissions.map(sub => {
-        if (sub.type === editingFeedback.type && sub.questionNumber === editingFeedback.questionNumber) {
-          return { ...sub, feedback: editingFeedback.feedback };
-        }
-        return sub;
-      });
-
-      // Update the document
-      const docRef = doc(db, 'homework', querySnapshot.docs[0].id);
-      await updateDoc(docRef, {
-        submissions: updatedSubmissions,
-        lastUpdated: new Date().toISOString()
-      });
-
-      setSubmissions(updatedSubmissions);
-      setEditingFeedback(null);
     } catch (error) {
       console.error('Error saving feedback:', error);
     }

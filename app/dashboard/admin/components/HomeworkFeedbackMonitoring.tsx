@@ -61,7 +61,8 @@ interface FeedbackStats {
     className: string, 
     teacherName: string,
     feedbackCount: number,
-    totalCount: number
+    totalCount: number,
+    studentId: string
   }>;
   teacherSubmissions: {
     [teacherId: string]: Array<HomeworkData & { 
@@ -69,7 +70,8 @@ interface FeedbackStats {
       className: string, 
       teacherName: string,
       feedbackCount: number,
-      totalCount: number
+      totalCount: number,
+      studentId: string
     }>;
   };
 }
@@ -327,7 +329,8 @@ export default function HomeworkFeedbackMonitoring() {
             className,
             teacherName,
             feedbackCount,
-            totalCount: submissionCount
+            totalCount: submissionCount,
+            studentId: homework.userId
           });
         }
       });
@@ -366,7 +369,8 @@ export default function HomeworkFeedbackMonitoring() {
           className: classMap[classId || ''] || 'Unknown Class',
           teacherName: teacherMap[teacherId || ''] || 'Unknown Teacher',
           feedbackCount,
-          totalCount: submissionCount
+          totalCount: submissionCount,
+          studentId: homework.userId
         };
       });
 

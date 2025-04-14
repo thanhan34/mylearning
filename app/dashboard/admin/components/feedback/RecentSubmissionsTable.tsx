@@ -14,6 +14,7 @@ interface RecentSubmission {
   feedbackCount: number;
   totalCount: number;
   submissions: any[];
+  studentId?: string;
 }
 
 interface RecentSubmissionsTableProps {
@@ -129,6 +130,8 @@ export default function RecentSubmissionsTable({
           className={selectedSubmission.className}
           date={formatDate(selectedSubmission.timestamp.toDate())}
           submissions={selectedSubmission.submissions}
+          studentId={selectedSubmission.studentId}
+          documentId={selectedSubmission.id}
         />
       )}
     </>

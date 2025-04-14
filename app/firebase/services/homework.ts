@@ -151,3 +151,80 @@ export const saveHomeworkSubmission = async (
     return false;
   }
 };
+
+/**
+ * Update feedback for a specific homework submission
+ * This function is used by admins and teachers to add feedback to student submissions
+ */
+export const updateHomeworkFeedback = async (
+  studentName: string,
+  date: string,
+  submissionType: string,
+  questionNumber: number,
+  feedback: string
+): Promise<boolean> => {
+  try {
+    console.log('Updating feedback for:', {
+      studentName,
+      date,
+      submissionType,
+      questionNumber,
+      feedback
+    });
+
+    // First try to find all homework submissions for this date
+    const submissionsRef = collection(db, 'homework');
+    const q = query(
+      submissionsRef,
+      where('date', '==', date)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      console.error('No homework submissions found for date:', date);
+      return false;
+    }
+
+    // Look for a submission that matches the student name
+    let foundDoc = null;
+    for (const docSnapshot of querySnapshot.docs) {
+      const data = docSnapshot.data();
+      
+      // Check if this document belongs to the student we're looking for
+      if (data.userName && data.userName.includes(studentName)) {
+        foundDoc = docSnapshot;
+        break;
+      }
+    }
+
+    if (!foundDoc) {
+      console.error('No matching submission found for student:', studentName);
+      return false;
+    }
+
+    // Get the current submissions array
+    const data = foundDoc.data();
+    const submissions = data.submissions || [];
+
+    // Find and update the specific submission
+    const updatedSubmissions = submissions.map((sub: HomeworkSubmission) => {
+      if (sub.type === submissionType && sub.questionNumber === questionNumber) {
+        return { ...sub, feedback };
+      }
+      return sub;
+    });
+
+    // Update the document
+    const docRef = doc(db, 'homework', foundDoc.id);
+    await updateDoc(docRef, {
+      submissions: updatedSubmissions,
+      lastUpdated: new Date().toISOString()
+    });
+
+    console.log('Successfully updated feedback');
+    return true;
+  } catch (error) {
+    console.error('Error updating homework feedback:', error);
+    return false;
+  }
+};

@@ -66,6 +66,7 @@ const Navigation = () => {
 
   const adminNavItems: NavItem[] = [
     { href: "/dashboard/admin", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> },       
+    { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest/admin", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
@@ -73,6 +74,7 @@ const Navigation = () => {
 
   const teacherNavItems: NavItem[] = [     
     { href: "/dashboard/class", label: "Classes", icon: <RiTeamLine className="w-5 h-5" /> },
+    { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
