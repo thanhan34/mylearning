@@ -148,83 +148,82 @@ export default function SubmitPage() {
 
     setSaveStatus('saving');
     const validateLink = (link: string) => {
-      // Normalize the link by removing line breaks and extra spaces
-      const normalizedLink = link.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      // Super lenient validation - just check for the prefix and apeuni.com
       
-      const patterns: Record<HomeworkType, RegExp[]> = {
-        'Read aloud': [
-          // Desktop format
-          /^RA#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          /^RA#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          // Mobile format
-          /^RA#\d+ shared a answer from PTE APEUni.*APEUni AI Score \d+\/90 https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/,
-          /^RA#\d+ shared a answer from PTE APEUni.*APEUni AI Score.*https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/
-        ],
-        'Retell lecture': [
-          // Desktop format
-          /^RL#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          /^RL#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          // Mobile format
-          /^RL#\d+ shared a answer from PTE APEUni.*APEUni AI Score \d+\/90 https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/,
-          /^RL#\d+ shared a answer from PTE APEUni.*APEUni AI Score.*https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/
-        ],
-        'Describe image': [
-          // Desktop format
-          /^DI#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          /^DI#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          // Mobile format
-          /^DI#\d+ shared a answer from PTE APEUni.*APEUni AI Score \d+\/90 https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/,
-          /^DI#\d+ shared a answer from PTE APEUni.*APEUni AI Score.*https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/
-        ],
-        'Repeat sentence': [
-          // Desktop format
-          /^RS#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          /^RS#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          // Mobile format
-          /^RS#\d+ shared a answer from PTE APEUni.*APEUni AI Score \d+\/90 https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/,
-          /^RS#\d+ shared a answer from PTE APEUni.*APEUni AI Score.*https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/
-        ],
-        'Summarize Written Text': [
-          // Desktop format
-          /^SWT#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          /^SWT#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          // Mobile format - note that SWT uses different score format (out of 7)
-          /^SWT#\d+ shared a answer from PTE APEUni.*APEUni AI Score \d+(\.\d+)?\/7 https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/,
-          /^SWT#\d+ shared a answer from PTE APEUni.*APEUni AI Score.*https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/
-        ],
-        'Write Essay': [
-          // Desktop format
-          /^WE#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          /^WE#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          // Mobile format - note that WE uses different score format (out of 15)
-          /^WE#\d+ shared a answer from PTE APEUni.*APEUni AI Score \d+(\.\d+)?\/15 https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/,
-          /^WE#\d+ shared a answer from PTE APEUni.*APEUni AI Score.*https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/
-        ],
-        'Summarize Spoken Text': [
-          // Desktop format
-          /^SST#\d+ APEUni.*AI Score \d+\/90 https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          /^SST#\d+ APEUni.*AI Score.*https:\/\/www\.apeuni\.com\/practice\/answer_item\?.*$/,
-          // Mobile format - note that SST uses different score format (out of 10)
-          /^SST#\d+ shared a answer from PTE APEUni.*APEUni AI Score \d+(\.\d+)?\/10 https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/,
-          /^SST#\d+ shared a answer from PTE APEUni.*APEUni AI Score.*https:\/\/www\.apeuni\.com\/en\/practice\/answer_item\?.*$/
-        ]
+      // Get the prefix based on homework type
+      const prefixMap: Record<HomeworkType, string> = {
+        'Read aloud': 'RA#',
+        'Retell lecture': 'RL#',
+        'Describe image': 'DI#',
+        'Repeat sentence': 'RS#',
+        'Summarize Written Text': 'SWT#',
+        'Write Essay': 'WE#',
+        'Summarize Spoken Text': 'SST#'
       };
-      return patterns[selectedHomeworkType]?.some(pattern => pattern.test(link)) || false;
+      
+      const prefix = prefixMap[selectedHomeworkType];
+      
+      // Convert to lowercase for case-insensitive matching
+      const linkLower = link.toLowerCase();
+      
+      // Check if the link contains the prefix (case-insensitive)
+      const hasPrefix = link.includes(prefix) || linkLower.includes(prefix.toLowerCase());
+      
+      // Check if the link contains apeuni.com (case-insensitive)
+      const hasApeuni = linkLower.includes('apeuni.com') || linkLower.includes('www.apeuni.com');
+      
+      // Accept any link that contains both the prefix and apeuni.com
+      return hasPrefix && hasApeuni;
     };
 
-    const links = existingLinks.split('\n').filter(link => link.trim());
+    // Handle multi-line submissions by joining all lines before validation
+    const rawLinks = existingLinks.split('\n').filter(line => line.trim());
+    
+    // Group lines that belong to the same submission
+    const links: string[] = [];
+    let currentLink = '';
+    
+    for (const line of rawLinks) {
+      const prefixMap: Record<HomeworkType, string> = {
+        'Read aloud': 'RA#',
+        'Retell lecture': 'RL#',
+        'Describe image': 'DI#',
+        'Repeat sentence': 'RS#',
+        'Summarize Written Text': 'SWT#',
+        'Write Essay': 'WE#',
+        'Summarize Spoken Text': 'SST#'
+      };
+      
+      const prefix = prefixMap[selectedHomeworkType];
+      
+      // If this line starts a new submission, save the previous one and start a new one
+      if (line.includes(prefix) || line.toLowerCase().includes(prefix.toLowerCase())) {
+        if (currentLink.trim()) {
+          links.push(currentLink.trim());
+        }
+        currentLink = line;
+      } else {
+        // Otherwise, append to the current submission
+        currentLink += ' ' + line;
+      }
+    }
+    
+    // Add the last submission if there is one
+    if (currentLink.trim()) {
+      links.push(currentLink.trim());
+    }
     
     // Validate link format
     const invalidLinks = links.filter(link => !validateLink(link));
     if (invalidLinks.length > 0) {
       const formatExamples: Record<HomeworkType, string> = {
-        'Read aloud': 'Desktop: RA#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile: RA#[số] shared a answer from PTE APEUni APEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?...',
-        'Retell lecture': 'Desktop: RL#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile: RL#[số] shared a answer from PTE APEUni APEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?...',
-        'Describe image': 'Desktop: DI#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile: DI#[số] shared a answer from PTE APEUni APEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?...',
-        'Repeat sentence': 'Desktop: RS#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile: RS#[số] shared a answer from PTE APEUni APEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?...',
-        'Summarize Written Text': 'Desktop: SWT#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile: SWT#[số] shared a answer from PTE APEUni APEUni AI Score [số]/7 https://www.apeuni.com/en/practice/answer_item?...',
-        'Write Essay': 'Desktop: WE#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile: WE#[số] shared a answer from PTE APEUni APEUni AI Score [số]/15 https://www.apeuni.com/en/practice/answer_item?...',
-        'Summarize Spoken Text': 'Desktop: SST#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile: SST#[số] shared a answer from PTE APEUni APEUni AI Score [số]/10 https://www.apeuni.com/en/practice/answer_item?...'
+        'Read aloud': 'Desktop: RA#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: RA#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?...',
+        'Retell lecture': 'Desktop: RL#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: RL#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?...',
+        'Describe image': 'Desktop: DI#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: DI#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?...',
+        'Repeat sentence': 'Desktop: RS#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: RS#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?...',
+        'Summarize Written Text': 'Desktop: SWT#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: SWT#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/7 https://www.apeuni.com/en/practice/answer_item?...',
+        'Write Essay': 'Desktop: WE#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: WE#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/15 https://www.apeuni.com/en/practice/answer_item?...',
+        'Summarize Spoken Text': 'Desktop: SST#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: SST#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/10 https://www.apeuni.com/en/practice/answer_item?...'
       };
       setValidationErrors({
         invalidLinks,
@@ -389,14 +388,14 @@ export default function SubmitPage() {
                   }#[số] APEUni AI Score https://www.apeuni.com/practice/answer_item?...
                 </p>
                 <p className="text-gray-400 text-sm mb-2">
-                  Format (Mobile): {
+                  Format (Mobile với xuống dòng): {
                     selectedHomeworkType === 'Read aloud' ? 'RA' : 
                     selectedHomeworkType === 'Retell lecture' ? 'RL' : 
                     selectedHomeworkType === 'Describe image' ? 'DI' : 
                     selectedHomeworkType === 'Repeat sentence' ? 'RS' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'SWT' :
                     selectedHomeworkType === 'Write Essay' ? 'WE' : 'SST'
-                  }#[số] shared a answer from PTE APEUni APEUni AI Score https://www.apeuni.com/en/practice/answer_item?...
+                  }#[số] shared a/an answer from PTE APEUni<br />APEUni AI Score https://www.apeuni.com/en/practice/answer_item?...
                 </p>
                 <textarea
                   name="links"
@@ -415,18 +414,18 @@ export default function SubmitPage() {
                     selectedHomeworkType === 'Repeat sentence' ? 'repeat_sentences' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'summarize_written_texts' :
                     selectedHomeworkType === 'Write Essay' ? 'write_essays' : 'summarize_spoken_texts'
-                  }&answer_id=2937397445\n\nExample (Mobile):\n${
+                  }&answer_id=2937397445\n\nExample (Mobile với xuống dòng):\n${
                     selectedHomeworkType === 'Read aloud' ? 'RA' : 
                     selectedHomeworkType === 'Retell lecture' ? 'RL' : 
                     selectedHomeworkType === 'Describe image' ? 'DI' : 
                     selectedHomeworkType === 'Repeat sentence' ? 'RS' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'SWT' :
                     selectedHomeworkType === 'Write Essay' ? 'WE' : 'SST'
-                  }#338 shared a answer from PTE APEUni\nAPEUni AI Score ${
+                  }#1014 shared an answer from PTE APEUni\nAPEUni AI Score ${
                     selectedHomeworkType === 'Summarize Written Text' ? '6.25/7' :
                     selectedHomeworkType === 'Write Essay' ? '11.8/15' :
                     selectedHomeworkType === 'Summarize Spoken Text' ? '8.5/10' :
-                    '67/90'
+                    '59/90'
                   } https://www.apeuni.com/en/practice/answer_item?model=${
                     selectedHomeworkType === 'Read aloud' ? 'read_alouds' : 
                     selectedHomeworkType === 'Retell lecture' ? 'retell_lectures' : 
@@ -434,7 +433,7 @@ export default function SubmitPage() {
                     selectedHomeworkType === 'Repeat sentence' ? 'repeat_sentences' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'swts' :
                     selectedHomeworkType === 'Write Essay' ? 'essays' : 'ssts'
-                  }&answer_id=3139921963\n\nNo limit on number of submissions`}
+                  }&answer_id=3156378045\n\nNo limit on number of submissions`}
                   value={existingLinks}
                   onChange={(e) => setExistingLinks(e.target.value)}
                 />

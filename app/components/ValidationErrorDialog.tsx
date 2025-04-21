@@ -55,6 +55,9 @@ export default function ValidationErrorDialog({
           <code className="text-sm bg-white rounded px-2 py-1 border border-gray-200 block whitespace-pre-wrap break-all">
             {expectedFormat}
           </code>
+          <p className="text-sm text-gray-600 mt-2">
+            Lưu ý: Hệ thống chấp nhận cả "shared a answer" và "shared an answer". Đối với định dạng mobile, chỉ chấp nhận định dạng có xuống dòng giữa "shared a/an answer from PTE APEUni" và "APEUni AI Score".
+          </p>
         </div>
 
         <div className="mt-6 flex justify-end">
