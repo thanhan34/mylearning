@@ -8,6 +8,7 @@ import {
 import { getUserByEmail } from '../../../firebase/services/user';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import ClassStudentsList from './ClassStudentsList';
+import MultiSelectStudentsList from './MultiSelectStudentsList';
 import { User } from '@/types/admin';
 
 interface SupportClassStudentsListProps {
@@ -26,6 +27,7 @@ const SupportClassStudentsList: React.FC<SupportClassStudentsListProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [studentEmail, setStudentEmail] = useState('');
   const [showClassStudentsList, setShowClassStudentsList] = useState(false);
+  const [showMultiSelect, setShowMultiSelect] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   
@@ -180,27 +182,31 @@ const SupportClassStudentsList: React.FC<SupportClassStudentsListProps> = ({
           <h4 className="text-sm font-medium mb-2">
             Add Student
           </h4>
-          <div className="flex gap-2 mb-2">
-            <input
-              type="text"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#fc5d01] focus:border-transparent"
-              value={studentEmail}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStudentEmail(e.target.value)}
-              placeholder="Enter student email"
-            />
-            <button 
-              onClick={handleAddStudent}
-              className="px-4 py-2 bg-[#fc5d01] text-white rounded-md hover:bg-[#fd7f33] transition-colors"
-            >
-              Add
-            </button>
+          <div className="flex flex-col gap-2 mb-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#fc5d01] focus:border-transparent"
+                value={studentEmail}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStudentEmail(e.target.value)}
+                placeholder="Enter student email"
+              />
+              <button 
+                onClick={handleAddStudent}
+                className="px-4 py-2 bg-[#fc5d01] text-white rounded-md hover:bg-[#fd7f33] transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                onClick={() => setShowMultiSelect(true)}
+                className="py-2 text-[#fc5d01] border border-[#fc5d01] rounded-md hover:bg-[#fedac2] transition-colors"
+              >
+                Add Multiple Students
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setShowClassStudentsList(true)}
-            className="w-full py-2 text-[#fc5d01] border border-[#fc5d01] rounded-md hover:bg-[#fedac2] transition-colors"
-          >
-            Add from Existing Classes
-          </button>
         </div>
       )}
       
@@ -255,39 +261,34 @@ const SupportClassStudentsList: React.FC<SupportClassStudentsListProps> = ({
         />
       )}
       
-      {/* Class Students List Dialog */}
-      {showClassStudentsList && (
-        <ClassStudentsList
-          onSelect={(student: User) => {
-            // Create a SupportClassStudent object from the User
-            // Create a SupportClassStudent object from the User
-            // Use type assertion to access the classId property we added in ClassStudentsList
-            const studentWithClassId = student as User & { classId?: string };
+      {/* Multi-Select Students Dialog */}
+      {showMultiSelect && supportClass && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-[#fc5d01]">Add Multiple Students</h3>
+              <button
+                onClick={() => setShowMultiSelect(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
-            const supportStudent = {
-              id: student.id,
-              name: student.name,
-              email: student.email,
-              regularClassId: studentWithClassId.classId || ''
-            };
-            
-            // Add the student to the support class
-            addStudentToSupportClass(
-              supportClassId,
-              supportStudent,
-              supportClass?.teacherId || ''
-            ).then(success => {
-              if (success) {
+            <MultiSelectStudentsList
+              supportClassId={supportClassId}
+              teacherId={supportClass.teacherId}
+              existingStudentIds={supportClass.students.map(student => student.id)}
+              onStudentsAdded={() => {
                 loadSupportClass();
                 onStudentsUpdated();
-              } else {
-                setError('Failed to add student to support class. Please try again.');
-              }
-              setShowClassStudentsList(false);
-            });
-          }}
-          onClose={() => setShowClassStudentsList(false)}
-        />
+              }}
+              onClose={() => setShowMultiSelect(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
