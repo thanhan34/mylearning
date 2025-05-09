@@ -91,39 +91,43 @@ export default function StudentDashboard({
       <ProgressChart data={homeworkProgressData} />
 
       {/* Daily Targets */}
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <h3 className="text-xl font-semibold text-[#fc5d01] mb-6">Mục tiêu hàng ngày</h3>
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold text-[#fc5d01] mb-4 sm:mb-6">Mục tiêu hàng ngày</h3>
         <DailyTargetTable />
       </div>
 
       {/* Daily Home */}
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <h3 className="text-xl font-semibold text-[#fc5d01] mb-6">Bài tập về nhà</h3>
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold text-[#fc5d01] mb-4 sm:mb-6">Bài tập về nhà</h3>
         <DailyHome />
       </div>
 
       {/* Homework Submissions */}
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-[#fc5d01]">Nộp bài tập</h3>
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+          <h3 className="text-lg sm:text-xl font-semibold text-[#fc5d01]">Nộp bài tập</h3>
           <button
             onClick={() => router.push('/dashboard/submit')}
-            className="bg-[#fc5d01] text-white px-4 py-2 rounded-lg hover:bg-[#fd7f33] transition-colors"
+            className="bg-[#fc5d01] text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-[#fd7f33] transition-colors text-sm sm:text-base w-full sm:w-auto"
           >
             Nộp bài mới
           </button>
         </div>
-        <div className="flex gap-8">
-          <SubmissionsCalendar 
-            selectedDate={selectedDate}
-            submissionDates={submissionDates}
-            onDateChange={onDateChange}
-          />
-          <SubmissionsList 
-            selectedDate={selectedDate}
-            submissionDates={submissionDates}
-            submissions={homeworkSubmissions}
-          />
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+          <div className="w-full lg:w-auto">
+            <SubmissionsCalendar 
+              selectedDate={selectedDate}
+              submissionDates={submissionDates}
+              onDateChange={onDateChange}
+            />
+          </div>
+          <div className="w-full">
+            <SubmissionsList 
+              selectedDate={selectedDate}
+              submissionDates={submissionDates}
+              submissions={homeworkSubmissions}
+            />
+          </div>
         </div>
       </div>
     </div>

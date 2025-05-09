@@ -130,23 +130,23 @@ const TeacherDailyHomework = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <div className="bg-white p-6 rounded-xl shadow-lg animate-pulse">
-          <div className="h-8 w-48 bg-[#fedac2] rounded mb-4"></div>
-          <div className="h-64 bg-[#fedac2] rounded opacity-30"></div>
+      <div className="space-y-6 sm:space-y-8">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg animate-pulse">
+          <div className="h-6 sm:h-8 w-36 sm:w-48 bg-[#fedac2] rounded mb-4"></div>
+          <div className="h-48 sm:h-64 bg-[#fedac2] rounded opacity-30"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Date Navigation and Daily Homework */}
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 sm:gap-0 mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-[#fc5d01]">Daily Homework</h2>
-            <p className="text-[#fd7f33] text-sm">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#fc5d01]">Daily Homework</h2>
+            <p className="text-[#fd7f33] text-xs sm:text-sm">
               {selectedDate.toLocaleDateString('en-US', { 
                 weekday: 'long',
                 year: 'numeric',
@@ -156,33 +156,33 @@ const TeacherDailyHomework = () => {
               })}
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-2 sm:gap-4">
             <button 
               onClick={() => navigateDay('prev')}
-              className="px-4 py-2 bg-[#fc5d01] text-white rounded hover:bg-[#fd7f33] transition-colors"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#fc5d01] text-white text-sm rounded hover:bg-[#fd7f33] transition-colors flex-1 sm:flex-none"
             >
-              Previous Day
+              Previous
             </button>
             <button
               onClick={() => {
                 const vietnamTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
                 setSelectedDate(new Date(vietnamTime));
               }}
-              className="px-4 py-2 bg-[#fedac2] text-[#fc5d01] rounded hover:bg-[#fdbc94] transition-colors"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#fedac2] text-[#fc5d01] text-sm rounded hover:bg-[#fdbc94] transition-colors flex-1 sm:flex-none"
             >
               Today
             </button>
             <button 
               onClick={() => navigateDay('next')}
-              className="px-4 py-2 bg-[#fc5d01] text-white rounded hover:bg-[#fd7f33] transition-colors"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#fc5d01] text-white text-sm rounded hover:bg-[#fd7f33] transition-colors flex-1 sm:flex-none"
             >
-              Next Day
+              Next
             </button>
           </div>
         </div>
         
         {/* Daily Homework Content */}
-        <div className="mt-6 p-4 bg-[#fedac2] bg-opacity-10 rounded-lg">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-[#fedac2] bg-opacity-10 rounded-lg">
           {currentMessage ? currentMessage.message : (
             <p className="text-gray-500">Không thể tải nội dung bài tập. Vui lòng thử lại sau.</p>
           )}
@@ -190,42 +190,44 @@ const TeacherDailyHomework = () => {
       </div>
 
       {/* Daily Targets */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-semibold mb-4 text-[#fc5d01]">Daily Targets</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b border-[#fedac2]">
-                <th className="py-2 px-4 text-left text-[#fc5d01]">NO</th>
-                <th className="py-2 px-4 text-left text-[#fc5d01]">TYPE</th>
-                <th className="py-2 px-4 text-left text-[#fc5d01]">Target</th>
-                <th className="py-2 px-4 text-left text-[#fc5d01]">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {targets.map((target) => (
-                <tr key={target.id} className="border-b border-[#fedac2] hover:bg-[#fedac2] hover:bg-opacity-10">
-                  <td className="py-2 px-4">{target.id}</td>
-                  <td className="py-2 px-4">{target.type}</td>
-                  <td className="py-2 px-4">{target.target}</td>
-                  <td className="py-2 px-4">
-                    {target.link ? (
-                      <a 
-                        href={target.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#fc5d01] hover:text-[#fd7f33] underline"
-                      >
-                        {target.source}
-                      </a>
-                    ) : (
-                      target.source || '-'
-                    )}
-                  </td>
+      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-[#fc5d01]">Daily Targets</h2>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-[#fedac2]">
+                  <th className="py-2 px-2 sm:px-4 text-left text-[#fc5d01] text-xs sm:text-sm">NO</th>
+                  <th className="py-2 px-2 sm:px-4 text-left text-[#fc5d01] text-xs sm:text-sm">TYPE</th>
+                  <th className="py-2 px-2 sm:px-4 text-left text-[#fc5d01] text-xs sm:text-sm">Target</th>
+                  <th className="py-2 px-2 sm:px-4 text-left text-[#fc5d01] text-xs sm:text-sm">Source</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {targets.map((target) => (
+                  <tr key={target.id} className="border-b border-[#fedac2] hover:bg-[#fedac2] hover:bg-opacity-10">
+                    <td className="py-2 px-2 sm:px-4 text-xs sm:text-sm">{target.id}</td>
+                    <td className="py-2 px-2 sm:px-4 text-xs sm:text-sm">{target.type}</td>
+                    <td className="py-2 px-2 sm:px-4 text-xs sm:text-sm">{target.target}</td>
+                    <td className="py-2 px-2 sm:px-4 text-xs sm:text-sm">
+                      {target.link ? (
+                        <a 
+                          href={target.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#fc5d01] hover:text-[#fd7f33] underline"
+                        >
+                          {target.source}
+                        </a>
+                      ) : (
+                        target.source || '-'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

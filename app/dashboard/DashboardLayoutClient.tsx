@@ -32,7 +32,7 @@ export default function DashboardLayoutClient({
   return (
     <div className="min-h-screen bg-[#ffffff] relative">
       <Navigation />
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-0">
+      <main className="max-w-7xl mx-auto py-3 sm:py-4 md:py-6 px-3 sm:px-4 md:px-6 lg:px-8 relative z-0">
         {children}
       </main>
     </div>

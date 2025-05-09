@@ -78,34 +78,56 @@ export default function AdminDashboardClient() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Welcome Header */}
       <WelcomeHeader />
 
       {/* Main Content */}
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex overflow-x-auto">
+        {/* Tabs - Mobile View */}
+        <div className="md:hidden border-b border-gray-200 bg-white">
+          <div className="relative">
+            <select 
+              className="w-full py-3 px-4 bg-white border-0 focus:ring-2 focus:ring-[#fc5d01] text-sm text-gray-700 appearance-none"
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value)}
+            >
+              {tabs.map((tab) => (
+                <option key={tab.id} value={tab.id}>
+                  {tab.name}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        {/* Tabs - Desktop View */}
+        <div className="hidden md:block border-b border-gray-200">
+          <nav className="-mb-px flex overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`${
                   activeTab === tab.id
-                    ? 'border-[#fc5d01] text-[#fc5d01]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } flex items-center space-x-2 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors duration-200`}
+                    ? 'border-[#fc5d01] text-[#fc5d01] bg-[#fedac2]/10'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                } flex items-center space-x-2 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors duration-200 flex-1 justify-center`}
               >
-                {tab.icon}
-                <span>{tab.name}</span>
+                <span className="flex-shrink-0">{tab.icon}</span>
+                <span className="truncate">{tab.name}</span>
               </button>
             ))}
           </nav>
         </div>
 
         {/* Content Area */}
-        <div className="p-6 bg-gradient-to-br from-white to-[#fedac2]/5">
+        <div className="p-3 sm:p-6 bg-gradient-to-br from-white to-[#fedac2]/5">
           <div className="animate-fadeIn">
             {activeTab === 'stats' && <SystemStats />}
             {activeTab === 'feedback' && <FeedbackMonitoring />}

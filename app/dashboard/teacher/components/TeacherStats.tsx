@@ -236,40 +236,40 @@ export default function TeacherStats() {
 
   if (isLoading) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-xl shadow-lg animate-pulse">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-[#fedac2] rounded-full"></div>
-                <div className="w-20 h-4 bg-[#fedac2] rounded opacity-50"></div>
+            <div key={i} className="bg-white p-4 sm:p-6 rounded-xl shadow-lg animate-pulse">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#fedac2] rounded-full"></div>
+                <div className="w-16 sm:w-20 h-3 sm:h-4 bg-[#fedac2] rounded opacity-50"></div>
               </div>
-              <div className="space-y-3">
-                <div className="h-8 w-16 bg-[#fedac2] rounded"></div>
-                <div className="h-4 w-32 bg-[#fedac2] rounded opacity-30"></div>
+              <div className="space-y-2 sm:space-y-3">
+                <div className="h-6 sm:h-8 w-12 sm:w-16 bg-[#fedac2] rounded"></div>
+                <div className="h-3 sm:h-4 w-24 sm:w-32 bg-[#fedac2] rounded opacity-30"></div>
               </div>
             </div>
           ))}
         </div>
 
         {/* Chart */}
-        <div className="bg-white p-6 rounded-xl shadow-lg animate-pulse">
-          <div className="h-8 w-48 bg-[#fedac2] rounded mb-4"></div>
-          <div className="h-64 bg-[#fedac2] rounded opacity-30"></div>
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg animate-pulse">
+          <div className="h-6 sm:h-8 w-36 sm:w-48 bg-[#fedac2] rounded mb-4"></div>
+          <div className="h-48 sm:h-64 bg-[#fedac2] rounded opacity-30"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Total Classes */}
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#fc5d01]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
@@ -278,7 +278,7 @@ export default function TeacherStats() {
           </div>
           <div className="flex flex-col">
             <div className="flex items-baseline space-x-2">
-              <div className="text-3xl font-bold text-[#fc5d01]">{stats.totalClasses}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#fc5d01]">{stats.totalClasses}</div>
               <div className="text-sm text-[#fc5d01] opacity-75">lớp</div>
             </div>
             <div className="text-sm text-gray-600 mt-1">Lớp đang phụ trách</div>
@@ -286,9 +286,9 @@ export default function TeacherStats() {
         </div>
 
         {/* Total Students */}
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#fc5d01]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
@@ -297,7 +297,7 @@ export default function TeacherStats() {
           </div>
           <div className="flex flex-col">
             <div className="flex items-baseline space-x-2">
-              <div className="text-3xl font-bold text-[#fc5d01]">{stats.totalStudents}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#fc5d01]">{stats.totalStudents}</div>
               <div className="text-sm text-[#fc5d01] opacity-75">học viên</div>
             </div>
             <div className="text-sm text-gray-600 mt-1">Tổng số học viên</div>
@@ -305,9 +305,9 @@ export default function TeacherStats() {
         </div>
 
         {/* Active Students */}
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#fc5d01]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -316,7 +316,7 @@ export default function TeacherStats() {
           </div>
           <div className="flex flex-col">
             <div className="flex items-baseline space-x-2">
-              <div className="text-3xl font-bold text-[#fc5d01]">{stats.activeStudents}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#fc5d01]">{stats.activeStudents}</div>
               <div className="text-sm text-[#fc5d01] opacity-75">học viên</div>
             </div>
             <div className="text-sm text-gray-600 mt-1">Hoạt động trong 7 ngày</div>
@@ -324,9 +324,9 @@ export default function TeacherStats() {
         </div>
 
         {/* Completion Rate */}
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#fedac2] rounded-full flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#fc5d01]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
@@ -335,7 +335,7 @@ export default function TeacherStats() {
           </div>
           <div className="flex flex-col">
             <div className="flex items-baseline space-x-2">
-              <div className="text-3xl font-bold text-[#fc5d01]">{stats.completionRate}%</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#fc5d01]">{stats.completionRate}%</div>
             </div>
             <div className="text-sm text-gray-600 mt-1">Tỷ lệ hoàn thành bài tập</div>
           </div>
@@ -343,9 +343,9 @@ export default function TeacherStats() {
       </div>
 
       {/* Progress Chart */}
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <h3 className="text-xl font-semibold text-[#fc5d01] mb-6">Tiến độ học tập trong tuần</h3>
-        <div className="h-64">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold text-[#fc5d01] mb-4 sm:mb-6">Tiến độ học tập trong tuần</h3>
+        <div className="h-48 sm:h-64">
           <Line 
             data={studentProgressData}
             options={{

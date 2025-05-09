@@ -11,6 +11,7 @@ export interface User {
   classId?: string;
   teacherId?: string;
   passed?: boolean;
+  supportClassId?: string; // ID of the support speaking class if enrolled
 }
 
 export const createUser = async (userData: {
@@ -81,7 +82,8 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         name: data.name,
         classId: data.classId,
         teacherId: data.teacherId,
-        passed: data.passed
+        passed: data.passed,
+        supportClassId: data.supportClassId
       };
     }
     
@@ -153,7 +155,8 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
         name: data.name,
         classId: data.classId,
         teacherId: data.teacherId,
-        passed: data.passed
+        passed: data.passed,
+        supportClassId: data.supportClassId
       };
     }
 
@@ -181,7 +184,8 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
         name: data.name,
         classId: data.classId,
         teacherId: data.teacherId,
-        passed: data.passed
+        passed: data.passed,
+        supportClassId: data.supportClassId
       };
     }
 
