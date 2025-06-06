@@ -77,10 +77,10 @@ export default function TeacherFeedbackClient() {
     try {
       // Get all student IDs from the selected class
       const studentIds = classData.students.map(student => student.id);
-      console.log('Fetching homework for students:', studentIds);
+      
       
       if (studentIds.length === 0) {
-        console.log('No students in class');
+        
         setHomeworkSubmissions([]);
         setLoading(false);
         return;
@@ -92,8 +92,7 @@ export default function TeacherFeedbackClient() {
       const batchSize = 10;
       
       for (let i = 0; i < studentIds.length; i += batchSize) {
-        const batchIds = studentIds.slice(i, i + batchSize);
-        console.log(`Processing batch ${i / batchSize + 1}, students:`, batchIds);
+        const batchIds = studentIds.slice(i, i + batchSize);        
         
         // Fetch homework submissions for this batch of students
         const submissionsRef = collection(db, 'homework');
@@ -103,7 +102,7 @@ export default function TeacherFeedbackClient() {
         );
         
         const querySnapshot = await getDocs(q);
-        console.log(`Batch ${i / batchSize + 1} results:`, querySnapshot.size);
+        
         
         querySnapshot.forEach(doc => {
           const data = doc.data() as HomeworkData;
@@ -132,7 +131,7 @@ export default function TeacherFeedbackClient() {
         return b.timestamp.seconds - a.timestamp.seconds;
       });
       
-      console.log('Total submissions found:', submissions.length);
+      
       setHomeworkSubmissions(submissions);
     } catch (error) {
       console.error('Error fetching homework submissions:', error);

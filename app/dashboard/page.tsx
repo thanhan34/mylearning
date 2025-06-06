@@ -48,9 +48,9 @@ export default function DashboardPage() {
       const user = await getUserByEmail(session.user.email);
       if (!user) return;
 
-      console.log('Loading progress for user:', user.id);
+      
       const progressData = await getHomeworkProgress(user.id);
-      console.log('Progress data:', progressData);
+      
 
       if (!progressData.length) {
         console.log('No progress data found');
@@ -62,12 +62,12 @@ export default function DashboardPage() {
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
-      console.log('Sorted data:', sortedData);
+      
 
       const labels = sortedData.map(d => d.date);
       const data = sortedData.map(d => d.completed);
       
-      console.log('Setting chart data:', { labels, data });
+      
 
       setHomeworkProgressData({
         labels,
@@ -92,9 +92,9 @@ export default function DashboardPage() {
       const user = await getUserByEmail(session.user.email);
       if (!user) return;
 
-      console.log('Loading submissions for date:', date);
+      
       const submissions = await getHomeworkSubmissions(user.id, date);
-      console.log('Submissions:', submissions);
+     
 
       if (submissions) {
         setHomeworkSubmissions(submissions);

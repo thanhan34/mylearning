@@ -24,21 +24,9 @@ export default function AdminMocktestClient({ admin, classes }: Props) {
       setLoading(true);
       try {
         // Get all mocktests for this class
-        console.log("Fetching mocktests for class:", {
-          id: selectedClass.id,
-          name: selectedClass.name,
-          studentCount: selectedClass.students.length
-        });
+        
         const classMocktests = await getMocktestsByClass(selectedClass.id);
-        console.log("Fetched mocktests:", {
-          count: classMocktests.length,
-          mocktests: classMocktests.map(m => ({
-            id: m.id,
-            studentId: m.studentId,
-            classId: m.classId,
-            submittedAt: m.submittedAt.toDate()
-          }))
-        });
+        
         setMocktests(classMocktests);
       } catch (error) {
         console.error("Error fetching mocktests:", error);
@@ -59,15 +47,7 @@ export default function AdminMocktestClient({ admin, classes }: Props) {
       m.classId === selectedClass.id
     );
 
-    console.log(`Student ${studentId} mocktests:`, {
-      studentId,
-      classId: selectedClass.id,
-      count: studentMocktests.length,
-      mocktests: studentMocktests.map(m => ({
-        id: m.id,
-        submittedAt: m.submittedAt.toDate()
-      }))
-    });
+    
     
     return studentMocktests.length;
   };
@@ -228,18 +208,7 @@ export default function AdminMocktestClient({ admin, classes }: Props) {
                         const mocktestCount = getStudentMocktestCount(student.id);
                         const hasMultipleMocktests = mocktestCount > 1;
                         const status = hasMultipleMocktests ? 'Đã nộp' : mocktestCount === 1 ? '1 mocktest' : 'Chưa nộp';
-                        console.log(`Student ${student.name || student.email} status:`, {
-                          id: student.id,
-                          mocktestCount,
-                          hasMultipleMocktests,
-                          status
-                        });
-                        console.log(`Rendering student ${student.name || student.email}:`, {
-                          id: student.id,
-                          mocktestCount,
-                          hasMultipleMocktests,
-                          status: hasMultipleMocktests ? 'Đã nộp' : mocktestCount === 1 ? '1 mocktest' : 'Chưa nộp'
-                        });
+                        
                         return (
                           <tr 
                             key={student.id}

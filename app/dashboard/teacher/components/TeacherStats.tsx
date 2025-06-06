@@ -61,11 +61,7 @@ export default function TeacherStats() {
         const classesSnapshot = await getDocs(classesQuery);
         const totalClasses = classesSnapshot.size;
 
-        console.log('Teacher found:', {
-          email: session.user.email,
-          id: teacherDoc.id,
-          data: teacherData
-        });
+        
 
         // Get all students from classes
         let totalStudents = 0;
@@ -83,16 +79,7 @@ export default function TeacherStats() {
           }
         });
 
-        console.log('Stats found:', {
-          classes: {
-            count: totalClasses,
-            ids: classesSnapshot.docs.map(doc => doc.id)
-          },
-          students: {
-            count: totalStudents,
-            emails: Array.from(studentEmails)
-          }
-        });
+        
         
         // Calculate active students and weekly progress
         const today = new Date();
@@ -191,21 +178,7 @@ export default function TeacherStats() {
           }]
         });
 
-        console.log('Chart data:', {
-          labels,
-          data: chartData,
-          activeStudents: activeStudentsCount,
-          studentCount: totalStudents,
-          dailyStats: Object.fromEntries(
-            Array.from(submissionsByDate.entries()).map(([date, data]) => [
-              new Date(date).toISOString().split('T')[0],
-              {
-                total: data.total,
-                uniqueStudents: data.uniqueStudents.size
-              }
-            ])
-          )
-        });
+        
 
       } catch (error) {
         console.error('Error fetching teacher stats:', error);

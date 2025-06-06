@@ -17,7 +17,7 @@ export const getHomeworkProgress = async (userId: string): Promise<ProgressData[
     );
     
     const querySnapshot = await getDocs(q);
-    console.log('Found submissions:', querySnapshot.size);
+    
     
     if (querySnapshot.empty) {
       console.log('No submissions found for user:', userId);
@@ -32,7 +32,7 @@ export const getHomeworkProgress = async (userId: string): Promise<ProgressData[
     
     querySnapshot.docs.forEach(doc => {
       const data = doc.data();
-      console.log('Processing document:', data);
+      
       
       const date = data.date;
       const submissions = data.submissions || [];
@@ -49,7 +49,7 @@ export const getHomeworkProgress = async (userId: string): Promise<ProgressData[
       .map(([date, completed]) => ({ date, completed }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    console.log('Final progress data:', result);
+    
     return result;
   } catch (error) {
     console.error('Error getting homework progress:', error);

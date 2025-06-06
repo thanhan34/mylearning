@@ -63,9 +63,9 @@ export default function InlineStudentSubmissions({ student }: Props) {
     const loadHomeworkProgress = async () => {
       try {
         setError(null);
-        console.log('Loading progress for student:', student.id);
+        
         const progressData = await getHomeworkProgress(student.id);
-        console.log('Progress data:', progressData);
+        
 
         if (!progressData.length) {
           console.log('No progress data found');
@@ -77,7 +77,7 @@ export default function InlineStudentSubmissions({ student }: Props) {
           new Date(a.date).getTime() - new Date(b.date).getTime()
         );
 
-        console.log('Sorted data:', sortedData);
+        
 
         // Update submission dates for calendar
         const datesMap = sortedData.reduce((acc: {[key: string]: number}, {date, completed}) => {
@@ -98,7 +98,7 @@ export default function InlineStudentSubmissions({ student }: Props) {
         });
         const data = sortedData.map(d => d.completed);
         
-        console.log('Setting chart data:', { labels, data });
+        
 
         setHomeworkProgressData({
           labels,
@@ -129,7 +129,7 @@ export default function InlineStudentSubmissions({ student }: Props) {
       setError(null);
       try {
         const userSubmissions = await getHomeworkSubmissions(student.id, selectedDate);
-        console.log('User submissions:', userSubmissions);
+        
         setSubmissions(userSubmissions || []);
       } catch (error) {
         console.error('Error loading submissions:', error);

@@ -60,7 +60,7 @@ export const getStudentWeeklyStatus = async (
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    console.log('Fetching submissions for week:', monday, 'to', sunday);
+    
 
     // Query all homework submissions for this week
     const submissionsRef = collection(db, 'homework');

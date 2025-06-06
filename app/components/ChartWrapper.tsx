@@ -47,8 +47,8 @@ export default function ChartWrapper({ data, options, className = 'h-64' }: Char
 
   useEffect(() => {
     // Log data to verify it's being passed correctly
-    console.log('Chart data:', data);
-    console.log('Chart instance:', chartRef.current);
+    
+   
   }, [data]);
 
   const defaultOptions: ChartOptions<'line'> = {

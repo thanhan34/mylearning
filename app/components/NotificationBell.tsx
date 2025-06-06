@@ -43,11 +43,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
         unsubscribeRef.current = undefined;
       }
 
-      console.log('NotificationBell useEffect:', {
-        email: session?.user?.email,
-        userRole,
-        isTeacher: userRole === 'teacher'
-      });
+      
 
       if (!session?.user?.email || (userRole !== 'teacher' && userRole !== 'admin' && userRole !== 'assistant')) {
         console.log('NotificationBell: Conditions not met for notifications');
@@ -64,14 +60,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
 
         // Get initial notifications
         const initialNotifications = await getUnreadNotifications(session.user.email, userRole);
-        console.log('Initial notifications:', {
-          count: initialNotifications.length,
-          notifications: initialNotifications.map(n => ({
-            id: n.id,
-            message: n.message,
-            created_at: n.created_at instanceof Timestamp ? n.created_at.toDate().toISOString() : null
-          }))
-        });
+        
         
         if (!initialNotifications.length) {
           setIsLoading(false);
@@ -80,19 +69,12 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
         setNotifications(initialNotifications);
 
         // Subscribe to real-time updates
-        console.log('Setting up notifications subscription for:', session.user.email);
+        
         const unsubscribe = await subscribeToNotifications(
           session.user.email,
           userRole,
           (newNotifications) => {
-            console.log('Received notifications update:', {
-              count: newNotifications.length,
-              notifications: newNotifications.map(n => ({
-                id: n.id,
-                message: n.message,
-                created_at: n.created_at instanceof Timestamp ? n.created_at.toDate().toISOString() : null
-              }))
-            });
+           
             setNotifications(newNotifications);
             setIsLoading(false);
           },
@@ -118,7 +100,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
     setupNotifications();
 
     return () => {
-      console.log('Cleaning up notification subscription');
+      
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = undefined;

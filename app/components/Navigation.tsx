@@ -26,19 +26,13 @@ const Navigation = () => {
     const fetchUserData = async () => {
       if (session?.user?.email) {
         try {
-          console.log('Fetching user data for:', session.user.email);
           const usersRef = collection(db, 'users');
           const q = query(usersRef, where('email', '==', session.user.email));
           const querySnapshot = await getDocs(q);
           
           if (!querySnapshot.empty) {
             const userDoc = querySnapshot.docs[0];
-            const data = userDoc.data() as UserProfile;
-            console.log('User data fetched:', {
-              email: session.user.email,
-              role: data.role,
-              name: data.name
-            });
+            const data = userDoc.data() as UserProfile;            
             setUserData(data);
             
             // Update session role if it doesn't match

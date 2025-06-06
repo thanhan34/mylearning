@@ -33,7 +33,7 @@ export const getAdminStats = async (): Promise<AdminStats> => {
   }
 
   try {
-    console.log('Fetching fresh admin stats');
+    
     // Get users collection
     const usersRef = collection(db, 'users');
     

@@ -136,7 +136,6 @@ export const markClassAsPassed = async (classId: string): Promise<boolean> => {
 
 export const getUserByEmail = async (email: string): Promise<User | null> => {
   try {
-    console.log('Getting user by email:', email);
     
     // Try direct document lookup first using sanitized email
     const sanitizedEmail = email.replace(/[.#$[\]]/g, '_');
@@ -144,13 +143,7 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
     
     if (userDoc.exists()) {
       const data = userDoc.data();
-      console.log('Found user by direct lookup:', {
-        id: userDoc.id,
-        email: data.email,
-        role: data.role,
-        teacherId: data.teacherId,
-        passed: data.passed
-      });
+      
       return {
         id: userDoc.id,
         email: data.email,
@@ -176,13 +169,7 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0];
       const data = doc.data();
-      console.log('Found user by query:', {
-        id: doc.id,
-        email: data.email,
-        role: data.role,
-        teacherId: data.teacherId,
-        passed: data.passed
-      });
+      
       return {
         id: doc.id,
         email: data.email,

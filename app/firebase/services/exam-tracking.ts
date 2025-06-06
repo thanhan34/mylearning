@@ -284,7 +284,7 @@ export const getAllExamInfo = async (): Promise<ExamTrackingInfo[]> => {
           ...doc.data(),
         } as ExamTrackingInfo)
     );
-    console.log('All exam info:', examInfo);
+   
     return examInfo;
   } catch (error) {
     console.error("Error getting all exam info:", error);

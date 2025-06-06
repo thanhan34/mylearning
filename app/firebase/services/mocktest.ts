@@ -57,11 +57,7 @@ export const getMocktestsByStudent = async (studentId: string, classId?: string)
 };
 
 export const getMocktestsByClass = async (classId: string) => {
-  console.log("Getting mocktests for class:", {
-    queryClassId: classId,
-    collection: COLLECTION,
-    query: `where("classId", "==", "${classId}")`
-  });
+ 
   // First get all mocktests for this class
   const q = query(
     collection(db, COLLECTION),
@@ -69,36 +65,19 @@ export const getMocktestsByClass = async (classId: string) => {
     orderBy("submittedAt", "desc")
   );
 
-  console.log("Querying mocktests with:", {
-    collection: COLLECTION,
-    classId,
-    query: "where classId == classId orderBy submittedAt desc"
-  });
+  
   
   const querySnapshot = await getDocs(q);
   const mocktests = querySnapshot.docs.map(doc => {
     const data = doc.data();
-    console.log(`Mocktest ${doc.id} data:`, {
-      ...data,
-      classIdMatch: data.classId === classId,
-      classIdInDoc: data.classId,
-      expectedClassId: classId
-    });
+    
     return {
       id: doc.id,
       ...data
     };
   }) as Mocktest[];
 
-  console.log("Found mocktests for class:", {
-    classId,
-    count: mocktests.length,
-    mocktests: mocktests.map(m => ({
-      id: m.id,
-      studentId: m.studentId,
-      submittedAt: m.submittedAt.toDate()
-    }))
-  });
+  
   
   // Group by student to check counts
   const studentCounts = mocktests.reduce((acc, mocktest) => {
@@ -106,7 +85,7 @@ export const getMocktestsByClass = async (classId: string) => {
     return acc;
   }, {} as Record<string, number>);
   
-  console.log("Student mocktest counts:", studentCounts);
+  
   
   return mocktests;
 };

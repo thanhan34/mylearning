@@ -36,21 +36,14 @@ const retryOperation = async (
 };
 
 export const getClassById = async (classId: string): Promise<Class | null> => {
-  try {
-    console.log("Getting class by ID:", classId);
+  try {    
     const classRef = doc(db, 'classes', classId);
     
     // Get class document with retry logic
     const classDoc = await retryOperation(() => getDoc(classRef));
     
     if (classDoc.exists()) {
-      const classData = classDoc.data();
-      console.log("Found class data:", {
-        id: classDoc.id,
-        name: classData.name,
-        teacherId: classData.teacherId,
-        studentCount: classData.students?.length || 0
-      });
+      const classData = classDoc.data();      
       return {
         id: classDoc.id,
         ...classData
@@ -98,7 +91,7 @@ export const getAssistantClasses = async (assistantEmail: string): Promise<Class
       }
     }
     
-    console.log(`Retrieved ${allClasses.length} classes for assistant: ${assistantEmail}`);
+    
     return allClasses;
   } catch (error) {
     console.error('Error getting assistant classes:', error);
@@ -134,7 +127,7 @@ export const getTeacherClasses = async (teacherEmail: string): Promise<Class[]> 
       ...doc.data()
     } as Class));
     
-    console.log(`Retrieved ${classes.length} classes for teacher: ${teacherEmail}`);
+   
     return classes;
   } catch (error) {
     console.error('Error getting teacher classes:', error);

@@ -92,7 +92,7 @@ const ClassManagement = () => {
           status: classData.status || 'active' // Default to active if not specified
         };
       }));
-      console.log('Fetched classes:', classesData); // Debug log
+      
       setClasses(classesData);
       
       // Group classes by teacher

@@ -62,12 +62,7 @@ export const getUnreadNotifications = async (userEmail: string, type: 'teacher' 
       return [];
     }
     
-    console.log('Getting unread notifications:', {
-      email: userEmail,
-      id: userDoc.id,
-      type,
-      role: userDoc.role
-    });
+    
     
     // Determine the field to query based on user role
     const fieldName = type === 'teacher' ? 'teacher_id' : 'admin_id';
@@ -80,7 +75,7 @@ export const getUnreadNotifications = async (userEmail: string, type: 'teacher' 
     );
     
     const querySnapshot = await getDocs(q);
-    console.log(`Found ${querySnapshot.size} unread notifications for ${type} ${userEmail}`);
+    
     
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -99,7 +94,7 @@ export const subscribeToNotifications = async (
   onError?: (error: Error) => void
 ): Promise<() => void> => {
   try {
-    console.log('Subscribing to notifications:', { userEmail, type });
+    
     
     const notificationsRef = collection(db, 'notifications');
     const userDoc = await getUserByEmail(userEmail);
@@ -107,12 +102,7 @@ export const subscribeToNotifications = async (
       throw new Error('User not found');
     }
     
-    console.log('Found user:', {
-      email: userEmail,
-      id: userDoc.id,
-      type,
-      role: userDoc.role
-    });
+    
     
     // Determine the field to query based on user role
     const fieldName = type === 'teacher' ? 'teacher_id' : 'admin_id';
@@ -126,17 +116,7 @@ export const subscribeToNotifications = async (
 
     try {
       const initialSnapshot = await getDocs(q);
-      console.log('Initial notifications:', {
-        count: initialSnapshot.size,
-        fieldName,
-        userId: userDoc.id,
-        notifications: initialSnapshot.docs.map(doc => ({
-          id: doc.id,
-          message: doc.data().message,
-          created_at: doc.data().created_at?.toDate()?.toISOString(),
-          [fieldName]: doc.data()[fieldName]
-        }))
-      });
+      
 
       if (initialSnapshot.size > 0) {
         const notifications = initialSnapshot.docs.map(doc => ({
@@ -153,19 +133,7 @@ export const subscribeToNotifications = async (
     const unsubscribe = onSnapshot(
       q, 
       (snapshot) => {
-        console.log('Snapshot received:', {
-          size: snapshot.size,
-          empty: snapshot.empty,
-          fieldName,
-          userId: userDoc.id,
-          docs: snapshot.docs.map(doc => ({
-            id: doc.id,
-            message: doc.data().message,
-            is_read: doc.data().is_read,
-            created_at: doc.data().created_at?.toDate()?.toISOString(),
-            [fieldName]: doc.data()[fieldName]
-          }))
-        });
+        
         
         const notifications = snapshot.docs.map(doc => ({
           id: doc.id,

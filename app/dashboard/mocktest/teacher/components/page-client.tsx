@@ -24,15 +24,7 @@ export default function TeacherMocktestClient({ teacher, classes }: Props) {
       setLoading(true);
       try {
         // Get all mocktests for this class
-        const classMocktests = await getMocktestsByClass(selectedClass.id);
-        console.log("Fetched mocktests for class:", {
-          classId: selectedClass.id,
-          mocktests: classMocktests.map(m => ({
-            id: m.id,
-            studentId: m.studentId,
-            submittedAt: m.submittedAt.toDate()
-          }))
-        });
+        const classMocktests = await getMocktestsByClass(selectedClass.id);        
         setMocktests(classMocktests);
       } catch (error) {
         console.error("Error fetching mocktests:", error);
@@ -53,32 +45,18 @@ export default function TeacherMocktestClient({ teacher, classes }: Props) {
       m.classId === selectedClass.id
     );
 
-    console.log(`Student ${studentId} mocktests:`, {
-      studentId,
-      classId: selectedClass.id,
-      count: studentMocktests.length,
-      mocktests: studentMocktests.map(m => ({
-        id: m.id,
-        submittedAt: m.submittedAt.toDate()
-      }))
-    });
+    
     
     return studentMocktests.length;
   };
 
 
   useEffect(() => {
-    console.log("Selected class changed:", {
-      id: selectedClass?.id,
-      students: selectedClass?.students.map(s => ({
-        id: s.id,
-        name: s.name || s.email
-      }))
-    });
+    
   }, [selectedClass]);
 
   useEffect(() => {
-    console.log("All mocktests:", mocktests);
+    
   }, [mocktests]);
 
   if (classes.length === 0) {
@@ -180,12 +158,7 @@ export default function TeacherMocktestClient({ teacher, classes }: Props) {
                         const mocktestCount = getStudentMocktestCount(student.id);
                         const hasMultipleMocktests = mocktestCount > 1;
                         const status = hasMultipleMocktests ? 'Đã nộp' : mocktestCount === 1 ? '1 mocktest' : 'Chưa nộp';
-                        console.log(`Student ${student.name || student.email} status:`, {
-                          id: student.id,
-                          mocktestCount,
-                          hasMultipleMocktests,
-                          status
-                        });
+                        
                         return (
                           <tr 
                             key={student.id}

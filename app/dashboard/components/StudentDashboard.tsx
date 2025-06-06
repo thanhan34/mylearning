@@ -44,15 +44,8 @@ export default function StudentDashboard({
     const checkAssignment = async () => {
       if (session?.user?.email) {
         const user = await getUserByEmail(session.user.email) as User | null;
-        if (user) {
-          console.log('User assignment status:', { 
-            email: user.email,
-            classId: user.classId, 
-            teacherId: user.teacherId,
-            role: user.role 
-          });
-          const hasAssignment = !!user.classId || !!user.teacherId;
-          console.log('Is assigned:', hasAssignment);
+        if (user) {          
+          const hasAssignment = !!user.classId || !!user.teacherId;          
           setIsAssigned(hasAssignment);
         }
         setIsLoading(false);
