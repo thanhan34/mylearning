@@ -30,11 +30,9 @@ export default function StudentHomeworkTable({
       if (!session?.user?.email) return;
 
       setLoading(true);
-      console.log('Loading homework for user:', session.user.email);
-
+      
       try {
-        const homework = await getStudentHomework(session.user.email);
-        console.log('Received homework data:', homework);
+        const homework = await getStudentHomework(session.user.email);        
         setHomeworkData(homework);
       } catch (error) {
         console.error('Error loading homework:', error);
@@ -47,20 +45,11 @@ export default function StudentHomeworkTable({
   }, [session?.user?.email]);
 
   // Process and filter homework data - SIMPLIFIED VERSION
-  const processedHomework = useMemo(() => {
-    console.log('Processing homework data:', homeworkData);
+  const processedHomework = useMemo(() => {    
     if (!homeworkData.length) {
       console.log('No homework data to process');
       return [];
     }
-
-    // Show all homework first for debugging
-    console.log('All homework before any filtering:', homeworkData.map(hw => ({
-      id: hw.id,
-      date: hw.date,
-      userId: hw.userId,
-      submissions: hw.submissions?.length || 0
-    })));
 
     // TEMPORARILY REMOVE DATE FILTER FOR DEBUGGING
     let processed = homeworkData.map(homework => {
@@ -69,13 +58,7 @@ export default function StudentHomeworkTable({
         submission => submission.feedback && submission.feedback.trim() !== ''
       ).length;
 
-      console.log('Processing homework:', {
-        id: homework.id,
-        date: homework.date,
-        submissionCount,
-        feedbackCount,
-        submissions: homework.submissions
-      });
+      
 
       return {
         ...homework,
@@ -84,7 +67,7 @@ export default function StudentHomeworkTable({
       };
     });
 
-    console.log('Processed homework (no date filter):', processed);
+    
 
     // Apply search filter only
     if (searchTerm) {
@@ -111,9 +94,7 @@ export default function StudentHomeworkTable({
       }
 
       return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-    console.log('Final processed homework:', processed);
+    });    
     return processed;
   }, [homeworkData, searchTerm, sortBy, sortOrder]); // Removed selectedTimeframe dependency
 

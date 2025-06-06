@@ -24,31 +24,19 @@ const emailToUserId = (email: string): string => {
 
 export const getStudentHomework = async (userId: string): Promise<StudentHomeworkData[]> => {
   try {
-    console.log('Getting homework for userId:', userId);
-    
+        
     // Try both original email and converted format
-    const convertedUserId = emailToUserId(userId);
-    console.log('Converted userId (. to _):', convertedUserId);
-    
+    const convertedUserId = emailToUserId(userId);    
     // First, let's query ALL homework to see what's in the database
     const allHomeworkRef = collection(db, 'homework');
-    const allHomeworkSnapshot = await getDocs(allHomeworkRef);
-    console.log('=== DEBUG: ALL HOMEWORK IN DATABASE ===');
-    console.log('Total homework documents:', allHomeworkSnapshot.size);
-    
+    const allHomeworkSnapshot = await getDocs(allHomeworkRef);   
     allHomeworkSnapshot.docs.forEach((doc, index) => {
       const data = doc.data();
-      console.log(`Document ${index + 1}:`, {
-        id: doc.id,
-        userId: data.userId,
-        date: data.date,
-        userName: data.userName,
-        submissions: data.submissions?.length || 0
-      });
+      
     });
     
     // Try query with original email first
-    console.log('=== TRYING ORIGINAL EMAIL ===');
+    
     const submissionsRef1 = collection(db, 'homework');
     const q1 = query(
       submissionsRef1,
@@ -56,10 +44,7 @@ export const getStudentHomework = async (userId: string): Promise<StudentHomewor
     );
     
     const querySnapshot1 = await getDocs(q1);
-    console.log('Found homework documents with original email:', querySnapshot1.size);
     
-    // Try query with converted email (. to _)
-    console.log('=== TRYING CONVERTED EMAIL (. to _) ===');
     const submissionsRef2 = collection(db, 'homework');
     const q2 = query(
       submissionsRef2,
@@ -67,16 +52,14 @@ export const getStudentHomework = async (userId: string): Promise<StudentHomewor
     );
     
     const querySnapshot2 = await getDocs(q2);
-    console.log('Found homework documents with converted email:', querySnapshot2.size);
-    
+        
     // Use whichever query returned results
     let finalQuerySnapshot = querySnapshot1;
     let usedUserId = userId;
     
     if (querySnapshot1.empty && !querySnapshot2.empty) {
       finalQuerySnapshot = querySnapshot2;
-      usedUserId = convertedUserId;
-      console.log('Using converted userId:', convertedUserId);
+      usedUserId = convertedUserId;      
     } else if (!querySnapshot1.empty) {
       console.log('Using original userId:', userId);
     }
@@ -92,11 +75,7 @@ export const getStudentHomework = async (userId: string): Promise<StudentHomewor
     const homeworkData: StudentHomeworkData[] = [];
     
     finalQuerySnapshot.docs.forEach(doc => {
-      const data = doc.data();
-      console.log('Processing homework document:', {
-        id: doc.id,
-        data: data
-      });
+      const data = doc.data();     
 
       // Validate and process submissions - same as progress.ts
       let submissions: HomeworkSubmission[] = [];
@@ -121,7 +100,7 @@ export const getStudentHomework = async (userId: string): Promise<StudentHomewor
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
 
-    console.log('Final processed homework data:', homeworkData);
+    
     return homeworkData;
   } catch (error) {
     console.error('Error getting homework:', error);
