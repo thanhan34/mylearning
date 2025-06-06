@@ -12,7 +12,7 @@ import {
 import { Timestamp } from 'firebase/firestore';
 
 interface NotificationBellProps {
-  userRole: "teacher" | "admin" | "student";
+  userRole: "teacher" | "admin" | "student" | "assistant";
 }
 
 export default function NotificationBell({ userRole }: NotificationBellProps) {
@@ -49,7 +49,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
         isTeacher: userRole === 'teacher'
       });
 
-      if (!session?.user?.email || (userRole !== 'teacher' && userRole !== 'admin')) {
+      if (!session?.user?.email || (userRole !== 'teacher' && userRole !== 'admin' && userRole !== 'assistant')) {
         console.log('NotificationBell: Conditions not met for notifications');
         setNotifications([]);
         setIsLoading(false);

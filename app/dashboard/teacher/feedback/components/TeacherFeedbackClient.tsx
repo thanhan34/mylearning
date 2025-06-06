@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { getTeacherClasses } from '@/app/firebase/services/class';
+import { getTeacherClasses, getAssistantClasses } from '@/app/firebase/services/class';
+import { getUserByEmail } from '@/app/firebase/services/user';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/app/firebase/config';
 import FeedbackDetailsModal from '@/app/dashboard/admin/components/feedback/FeedbackDetailsModal';
@@ -45,7 +46,19 @@ export default function TeacherFeedbackClient() {
     const fetchClasses = async () => {
       if (session?.user?.email) {
         try {
-          const teacherClasses = await getTeacherClasses(session.user.email);
+          // Check user role first
+          const user = await getUserByEmail(session.user.email);
+          if (!user) {
+            console.error('User not found');
+            return;
+          }
+
+          let teacherClasses = [];
+          if (user.role === 'assistant') {
+            teacherClasses = await getAssistantClasses(session.user.email);
+          } else {
+            teacherClasses = await getTeacherClasses(session.user.email);
+          }
           setClasses(teacherClasses);
         } catch (error) {
           console.error('Error fetching classes:', error);

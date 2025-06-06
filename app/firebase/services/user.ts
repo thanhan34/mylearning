@@ -4,7 +4,7 @@ import { db } from '../config';
 export interface User {
   id: string;
   email: string;
-  role: "admin" | "teacher" | "student";
+  role: "admin" | "teacher" | "student" | "assistant";
   avatar?: string;
   target?: string;
   name?: string;
@@ -12,6 +12,8 @@ export interface User {
   teacherId?: string;
   passed?: boolean;
   supportClassId?: string; // ID of the support speaking class if enrolled
+  supportingTeacherIds?: string[]; // IDs of teachers being supported (for assistants)
+  assignedClassIds?: string[]; // Array of class IDs assigned to assistant
 }
 
 export const createUser = async (userData: {
@@ -76,14 +78,16 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       return {
         id: userSnap.id,
         email: data.email,
-        role: data.role as "admin" | "teacher" | "student",
+        role: data.role as "admin" | "teacher" | "student" | "assistant",
         avatar: data.avatar,
         target: data.target,
         name: data.name,
         classId: data.classId,
         teacherId: data.teacherId,
         passed: data.passed,
-        supportClassId: data.supportClassId
+        supportClassId: data.supportClassId,
+        supportingTeacherIds: data.supportingTeacherIds,
+        assignedClassIds: data.assignedClassIds
       };
     }
     
@@ -143,20 +147,23 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
       console.log('Found user by direct lookup:', {
         id: userDoc.id,
         email: data.email,
+        role: data.role,
         teacherId: data.teacherId,
         passed: data.passed
       });
       return {
         id: userDoc.id,
         email: data.email,
-        role: data.role as "admin" | "teacher" | "student",
+        role: data.role as "admin" | "teacher" | "student" | "assistant",
         avatar: data.avatar,
         target: data.target,
         name: data.name,
         classId: data.classId,
         teacherId: data.teacherId,
         passed: data.passed,
-        supportClassId: data.supportClassId
+        supportClassId: data.supportClassId,
+        supportingTeacherIds: data.supportingTeacherIds,
+        assignedClassIds: data.assignedClassIds
       };
     }
 
@@ -172,20 +179,23 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
       console.log('Found user by query:', {
         id: doc.id,
         email: data.email,
+        role: data.role,
         teacherId: data.teacherId,
         passed: data.passed
       });
       return {
         id: doc.id,
         email: data.email,
-        role: data.role as "admin" | "teacher" | "student",
+        role: data.role as "admin" | "teacher" | "student" | "assistant",
         avatar: data.avatar,
         target: data.target,
         name: data.name,
         classId: data.classId,
         teacherId: data.teacherId,
         passed: data.passed,
-        supportClassId: data.supportClassId
+        supportClassId: data.supportClassId,
+        supportingTeacherIds: data.supportingTeacherIds,
+        assignedClassIds: data.assignedClassIds
       };
     }
 

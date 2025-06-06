@@ -2,7 +2,7 @@ export interface UserProfile {
   name: string;
   email: string;
   avatar?: string;
-  role: 'student' | 'teacher' | 'admin';
+  role: 'student' | 'teacher' | 'admin' | 'assistant';
   classId?: string; // For students
   target?: string; // For students' target
 }

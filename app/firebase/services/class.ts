@@ -1,7 +1,39 @@
 import { collection, doc, getDoc, getDocs, query, where, runTransaction, arrayUnion, addDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '../config';
 import { Class, ClassStudent } from './types';
-import { getUserByEmail } from './user';
+import { getUserByEmail, User } from './user';
+
+// Helper function to delay execution (for rate limiting)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to implement exponential backoff
+const retryOperation = async (
+  operation: () => Promise<any>,
+  maxRetries = 5,
+  initialDelay = 1000
+): Promise<any> => {
+  let retries = 0;
+  
+  while (true) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      retries++;
+      
+      // If we've reached max retries or it's not a resource exhausted error, throw
+      if (retries >= maxRetries || 
+          !(error?.code === 'resource-exhausted' || 
+            (error?.name === 'FirebaseError' && error?.message?.includes('resource-exhausted')))) {
+        throw error;
+      }
+      
+      // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, etc.)
+      const waitTime = initialDelay * Math.pow(2, retries - 1);
+      console.log(`Retrying operation after ${waitTime}ms (attempt ${retries})`);
+      await delay(waitTime);
+    }
+  }
+};
 
 export const getClassById = async (classId: string): Promise<Class | null> => {
   try {
@@ -38,6 +70,47 @@ export const getClassById = async (classId: string): Promise<Class | null> => {
       });
     }
     return null;
+  }
+};
+
+export const getAssistantClasses = async (assistantEmail: string): Promise<Class[]> => {
+  try {
+    // Get assistant's document ID
+    const assistantDoc = await getUserByEmail(assistantEmail);
+    if (!assistantDoc) {
+      console.error('Assistant not found:', assistantEmail);
+      return [];
+    }
+
+    // Check if user is an assistant and has assigned classes
+    if (assistantDoc.role !== 'assistant' || !assistantDoc.assignedClassIds || assistantDoc.assignedClassIds.length === 0) {
+      console.error('User is not an assistant or has no assigned classes:', assistantEmail);
+      return [];
+    }
+
+    const allClasses: Class[] = [];
+    
+    // Get each assigned class by ID
+    for (const classId of assistantDoc.assignedClassIds) {
+      const classData = await getClassById(classId);
+      if (classData) {
+        allClasses.push(classData);
+      }
+    }
+    
+    console.log(`Retrieved ${allClasses.length} classes for assistant: ${assistantEmail}`);
+    return allClasses;
+  } catch (error) {
+    console.error('Error getting assistant classes:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        assistantEmail,
+        timestamp: new Date().toISOString()
+      });
+    }
+    return [];
   }
 };
 
@@ -220,38 +293,6 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
       });
     }
     return false;
-  }
-};
-
-// Helper function to delay execution (for rate limiting)
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Helper function to implement exponential backoff
-const retryOperation = async (
-  operation: () => Promise<any>,
-  maxRetries = 5,
-  initialDelay = 1000
-): Promise<any> => {
-  let retries = 0;
-  
-  while (true) {
-    try {
-      return await operation();
-    } catch (error: any) {
-      retries++;
-      
-      // If we've reached max retries or it's not a resource exhausted error, throw
-      if (retries >= maxRetries || 
-          !(error?.code === 'resource-exhausted' || 
-            (error?.name === 'FirebaseError' && error?.message?.includes('resource-exhausted')))) {
-        throw error;
-      }
-      
-      // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, etc.)
-      const waitTime = initialDelay * Math.pow(2, retries - 1);
-      console.log(`Retrying operation after ${waitTime}ms (attempt ${retries})`);
-      await delay(waitTime);
-    }
   }
 };
 

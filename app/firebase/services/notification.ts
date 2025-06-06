@@ -6,7 +6,7 @@ import { getUserByEmail } from './user';
 export const addNotification = async (
   recipientEmail: string, 
   message: string, 
-  type: 'teacher' | 'admin'
+  type: 'teacher' | 'admin' | 'assistant'
 ): Promise<boolean> => {
   try {
     console.log('Adding notification:', { recipientEmail, type });
@@ -52,7 +52,7 @@ export const addNotification = async (
   }
 };
 
-export const getUnreadNotifications = async (userEmail: string, type: 'teacher' | 'admin'): Promise<Notification[]> => {
+export const getUnreadNotifications = async (userEmail: string, type: 'teacher' | 'admin' | 'assistant'): Promise<Notification[]> => {
   try {
     const notificationsRef = collection(db, 'notifications');
     
@@ -94,7 +94,7 @@ export const getUnreadNotifications = async (userEmail: string, type: 'teacher' 
 
 export const subscribeToNotifications = async (
   userEmail: string,
-  type: 'teacher' | 'admin',
+  type: 'teacher' | 'admin' | 'assistant',
   callback: (notifications: Notification[]) => void,
   onError?: (error: Error) => void
 ): Promise<() => void> => {

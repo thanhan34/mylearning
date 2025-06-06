@@ -5,23 +5,31 @@ import { User } from '../../../../types/admin';
 import { db } from '../../../firebase/config';
 import { Switch } from '@headlessui/react';
 import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import SuccessNotification from '@/app/components/SuccessNotification';
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [showClassAssignModal, setShowClassAssignModal] = useState(false);
+  const [selectedAssistant, setSelectedAssistant] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showUnassigned, setShowUnassigned] = useState(false);
   const [showTeachers, setShowTeachers] = useState(false);
+  const [showAssistants, setShowAssistants] = useState(false);
+  const [notification, setNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [formData, setFormData] = useState({
     email: '',
     name: '',
-    role: 'student' as 'teacher' | 'student',
+    role: 'student' as 'teacher' | 'student' | 'assistant',
     teacherId: '',
+    supportingTeacherId: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
+    fetchClasses();
   }, []);
 
   const fetchUsers = async () => {
@@ -34,6 +42,45 @@ const UserManagement = () => {
       setUsers(usersData);
     } catch (error) {
       console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchClasses = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'classes'));
+      const classesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setClasses(classesData);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+  };
+
+  const handleAssignClassesToAssistant = async (assistant: User) => {
+    setSelectedAssistant(assistant);
+    setShowClassAssignModal(true);
+  };
+
+  const handleClassAssignment = async (classIds: string[]) => {
+    if (!selectedAssistant) return;
+
+    try {
+      await updateDoc(doc(db, 'users', selectedAssistant.id), {
+        assignedClassIds: classIds
+      });
+      
+      setNotification({
+        message: `Đã chỉ định ${classIds.length} lớp cho trợ giảng ${selectedAssistant.name}`,
+        show: true
+      });
+      
+      setShowClassAssignModal(false);
+      setSelectedAssistant(null);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error assigning classes to assistant:', error);
     }
   };
 
@@ -52,7 +99,7 @@ const UserManagement = () => {
         });
       }
       setShowForm(false);
-      setFormData({ email: '', name: '', role: 'student', teacherId: '' });
+      setFormData({ email: '', name: '', role: 'student', teacherId: '', supportingTeacherId: '' });
       setEditingId(null);
       fetchUsers();
     } catch (error) {
@@ -76,10 +123,20 @@ const UserManagement = () => {
       email: user.email,
       name: user.name,
       role: user.role,
-      teacherId: user.teacherId || ''
+      teacherId: user.teacherId || '',
+      supportingTeacherId: user.supportingTeacherId || ''
     });
     setEditingId(user.id);
     setShowForm(true);
+  };
+
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'teacher': return 'Giáo viên';
+      case 'student': return 'Học viên';
+      case 'assistant': return 'Trợ giảng';
+      default: return role;
+    }
   };
 
   return (
@@ -110,7 +167,10 @@ const UserManagement = () => {
                   checked={showUnassigned}
                   onChange={(checked) => {
                     setShowUnassigned(checked);
-                    if (checked) setShowTeachers(false);
+                    if (checked) {
+                      setShowTeachers(false);
+                      setShowAssistants(false);
+                    }
                   }}
                   className={`${
                     showUnassigned ? 'bg-[#fc5d01]' : 'bg-gray-200'
@@ -129,7 +189,10 @@ const UserManagement = () => {
                   checked={showTeachers}
                   onChange={(checked) => {
                     setShowTeachers(checked);
-                    if (checked) setShowUnassigned(false);
+                    if (checked) {
+                      setShowUnassigned(false);
+                      setShowAssistants(false);
+                    }
                   }}
                   className={`${
                     showTeachers ? 'bg-[#fc5d01]' : 'bg-gray-200'
@@ -143,14 +206,36 @@ const UserManagement = () => {
                 </Switch>
                 <span className="text-sm text-gray-600">Chỉ hiện giáo viên</span>
               </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={showAssistants}
+                  onChange={(checked) => {
+                    setShowAssistants(checked);
+                    if (checked) {
+                      setShowUnassigned(false);
+                      setShowTeachers(false);
+                    }
+                  }}
+                  className={`${
+                    showAssistants ? 'bg-[#fc5d01]' : 'bg-gray-200'
+                  } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
+                >
+                  <span
+                    className={`${
+                      showAssistants ? 'translate-x-6' : 'translate-x-1'
+                    } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  />
+                </Switch>
+                <span className="text-sm text-gray-600">Chỉ hiện trợ giảng</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-96">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4 text-[#fc5d01]">
               {editingId ? 'Chỉnh sửa tài khoản' : 'Thêm tài khoản mới'}
             </h3>
@@ -179,19 +264,39 @@ const UserManagement = () => {
                 <label className="block text-sm font-medium mb-1 text-black">Vai trò</label>
                 <select
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'teacher' | 'student' })}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'teacher' | 'student' | 'assistant' })}
                   className="w-full p-2 border rounded-lg text-black"
                 >
                   <option value="student">Học viên</option>
                   <option value="teacher">Giáo viên</option>
+                  <option value="assistant">Trợ giảng</option>
                 </select>
               </div>
+              {formData.role === 'assistant' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1 text-black">Giáo viên hỗ trợ</label>
+                  <select
+                    value={formData.supportingTeacherId}
+                    onChange={(e) => setFormData({ ...formData, supportingTeacherId: e.target.value })}
+                    className="w-full p-2 border rounded-lg text-black"
+                  >
+                    <option value="">Chọn giáo viên</option>
+                    {users
+                      .filter((u) => u.role === 'teacher')
+                      .map((teacher) => (
+                        <option key={teacher.id} value={teacher.id}>
+                          {teacher.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
               <div className="flex justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowForm(false);
-                    setFormData({ email: '', name: '', role: 'student', teacherId: '' });
+                    setFormData({ email: '', name: '', role: 'student', teacherId: '', supportingTeacherId: '' });
                     setEditingId(null);
                   }}
                   className="px-4 py-2 bg-gray-200 rounded-lg"
@@ -218,7 +323,7 @@ const UserManagement = () => {
               <th className="px-6 py-3 text-left text-sm font-semibold">Tên</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Vai trò</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Ngày tạo</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Giáo viên phụ trách</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Phân công</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Thao tác</th>
             </tr>
           </thead>
@@ -232,6 +337,9 @@ const UserManagement = () => {
                 if (showTeachers) {
                   return matchesSearch && user.role === 'teacher';
                 }
+                if (showAssistants) {
+                  return matchesSearch && user.role === 'assistant';
+                }
                 return matchesSearch;
               })
               .map((user) => (
@@ -239,7 +347,7 @@ const UserManagement = () => {
                 <td className="px-6 py-4">{user.email}</td>
                 <td className="px-6 py-4">{user.name}</td>
                 <td className="px-6 py-4">
-                  {user.role === 'teacher' ? 'Giáo viên' : 'Học viên'}
+                  {getRoleDisplayName(user.role)}
                 </td>
                 <td className="px-6 py-4">
                   {new Date(user.createdAt).toLocaleDateString('vi-VN')}
@@ -289,6 +397,51 @@ const UserManagement = () => {
                         ))}
                     </select>
                   )}
+                  {user.role === 'assistant' && (
+                    <div className="space-y-2">
+                      <select
+                        value={user.supportingTeacherId || ''}
+                        onChange={async (e) => {
+                          const supportingTeacherId = e.target.value;
+                          try {
+                            await updateDoc(doc(db, 'users', user.id), {
+                              supportingTeacherId: supportingTeacherId || null
+                            });
+                            fetchUsers();
+                          } catch (error) {
+                            console.error('Error updating assistant assignment:', error);
+                          }
+                        }}
+                        className="w-full p-2 border rounded-lg text-sm"
+                      >
+                        <option value="">Chọn giáo viên hỗ trợ</option>
+                        {users
+                          .filter((u) => u.role === 'teacher')
+                          .map((teacher) => (
+                            <option key={teacher.id} value={teacher.id}>
+                              {teacher.name}
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        onClick={() => handleAssignClassesToAssistant(user)}
+                        className="w-full px-2 py-1 bg-[#fc5d01] text-white text-xs rounded hover:bg-[#fd7f33]"
+                      >
+                        Chỉ định lớp ({user.assignedClassIds?.length || 0})
+                      </button>
+                      {user.assignedClassIds && user.assignedClassIds.length > 0 && (
+                        <div className="text-xs text-gray-600">
+                          {user.assignedClassIds.map(classId => {
+                            const classInfo = classes.find(c => c.id === classId);
+                            return classInfo ? classInfo.name : classId;
+                          }).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {user.role === 'teacher' && (
+                    <span className="text-gray-500">-</span>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <button
@@ -308,6 +461,96 @@ const UserManagement = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Class Assignment Modal */}
+      {showClassAssignModal && selectedAssistant && (
+        <ClassAssignmentModal
+          assistant={selectedAssistant}
+          classes={classes}
+          onAssign={handleClassAssignment}
+          onClose={() => {
+            setShowClassAssignModal(false);
+            setSelectedAssistant(null);
+          }}
+        />
+      )}
+
+      {/* Success Notification */}
+      {notification.show && (
+        <SuccessNotification
+          message={notification.message}
+          onClose={() => setNotification({message: '', show: false})}
+        />
+      )}
+    </div>
+  );
+};
+
+// Class Assignment Modal Component
+const ClassAssignmentModal = ({ 
+  assistant, 
+  classes, 
+  onAssign, 
+  onClose 
+}: {
+  assistant: User;
+  classes: any[];
+  onAssign: (classIds: string[]) => void;
+  onClose: () => void;
+}) => {
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>(
+    assistant.assignedClassIds || []
+  );
+
+  const handleClassToggle = (classId: string) => {
+    setSelectedClassIds(prev => 
+      prev.includes(classId) 
+        ? prev.filter(id => id !== classId)
+        : [...prev, classId]
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
+        <h3 className="text-lg font-semibold mb-4 text-[#fc5d01]">
+          Chỉ định lớp cho trợ giảng: {assistant.name}
+        </h3>
+        
+        <div className="space-y-2 mb-6">
+          {classes.map(classItem => (
+            <label key={classItem.id} className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedClassIds.includes(classItem.id)}
+                onChange={() => handleClassToggle(classItem.id)}
+                className="rounded border-gray-300 text-[#fc5d01] focus:ring-[#fc5d01]"
+              />
+              <span className="text-black">
+                {classItem.name} 
+                <span className="text-gray-500 text-sm ml-2">
+                  ({classItem.students?.length || 0} học viên)
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 rounded-lg"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={() => onAssign(selectedClassIds)}
+            className="px-4 py-2 bg-[#fc5d01] text-white rounded-lg hover:bg-[#fd7f33]"
+          >
+            Lưu ({selectedClassIds.length} lớp)
+          </button>
+        </div>
       </div>
     </div>
   );

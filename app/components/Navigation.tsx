@@ -86,8 +86,16 @@ const Navigation = () => {
 
   const studentNavItems: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> },
+    { href: "/dashboard/homework-feedback", label: "Bài tập & Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
+    { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
+  ];
+
+  const assistantNavItems: NavItem[] = [
+    { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
+    { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
+    { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
   ];
 
@@ -100,6 +108,8 @@ const Navigation = () => {
         return teacherNavItems;
       case "student":
         return studentNavItems;
+      case "assistant":
+        return assistantNavItems;
       default:
         return [];
     }
@@ -174,7 +184,7 @@ const Navigation = () => {
           
           {/* Desktop right section */}
           <div className="hidden md:flex items-center space-x-4">
-            {(userData?.role === "teacher" || userData?.role === "admin") && session?.user?.email && (
+            {(userData?.role === "teacher" || userData?.role === "admin" || userData?.role === "assistant") && session?.user?.email && (
               <NotificationBell 
                 userRole={userData.role} 
                 key={`${session.user.email}-${userData.role}`} 
@@ -206,7 +216,7 @@ const Navigation = () => {
                   {session?.user?.email}
                 </span>
                 <span className="text-xs text-[#fc5d01] capitalize font-medium">
-                  {session?.user?.role || 'User'}
+                  {session?.user?.role === 'assistant' ? 'Trợ giảng' : session?.user?.role || 'User'}
                 </span>
               </div>
             </div>
@@ -272,12 +282,12 @@ const Navigation = () => {
                   {session?.user?.email}
                 </span>
                 <span className="text-xs text-[#fc5d01] capitalize font-medium">
-                  {session?.user?.role || 'User'}
+                  {session?.user?.role === 'assistant' ? 'Trợ giảng' : session?.user?.role || 'User'}
                 </span>
               </div>
             </div>
             
-            {(userData?.role === "teacher" || userData?.role === "admin") && session?.user?.email && (
+            {(userData?.role === "teacher" || userData?.role === "admin" || userData?.role === "assistant") && session?.user?.email && (
               <div className="px-4 py-2">
                 <NotificationBell 
                   userRole={userData.role} 

@@ -12,7 +12,7 @@ export default withAuth(
     }
 
     if (path.startsWith("/dashboard/class") && 
-        !["admin", "teacher"].includes(token?.role as string)) {
+        !["admin", "teacher", "assistant"].includes(token?.role as string)) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
@@ -26,9 +26,9 @@ export default withAuth(
       }
     }
 
-    // Teacher route protection
+    // Teacher route protection (allow assistants too)
     if (path.startsWith("/dashboard/teacher") && 
-        !["admin", "teacher"].includes(token?.role as string)) {
+        !["admin", "teacher", "assistant"].includes(token?.role as string)) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 

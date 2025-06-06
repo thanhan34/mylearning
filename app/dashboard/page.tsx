@@ -175,7 +175,7 @@ export default function DashboardPage() {
         role={userRole}
       />
       
-      {userRole === 'teacher' ? (
+      {userRole === 'teacher' || userRole === 'assistant' ? (
         <TeacherStats />
       ) : (
         <StudentDashboard 

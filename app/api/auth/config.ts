@@ -124,7 +124,7 @@ export const authOptions: AuthOptions = {
       try {
         if (session.user && token) {
           session.user.id = token.id as string;
-          session.user.role = token.role as "admin" | "teacher" | "student";
+          session.user.role = token.role as "admin" | "teacher" | "student" | "assistant";
           session.accessToken = token.accessToken;
           session.refreshToken = token.refreshToken;
           console.log('Session created:', {
