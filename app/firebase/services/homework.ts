@@ -161,7 +161,9 @@ export const updateHomeworkFeedback = async (
   date: string,
   submissionType: string,
   questionNumber: number,
-  feedback: string
+  feedback: string,
+  feedbackBy?: string,
+  feedbackByName?: string
 ): Promise<boolean> => {
   try {
     console.log('Updating feedback for:', {
@@ -209,7 +211,13 @@ export const updateHomeworkFeedback = async (
     // Find and update the specific submission
     const updatedSubmissions = submissions.map((sub: HomeworkSubmission) => {
       if (sub.type === submissionType && sub.questionNumber === questionNumber) {
-        return { ...sub, feedback };
+        return { 
+          ...sub, 
+          feedback,
+          feedbackBy,
+          feedbackByName,
+          feedbackAt: new Date().toISOString()
+        };
       }
       return sub;
     });

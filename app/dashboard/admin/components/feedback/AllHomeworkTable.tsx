@@ -34,6 +34,7 @@ interface ExtendedHomeworkData extends HomeworkData {
   studentId: string;
   classId: string;
   teacherId: string;
+  feedbackByNames: string[]; // Danh sách tên người đã cho feedback
 }
 
 interface AllHomeworkTableProps {
@@ -143,6 +144,12 @@ export default function AllHomeworkTable({
         submission => submission.feedback && submission.feedback.trim() !== ''
       ).length;
 
+      // Thu thập danh sách tên người đã cho feedback
+      const feedbackByNames = (homework.submissions || [])
+        .filter(submission => submission.feedback && submission.feedback.trim() !== '' && submission.feedbackByName)
+        .map(submission => submission.feedbackByName!)
+        .filter((name, index, array) => array.indexOf(name) === index); // Loại bỏ trùng lặp
+
       return {
         ...homework,
         studentName: studentInfo.name,
@@ -152,7 +159,8 @@ export default function AllHomeworkTable({
         totalCount: submissionCount,
         studentId: homework.userId,
         classId,
-        teacherId
+        teacherId,
+        feedbackByNames
       } as ExtendedHomeworkData;
     }).filter(Boolean) as ExtendedHomeworkData[];
 
@@ -340,6 +348,9 @@ export default function AllHomeworkTable({
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Người cho feedback
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Hành động
                 </th>
               </tr>
@@ -347,7 +358,7 @@ export default function AllHomeworkTable({
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedHomework.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                     <div className="flex flex-col items-center">
                       <div className="text-4xl mb-2">{emptyIcon}</div>
                       <div className="text-lg font-medium mb-1">{emptyMessage}</div>
@@ -382,6 +393,21 @@ export default function AllHomeworkTable({
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.color}`}>
                           {status.text}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {homework.feedbackByNames.length > 0 ? (
+                            <div className="space-y-1">
+                              {homework.feedbackByNames.map((name, index) => (
+                                <div key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-[#fedac2] text-[#fc5d01] mr-1 mb-1">
+                                  {name}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic text-xs">Chưa có feedback</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button

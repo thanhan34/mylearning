@@ -7,6 +7,9 @@ export interface HomeworkSubmission {
   link: string;
   date: string;
   feedback?: string;
+  feedbackBy?: string; // ID của người cho feedback
+  feedbackByName?: string; // Tên của người cho feedback
+  feedbackAt?: string; // Thời gian cho feedback
 }
 
 export interface SubmissionWithId extends HomeworkSubmission {

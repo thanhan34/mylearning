@@ -61,7 +61,9 @@ export default function FeedbackDetailsModal({
         date,
         editingFeedback.type,
         editingFeedback.questionNumber,
-        editingFeedback.feedback
+        editingFeedback.feedback,
+        session?.user?.id || undefined,
+        session?.user?.name || session?.user?.email || undefined
       );
       
       if (success) {
