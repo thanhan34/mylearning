@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { UserProfile } from "../../types/profile";
-import { RiDashboardLine, RiProfileLine, RiTeamLine, RiLogoutBoxRLine, RiFileList2Line, RiFileTextLine, RiCalendarCheckLine, RiChat1Line, RiMenuLine, RiCloseLine } from "react-icons/ri";
+import { RiDashboardLine, RiProfileLine, RiTeamLine, RiLogoutBoxRLine, RiFileList2Line, RiFileTextLine, RiCalendarCheckLine, RiChat1Line, RiMenuLine, RiCloseLine, RiCheckboxLine } from "react-icons/ri";
 
 interface NavItem {
   href: string;
@@ -63,6 +63,7 @@ const Navigation = () => {
     { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest/admin", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
+    { href: "/dashboard/admin/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-5 h-5" /> },
     { href: "/dashboard/admin/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-5 h-5" /> },
     { href: "/dashboard/admin/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
@@ -73,6 +74,7 @@ const Navigation = () => {
     { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
+    { href: "/dashboard/teacher/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-5 h-5" /> },
     { href: "/dashboard/teacher/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-5 h-5" /> },
     { href: "/dashboard/teacher/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
@@ -83,6 +85,7 @@ const Navigation = () => {
     { href: "/dashboard/homework-feedback", label: "Bài tập & Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
+    { href: "/dashboard/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
   ];
 
@@ -90,6 +93,7 @@ const Navigation = () => {
     { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
+    { href: "/dashboard/teacher/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-5 h-5" /> },
     { href: "/dashboard/profile", label: "Profile", icon: <RiProfileLine className="w-5 h-5" /> },
   ];
 
