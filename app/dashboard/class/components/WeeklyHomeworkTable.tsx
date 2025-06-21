@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { getStudentWeeklyStatus } from '@/app/firebase/services/homework';
 import { ClassStudent } from '@/app/firebase/services/types';
 import { getUserById, User, updateUserPassedStatus } from '@/app/firebase/services/user';
+import { getMultipleStudentNicknames } from '@/app/firebase/services/student-nickname';
+import NicknameEditor from '@/app/dashboard/components/NicknameEditor';
 
 interface WeeklyHomeworkTableProps {
   classId: string;
   students: ClassStudent[];
+  teacherId: string;
   showPassedStudents: boolean;
   onStudentSelect?: (student: ClassStudent) => void;
   onRemoveStudent?: (studentId: string) => void;
@@ -19,6 +22,7 @@ const DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const WeeklyHomeworkTable = ({ 
   classId, 
   students,
+  teacherId,
   showPassedStudents,
   onStudentSelect,
   onRemoveStudent,
@@ -30,6 +34,7 @@ const WeeklyHomeworkTable = ({
   const [weekRange, setWeekRange] = useState('');
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [fullStudentData, setFullStudentData] = useState<Record<string, User>>({});
+  const [nicknames, setNicknames] = useState<Record<string, string>>({});
 
   // Fetch full user data to get passed status
   useEffect(() => {
@@ -50,6 +55,23 @@ const WeeklyHomeworkTable = ({
     
     fetchUserData();
   }, [students]);
+
+  // Fetch nicknames for all students
+  useEffect(() => {
+    const fetchNicknames = async () => {
+      if (teacherId && students.length > 0) {
+        try {
+          const studentIds = students.map(student => student.id);
+          const studentNicknames = await getMultipleStudentNicknames(teacherId, studentIds);
+          setNicknames(studentNicknames);
+        } catch (error) {
+          console.error('Error fetching nicknames:', error);
+        }
+      }
+    };
+
+    fetchNicknames();
+  }, [teacherId, students]);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -149,6 +171,13 @@ const WeeklyHomeworkTable = ({
     }
   };
 
+  const handleNicknameUpdate = (studentId: string, nickname: string) => {
+    setNicknames(prev => ({
+      ...prev,
+      [studentId]: nickname
+    }));
+  };
+
   // Filter students based on passed status
   const filteredStudents = students.filter(student => 
     showPassedStudents || !fullStudentData[student.id]?.passed
@@ -195,7 +224,15 @@ const WeeklyHomeworkTable = ({
                 onClick={() => onStudentSelect?.(student)}
                 className="border-b hover:bg-[#fedac2] cursor-pointer"
               >
-                <td className="px-6 py-4">{student.name}</td>
+                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                  <NicknameEditor
+                    studentId={student.id}
+                    teacherId={teacherId}
+                    currentNickname={nicknames[student.id] || ''}
+                    studentName={student.name}
+                    onNicknameUpdate={handleNicknameUpdate}
+                  />
+                </td>
                 <td className="px-6 py-4 text-center">
                   <div 
                     className="flex items-center justify-center"

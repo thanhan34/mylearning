@@ -264,6 +264,7 @@ export default function ClassManagement() {
             <WeeklyHomeworkTable 
               classId={selectedClass.id}
               students={selectedClass.students}
+              teacherId={selectedClass.teacherId}
               showPassedStudents={showPassedStudents}
               onStudentSelect={(student) => setSelectedStudent(student)}
               onRemoveStudent={handleRemoveStudent}

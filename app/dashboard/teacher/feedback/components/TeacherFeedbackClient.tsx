@@ -8,6 +8,7 @@ import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/app/firebase/config';
 import FeedbackDetailsModal from '@/app/dashboard/admin/components/feedback/FeedbackDetailsModal';
 import { HomeworkSubmission } from '@/app/firebase/services/types';
+import { getMultipleStudentNicknames } from '@/app/firebase/services/student-nickname';
 import { format } from 'date-fns';
 
 interface Class {
@@ -40,6 +41,8 @@ export default function TeacherFeedbackClient() {
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<HomeworkData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [nicknames, setNicknames] = useState<Record<string, string>>({});
+  const [currentTeacherId, setCurrentTeacherId] = useState<string>('');
 
   // Fetch teacher's classes
   useEffect(() => {
@@ -52,6 +55,8 @@ export default function TeacherFeedbackClient() {
             console.error('User not found');
             return;
           }
+
+          setCurrentTeacherId(user.id);
 
           let teacherClasses = [];
           if (user.role === 'assistant') {
@@ -68,6 +73,23 @@ export default function TeacherFeedbackClient() {
 
     fetchClasses();
   }, [session]);
+
+  // Fetch nicknames when selected class changes
+  useEffect(() => {
+    const fetchNicknames = async () => {
+      if (selectedClass && currentTeacherId) {
+        try {
+          const studentIds = selectedClass.students.map(student => student.id);
+          const studentNicknames = await getMultipleStudentNicknames(currentTeacherId, studentIds);
+          setNicknames(studentNicknames);
+        } catch (error) {
+          console.error('Error fetching nicknames:', error);
+        }
+      }
+    };
+
+    fetchNicknames();
+  }, [selectedClass, currentTeacherId]);
 
   // Function to fetch homework submissions for a class
   const fetchHomeworkSubmissions = async (classData: Class | null) => {
@@ -240,7 +262,16 @@ export default function TeacherFeedbackClient() {
                       return (
                         <tr key={submission.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{submission.userName}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {nicknames[submission.userId] ? (
+                                <div>
+                                  <div className="font-semibold text-[#fc5d01]">{nicknames[submission.userId]}</div>
+                                  <div className="text-xs text-gray-500">{submission.userName}</div>
+                                </div>
+                              ) : (
+                                submission.userName
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">{formatDate(submission.timestamp)}</div>

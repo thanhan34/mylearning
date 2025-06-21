@@ -33,6 +33,7 @@ export interface ClassStudent {
   id: string;
   name: string;
   email: string;
+  nickname?: string;
 }
 
 export interface Notification {
