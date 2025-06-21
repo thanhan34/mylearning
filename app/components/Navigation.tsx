@@ -127,21 +127,44 @@ const Navigation = () => {
     }
   ];
 
-  const studentNavItems: NavItem[] = [
-    { href: "/dashboard", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> },
-    { href: "/dashboard/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-5 h-5" /> },
-    { href: "/dashboard/homework-feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
-    { href: "/dashboard/mocktest", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
-    { href: "/dashboard/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-5 h-5" /> },
-    { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
+  const studentNavCategories: NavCategory[] = [
+    {
+      label: "Học tập",
+      icon: <RiBookOpenLine className="w-5 h-5" />,
+      items: [
+        { href: "/dashboard/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
+        { href: "/dashboard/homework-feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
+        { href: "/dashboard/mocktest", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
+        { href: "/dashboard/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
+      ]
+    },
+    {
+      label: "Tiện ích",
+      icon: <RiSettings4Line className="w-5 h-5" />,
+      items: [
+        { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
+      ]
+    }
   ];
 
-  const assistantNavItems: NavItem[] = [
-    { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-5 h-5" /> },
-    { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
-    { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
-    { href: "/dashboard/teacher/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-5 h-5" /> },
-    { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
+  const assistantNavCategories: NavCategory[] = [
+    {
+      label: "Học tập",
+      icon: <RiBookOpenLine className="w-5 h-5" />,
+      items: [
+        { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
+        { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
+        { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
+        { href: "/dashboard/teacher/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
+      ]
+    },
+    {
+      label: "Tiện ích",
+      icon: <RiSettings4Line className="w-5 h-5" />,
+      items: [
+        { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
+      ]
+    }
   ];
 
   const getNavData = () => {
@@ -161,13 +184,15 @@ const Navigation = () => {
         };
       case "student":
         return { 
-          categories: [], 
-          mainItems: studentNavItems
+          categories: studentNavCategories, 
+          mainItems: [
+            { href: "/dashboard", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> }
+          ]
         };
       case "assistant":
         return { 
-          categories: [], 
-          mainItems: assistantNavItems
+          categories: assistantNavCategories, 
+          mainItems: []
         };
       default:
         return { categories: [], mainItems: [] };
