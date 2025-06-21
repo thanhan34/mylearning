@@ -650,6 +650,7 @@ const ClassManagement = () => {
             <WeeklyHomeworkTable 
               classId={selectedClass.id}
               students={selectedClass.students}
+              teacherId={selectedClass.teacherId}
               showPassedStudents={true}
               onStudentSelect={handleStudentSelect}
               onRemoveStudent={async (studentId) => {
