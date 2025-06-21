@@ -5,6 +5,7 @@ export interface User {
   role: 'teacher' | 'student' | 'assistant';
   createdAt: string;
   teacherId?: string; // ID of assigned teacher (for students)
+  classId?: string; // ID of class the student belongs to (for students)
   assignedStudents?: string[]; // Array of student IDs (for teachers)
   supportingTeacherId?: string; // ID of teacher being supported (for assistants)
   assignedClassIds?: string[]; // Array of class IDs assigned to assistant

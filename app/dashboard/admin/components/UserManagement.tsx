@@ -10,6 +10,7 @@ import SuccessNotification from '@/app/components/SuccessNotification';
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
+  const [classNameMap, setClassNameMap] = useState<{[key: string]: string}>({});
   const [showForm, setShowForm] = useState(false);
   const [showClassAssignModal, setShowClassAssignModal] = useState(false);
   const [selectedAssistant, setSelectedAssistant] = useState<User | null>(null);
@@ -53,6 +54,13 @@ const UserManagement = () => {
         ...doc.data()
       }));
       setClasses(classesData);
+      
+      // Create class name mapping for quick lookup
+      const nameMap: {[key: string]: string} = {};
+      classesData.forEach((classItem: any) => {
+        nameMap[classItem.id] = classItem.name;
+      });
+      setClassNameMap(nameMap);
     } catch (error) {
       console.error('Error fetching classes:', error);
     }
@@ -322,6 +330,7 @@ const UserManagement = () => {
               <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Tên</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Vai trò</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Lớp học</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Ngày tạo</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Phân công</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Thao tác</th>
@@ -348,6 +357,21 @@ const UserManagement = () => {
                 <td className="px-6 py-4">{user.name}</td>
                 <td className="px-6 py-4">
                   {getRoleDisplayName(user.role)}
+                </td>
+                <td className="px-6 py-4">
+                  {user.role === 'student' ? (
+                    user.classId ? (
+                      <span className="px-2 py-1 bg-[#fedac2] text-[#fc5d01] rounded-full text-sm font-medium">
+                        {classNameMap[user.classId] || 'Đang tải...'}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
+                        Chưa phân lớp
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-gray-500">-</span>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   {new Date(user.createdAt).toLocaleDateString('vi-VN')}
