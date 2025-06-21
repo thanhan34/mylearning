@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { UserProfile } from "../../types/profile";
-import { RiDashboardLine, RiProfileLine, RiTeamLine, RiLogoutBoxRLine, RiFileList2Line, RiFileTextLine, RiCalendarCheckLine, RiChat1Line, RiMenuLine, RiCloseLine, RiCheckboxLine } from "react-icons/ri";
+import { RiDashboardLine, RiProfileLine, RiTeamLine, RiLogoutBoxRLine, RiFileList2Line, RiFileTextLine, RiCalendarCheckLine, RiChat1Line, RiMenuLine, RiCloseLine, RiCheckboxLine, RiTaskLine } from "react-icons/ri";
 
 interface NavItem {
   href: string;
@@ -60,6 +60,7 @@ const Navigation = () => {
 
   const adminNavItems: NavItem[] = [
     { href: "/dashboard/admin", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> },       
+    { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-5 h-5" /> },
     { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest/admin", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
@@ -71,6 +72,7 @@ const Navigation = () => {
 
   const teacherNavItems: NavItem[] = [     
     { href: "/dashboard/class", label: "Classes", icon: <RiTeamLine className="w-5 h-5" /> },
+    { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-5 h-5" /> },
     { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
@@ -82,6 +84,7 @@ const Navigation = () => {
 
   const studentNavItems: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> },
+    { href: "/dashboard/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-5 h-5" /> },
     { href: "/dashboard/homework-feedback", label: "Bài tập & Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
@@ -90,6 +93,7 @@ const Navigation = () => {
   ];
 
   const assistantNavItems: NavItem[] = [
+    { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-5 h-5" /> },
     { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-5 h-5" /> },
     { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-5 h-5" /> },
     { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-5 h-5" /> },
