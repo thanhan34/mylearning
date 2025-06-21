@@ -9,6 +9,7 @@ import { db } from '../../firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { 
   getTeacherClasses,
+  getAssistantClasses,
   removeStudentFromClass,
   addStudentToClass,
   createClass
@@ -45,22 +46,26 @@ export default function ClassManagement() {
       if (success) {
         // Refresh class data
         if (session?.user?.email) {
-          getTeacherClasses(session.user.email).then(async (fetchedClasses) => {
-            setClasses(fetchedClasses);
-            
-            // Check passed status for each class
-            const passedStatus: Record<string, boolean> = {};
-            for (const cls of fetchedClasses) {
-              passedStatus[cls.id] = await isClassAllPassed(cls);
-            }
-            setClassPassedStatus(passedStatus);
-            
-            // Update selected class
-            const updatedClass = fetchedClasses.find(c => c.id === selectedClass.id);
-            if (updatedClass) {
-              setSelectedClass(updatedClass);
-            }
-          });
+          let fetchedClasses: Class[] = [];
+          if (session.user?.role === 'assistant') {
+            fetchedClasses = await getAssistantClasses(session.user.email);
+          } else {
+            fetchedClasses = await getTeacherClasses(session.user.email);
+          }
+          setClasses(fetchedClasses);
+          
+          // Check passed status for each class
+          const passedStatus: Record<string, boolean> = {};
+          for (const cls of fetchedClasses) {
+            passedStatus[cls.id] = await isClassAllPassed(cls);
+          }
+          setClassPassedStatus(passedStatus);
+          
+          // Update selected class
+          const updatedClass = fetchedClasses.find(c => c.id === selectedClass.id);
+          if (updatedClass) {
+            setSelectedClass(updatedClass);
+          }
         }
       }
     } catch (error) {
@@ -84,7 +89,15 @@ export default function ClassManagement() {
 
   useEffect(() => {
     if (session?.user?.email) {
-      getTeacherClasses(session.user.email).then(async (fetchedClasses) => {
+      const fetchClasses = async () => {
+        let fetchedClasses: Class[] = [];
+        
+        if (session.user?.role === 'assistant' && session.user?.email) {
+          fetchedClasses = await getAssistantClasses(session.user.email);
+        } else if (session.user?.email) {
+          fetchedClasses = await getTeacherClasses(session.user.email);
+        }
+        
         setClasses(fetchedClasses);
         
         // Check passed status for each class
@@ -93,7 +106,9 @@ export default function ClassManagement() {
           passedStatus[cls.id] = await isClassAllPassed(cls);
         }
         setClassPassedStatus(passedStatus);
-      });
+      };
+      
+      fetchClasses();
     }
   }, [session]);
 
@@ -120,8 +135,14 @@ export default function ClassManagement() {
       });
 
       if (classId) {
-        const teacherClasses = await getTeacherClasses(session.user.email);
-        setClasses(teacherClasses);
+        // Refresh classes based on role
+        let updatedClasses: Class[] = [];
+        if (session.user?.role === 'assistant') {
+          updatedClasses = await getAssistantClasses(session.user.email);
+        } else {
+          updatedClasses = await getTeacherClasses(session.user.email);
+        }
+        setClasses(updatedClasses);
         setNewClassName('');
         setShowNewClassForm(false);
       }
@@ -136,9 +157,15 @@ export default function ClassManagement() {
     try {
       const success = await removeStudentFromClass(selectedClass.id, studentId);
       if (success) {
-        const teacherClasses = await getTeacherClasses(session.user.email);
-        setClasses(teacherClasses);
-        const updatedClass = teacherClasses.find((c: Class) => c.id === selectedClass.id);
+        // Refresh classes based on role
+        let updatedClasses: Class[] = [];
+        if (session.user?.role === 'assistant') {
+          updatedClasses = await getAssistantClasses(session.user.email);
+        } else {
+          updatedClasses = await getTeacherClasses(session.user.email);
+        }
+        setClasses(updatedClasses);
+        const updatedClass = updatedClasses.find((c: Class) => c.id === selectedClass.id);
         if (updatedClass) {
           setSelectedClass(updatedClass);
         }
@@ -166,12 +193,15 @@ export default function ClassManagement() {
               <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${showPassedClasses ? 'transform translate-x-4' : ''}`}></div>
             </div>
           </label>
-          <button
-            onClick={() => setShowNewClassForm(true)}
-            className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
-          >
-            Thêm lớp học
-          </button>
+          {/* Only show "Add Class" button for teachers, not assistants */}
+          {session?.user?.role !== 'assistant' && (
+            <button
+              onClick={() => setShowNewClassForm(true)}
+              className="bg-[#fc5d01] text-white px-4 py-2 rounded hover:bg-[#fd7f33]"
+            >
+              Thêm lớp học
+            </button>
+          )}
         </div>
       </div>
 
@@ -268,19 +298,23 @@ export default function ClassManagement() {
               showPassedStudents={showPassedStudents}
               onStudentSelect={(student) => setSelectedStudent(student)}
               onRemoveStudent={handleRemoveStudent}
-              onStudentPassedChange={() => {
+              onStudentPassedChange={async () => {
                 // Refresh class data to update passed status
                 if (session?.user?.email) {
-                  getTeacherClasses(session.user.email).then(async (fetchedClasses) => {
-                    setClasses(fetchedClasses);
-                    
-                    // Check passed status for each class
-                    const passedStatus: Record<string, boolean> = {};
-                    for (const cls of fetchedClasses) {
-                      passedStatus[cls.id] = await isClassAllPassed(cls);
-                    }
-                    setClassPassedStatus(passedStatus);
-                  });
+                  let fetchedClasses: Class[] = [];
+                  if (session.user?.role === 'assistant') {
+                    fetchedClasses = await getAssistantClasses(session.user.email);
+                  } else {
+                    fetchedClasses = await getTeacherClasses(session.user.email);
+                  }
+                  setClasses(fetchedClasses);
+                  
+                  // Check passed status for each class
+                  const passedStatus: Record<string, boolean> = {};
+                  for (const cls of fetchedClasses) {
+                    passedStatus[cls.id] = await isClassAllPassed(cls);
+                  }
+                  setClassPassedStatus(passedStatus);
                 }
               }}
             />
@@ -305,9 +339,15 @@ export default function ClassManagement() {
               }, selectedClass.teacherId);
               
               if (session?.user?.email) {
-                const teacherClasses = await getTeacherClasses(session.user.email);
-                setClasses(teacherClasses);
-                const updatedClass = teacherClasses.find((c: Class) => c.id === selectedClass.id);
+                // Refresh classes based on role
+                let updatedClasses: Class[] = [];
+                if (session.user?.role === 'assistant') {
+                  updatedClasses = await getAssistantClasses(session.user.email);
+                } else {
+                  updatedClasses = await getTeacherClasses(session.user.email);
+                }
+                setClasses(updatedClasses);
+                const updatedClass = updatedClasses.find((c: Class) => c.id === selectedClass.id);
                 if (updatedClass) {
                   setSelectedClass(updatedClass);
                 }

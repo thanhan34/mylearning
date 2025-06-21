@@ -159,9 +159,12 @@ const Navigation = () => {
       ]
     },
     {
-      label: "Tiện ích",
+      label: "Quản lý",
       icon: <RiSettings4Line className="w-5 h-5" />,
       items: [
+        { href: "/dashboard/class", label: "Classes", icon: <RiTeamLine className="w-4 h-4" /> },
+        { href: "/dashboard/teacher/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-4 h-4" /> },
+        { href: "/dashboard/teacher/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-4 h-4" /> },
         { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
       ]
     }
