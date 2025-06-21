@@ -9,6 +9,7 @@ export interface HomeworkSubmission {
   feedback?: string;
   feedbackBy?: string; // ID của người cho feedback
   feedbackByName?: string; // Tên của người cho feedback
+  feedbackByRole?: string; // Vai trò của người cho feedback (teacher, assistant, admin)
   feedbackAt?: string; // Thời gian cho feedback
 }
 

@@ -146,8 +146,11 @@ export default function AllHomeworkTable({
 
       // Thu thập danh sách tên người đã cho feedback
       const feedbackByNames = (homework.submissions || [])
-        .filter(submission => submission.feedback && submission.feedback.trim() !== '' && submission.feedbackByName)
-        .map(submission => submission.feedbackByName!)
+        .filter(submission => submission.feedback && submission.feedback.trim() !== '')
+        .map(submission => {
+          // Ưu tiên feedbackByName (feedback mới), fallback về tên giảng viên (feedback cũ)
+          return submission.feedbackByName || teacherMap[teacherId] || 'Unknown Teacher';
+        })
         .filter((name, index, array) => array.indexOf(name) === index); // Loại bỏ trùng lặp
 
       return {
