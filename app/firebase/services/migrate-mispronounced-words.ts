@@ -82,9 +82,7 @@ export const migrateMispronouncedWords = async (): Promise<void> => {
         id: normalizedWord,
         word: normalizedWord,
         totalCount,
-        studentCount: studentGroups.size,
-        lastUpdated,
-        students
+        lastUpdated
       };
       
       // Save to word-statistics collection
