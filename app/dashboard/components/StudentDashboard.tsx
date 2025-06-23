@@ -9,6 +9,7 @@ import NewStudentGuide from './NewStudentGuide';
 import ProgressChart from './ProgressChart';
 import SubmissionsCalendar from './SubmissionsCalendar';
 import SubmissionsList from './SubmissionsList';
+import MispronouncedWordsTracker from './MispronouncedWordsTracker';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
@@ -82,6 +83,9 @@ export default function StudentDashboard({
     <div className="space-y-8">
       {/* Progress Charts */}
       <ProgressChart data={homeworkProgressData} />
+
+      {/* Mispronounced Words Tracker */}
+      <MispronouncedWordsTracker userRole={userRole} />
 
       {/* Daily Targets */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">

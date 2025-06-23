@@ -10,6 +10,7 @@ import SystemStats from './SystemStats';
 import FeedbackMonitoring from './FeedbackMonitoring';
 import HomeworkFeedbackMonitoring from './HomeworkFeedbackMonitoring';
 import WelcomeHeader from './WelcomeHeader';
+import MispronouncedWordsTracker from '../../components/MispronouncedWordsTracker';
 
 export default function AdminDashboardClient() {
   const { data: session } = useSession();
@@ -74,6 +75,15 @@ export default function AdminDashboardClient() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       )
+    },
+    {
+      id: 'mispronounced-words',
+      name: 'Từ phát âm sai',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2M9 10h6m-6 4h6" />
+        </svg>
+      )
     }
   ];
 
@@ -135,6 +145,7 @@ export default function AdminDashboardClient() {
             {activeTab === 'users' && <UserManagement />}
             {activeTab === 'classes' && <ClassManagement />}
             {activeTab === 'daily-targets' && <DailyTargetSettings />}
+            {activeTab === 'mispronounced-words' && <MispronouncedWordsTracker userRole="admin" />}
           </div>
         </div>
       </div>

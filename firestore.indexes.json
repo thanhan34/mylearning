@@ -63,6 +63,48 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "mispronounced-words",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "studentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "mispronounced-words",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "studentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "word",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "word-statistics",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "totalCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "lastUpdated",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
