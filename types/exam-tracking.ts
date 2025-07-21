@@ -32,3 +32,29 @@ export interface ExamTrackingFormData {
   examLocation: string;
   examDate: string;
 }
+
+// Admin-specific interfaces
+export interface AdminExamTrackingFormData extends ExamTrackingFormData {
+  classId: string;
+  studentId: string;
+  name: string;
+  email: string;
+  target: string;
+}
+
+export interface ClassOption {
+  id: string;
+  name: string;
+  teacherName: string;
+}
+
+export interface StudentOption {
+  id: string;
+  name: string;
+  email: string;
+  target?: string;
+}
+
+export interface ExamTrackingWithStudentInfo extends ExamTrackingInfo {
+  classId?: string;
+}

@@ -99,7 +99,7 @@ const Navigation = () => {
       items: [
         { href: "/dashboard/admin/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-4 h-4" /> },
         { href: "/dashboard/admin/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-4 h-4" /> },
-        { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
+        { href: "/dashboard/admin/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
       ]
     }
   ];
@@ -136,6 +136,7 @@ const Navigation = () => {
         { href: "/dashboard/homework-feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
         { href: "/dashboard/mocktest", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
         { href: "/dashboard/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
+        { href: "/dashboard/practice/wfd", label: "Write From Dictation", icon: <RiFileTextLine className="w-4 h-4" /> },
       ]
     },
     {

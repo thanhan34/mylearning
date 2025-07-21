@@ -27,6 +27,7 @@ const UserManagement = () => {
     supportingTeacherId: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -148,23 +149,32 @@ const UserManagement = () => {
   };
 
   return (
-    <div>
+    <div className={isFullscreen ? 'fixed inset-0 z-50 bg-white p-6 overflow-auto' : ''}>
       <div className="flex flex-col space-y-4 mb-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold text-[#fc5d01]">Quản lý tài khoản</h2>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-[#fc5d01] text-white px-4 py-2 rounded-lg hover:bg-[#fd7f33]"
-          >
-            Thêm tài khoản
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center space-x-2"
+            >
+              <span>{isFullscreen ? '🗗' : '🗖'}</span>
+              <span>{isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
+            </button>
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-[#fc5d01] text-white px-4 py-2 rounded-lg hover:bg-[#fd7f33]"
+            >
+              Thêm tài khoản
+            </button>
+          </div>
         </div>
         
         <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow">
           <div className="flex items-center space-x-4">
             <input
               type="text"
-              placeholder="Tìm kiếm theo tên..."
+              placeholder="Tìm kiếm theo tên hoặc email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fc5d01] text-black"
@@ -323,23 +333,25 @@ const UserManagement = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow text-black">
-        <table className="min-w-full">
-          <thead className="bg-[#fc5d01]">
-            <tr className="text-white">
-              <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Tên</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Vai trò</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Lớp học</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Ngày tạo</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Phân công</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
+      <div className="bg-white rounded-lg shadow text-black overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-[#fc5d01]">
+              <tr className="text-white">
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Email</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Tên</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Vai trò</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Lớp học</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Ngày tạo</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap min-w-[200px]">Phân công</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
             {users
               .filter((user) => {
-                const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                   user.email?.toLowerCase().includes(searchTerm.toLowerCase());
                 if (showUnassigned) {
                   return matchesSearch && user.role === 'student' && !user.teacherId;
                 }
@@ -353,12 +365,12 @@ const UserManagement = () => {
               })
               .map((user) => (
               <tr key={user.id}>
-                <td className="px-6 py-4">{user.email}</td>
-                <td className="px-6 py-4">{user.name}</td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4 whitespace-nowrap">{user.email}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{user.name}</td>
+                <td className="px-4 py-4 whitespace-nowrap">
                   {getRoleDisplayName(user.role)}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4 whitespace-nowrap">
                   {user.role === 'student' ? (
                     user.classId ? (
                       <span className="px-2 py-1 bg-[#fedac2] text-[#fc5d01] rounded-full text-sm font-medium">
@@ -373,10 +385,10 @@ const UserManagement = () => {
                     <span className="text-gray-500">-</span>
                   )}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4 whitespace-nowrap">
                   {new Date(user.createdAt).toLocaleDateString('vi-VN')}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4 min-w-[200px]">
                   {user.role === 'student' && (
                     <select
                       value={user.teacherId || ''}
@@ -467,24 +479,27 @@ const UserManagement = () => {
                     <span className="text-gray-500">-</span>
                   )}
                 </td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => handleEdit(user)}
-                    className="text-[#fc5d01] hover:text-[#fd7f33] mr-2"
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => handleDelete(user.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Xóa
-                  </button>
+                <td className="px-4 py-4 whitespace-nowrap">
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEdit(user)}
+                      className="text-[#fc5d01] hover:text-[#fd7f33] text-sm"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      onClick={() => handleDelete(user.id)}
+                      className="text-red-600 hover:text-red-800 text-sm"
+                    >
+                      Xóa
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Class Assignment Modal */}
