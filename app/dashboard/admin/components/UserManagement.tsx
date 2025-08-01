@@ -363,6 +363,12 @@ const UserManagement = () => {
                 }
                 return matchesSearch;
               })
+              .sort((a, b) => {
+                // Sắp xếp từ mới nhất đến cũ nhất theo createdAt
+                const dateA = new Date(a.createdAt || '').getTime();
+                const dateB = new Date(b.createdAt || '').getTime();
+                return dateB - dateA; // Mới nhất trước
+              })
               .map((user) => (
               <tr key={user.id}>
                 <td className="px-4 py-4 whitespace-nowrap">{user.email}</td>
