@@ -568,6 +568,108 @@ export const getAttendanceStatsForTeacher = async (teacherId: string): Promise<A
   }
 };
 
+// Get attendance statistics for an assistant's assigned classes
+export const getAttendanceStatsForAssistant = async (assistantEmail: string): Promise<AttendanceStats | null> => {
+  try {
+    // Get assistant's document to get assigned class IDs
+    const usersRef = collection(db, 'users');
+    const assistantQuery = query(usersRef, where('email', '==', assistantEmail));
+    
+    const assistantSnapshot = await retryOperation(() => getDocs(assistantQuery));
+    
+    if (assistantSnapshot.empty) {
+      console.log(`Assistant not found: ${assistantEmail}`);
+      return null;
+    }
+    
+    const assistantDoc = assistantSnapshot.docs[0];
+    const assistantData = assistantDoc.data();
+    
+    // Check if user is an assistant and has assigned classes
+    if (assistantData.role !== 'assistant' || !assistantData.assignedClassIds || assistantData.assignedClassIds.length === 0) {
+      console.log(`User is not an assistant or has no assigned classes: ${assistantEmail}`);
+      return null;
+    }
+    
+    // Process each assigned class
+    const classStats = await Promise.all(
+      assistantData.assignedClassIds.map(async (classId: string) => {
+        const classData = await getClassById(classId);
+        if (!classData) return null;
+        
+        const stats = await getAttendanceStatsByClass(classId);
+        
+        return {
+          classId,
+          className: classData.name,
+          stats
+        };
+      })
+    );
+    
+    // Filter out null results and classes with no attendance data
+    const validClassStats = classStats.filter(stat => stat !== null && stat.stats !== null);
+    
+    if (validClassStats.length === 0) {
+      console.log(`No attendance data found for assistant ${assistantEmail}`);
+      return null;
+    }
+    
+    // Calculate overall statistics
+    let totalSessions = 0;
+    let totalStudents = 0;
+    let totalPresent = 0;
+    let totalAttendanceRecords = 0;
+    
+    const byClass = validClassStats.map(classStat => {
+      const stats = classStat!.stats!;
+      
+      totalSessions += stats.totalSessions;
+      totalStudents += stats.totalStudents;
+      
+      // Calculate total present and total records for average
+      stats.byStudent.forEach((student: any) => {
+        totalPresent += Math.round((student.attendanceRate / 100) * stats.totalSessions);
+        totalAttendanceRecords += stats.totalSessions;
+      });
+      
+      return {
+        classId: classStat!.classId,
+        className: classStat!.className,
+        attendanceRate: stats.averageAttendance
+      };
+    });
+    
+    // Combine all student stats
+    const byStudent = validClassStats.flatMap(classStat => 
+      classStat!.stats!.byStudent
+    );
+    
+    const averageAttendance = totalAttendanceRecords > 0
+      ? Math.round((totalPresent / totalAttendanceRecords) * 100)
+      : 0;
+    
+    return {
+      totalSessions,
+      totalStudents,
+      averageAttendance,
+      byClass,
+      byStudent
+    };
+  } catch (error) {
+    console.error('Error getting attendance stats for assistant:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        assistantEmail,
+        timestamp: new Date().toISOString()
+      });
+    }
+    return null;
+  }
+};
+
 // Create attendance records for all students in a class with default status
 export const createDefaultAttendanceForClass = async (
   classId: string,

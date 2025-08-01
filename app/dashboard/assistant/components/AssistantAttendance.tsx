@@ -10,14 +10,12 @@ import {
   bulkUpdateAttendanceStatus,
   deleteAttendance
 } from '@/app/firebase/services/attendance';
-import { getTeacherClasses, getClassById } from '@/app/firebase/services/class';
+import { getAssistantClasses, getClassById } from '@/app/firebase/services/class';
 import SuccessNotification from '@/app/components/SuccessNotification';
 import ConfirmDialog from '@/app/components/ConfirmDialog';
-import AttendanceOverviewTable from '@/app/dashboard/components/AttendanceOverviewTable';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/app/firebase/config';
+import AttendanceOverviewTable from '../../components/AttendanceOverviewTable';
 
-const TeacherAttendance = () => {
+const AssistantAttendance = () => {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -38,7 +36,7 @@ const TeacherAttendance = () => {
     }
   }>({});
 
-  // Fetch teacher's classes
+  // Fetch assistant's classes
   useEffect(() => {
     const fetchData = async () => {
       if (!session?.user?.email) return;
@@ -46,8 +44,8 @@ const TeacherAttendance = () => {
       try {
         setLoading(true);
         
-        // Fetch teacher's classes
-        const classesData = await getTeacherClasses(session.user.email);
+        // Fetch assistant's classes
+        const classesData = await getAssistantClasses(session.user.email);
         setClasses(classesData);
         
         // If there's only one class, select it automatically
@@ -57,7 +55,7 @@ const TeacherAttendance = () => {
         
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching teacher classes:', error);
+        console.error('Error fetching assistant classes:', error);
         setLoading(false);
       }
     };
@@ -324,15 +322,32 @@ const TeacherAttendance = () => {
     );
   }
 
+  if (classes.length === 0) {
+    return (
+      <div className="p-6">
+        <h2 className="text-xl font-semibold text-[#fc5d01] mb-6">Điểm danh lớp học</h2>
+        <div className="bg-white p-8 rounded-xl shadow-lg text-center">
+          <div className="text-gray-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-[#fedac2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-[#fc5d01] mb-2">Chưa có lớp học được phân công</h3>
+          <p className="text-gray-600">Bạn chưa được phân công vào lớp học nào. Vui lòng liên hệ admin để được phân công lớp học.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold text-[#fc5d01] mb-6">Điểm danh lớp học</h2>
+      <h2 className="text-xl font-semibold text-[#fc5d01] mb-6">Điểm danh lớp học - Trợ giảng</h2>
       
       {/* Class Selection and Date Picker */}
       <div className="bg-white p-6 rounded-xl shadow-lg mb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Chọn lớp học</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Chọn lớp học được phân công</label>
             <select
               value={selectedClassId}
               onChange={handleClassChange}
@@ -625,4 +640,4 @@ const TeacherAttendance = () => {
   );
 };
 
-export default TeacherAttendance;
+export default AssistantAttendance;

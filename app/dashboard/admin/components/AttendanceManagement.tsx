@@ -14,6 +14,7 @@ import {
 import { getClassById } from '@/app/firebase/services/class';
 import SuccessNotification from '@/app/components/SuccessNotification';
 import ConfirmDialog from '@/app/components/ConfirmDialog';
+import AttendanceOverviewTable from '@/app/dashboard/components/AttendanceOverviewTable';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/app/firebase/config';
 
@@ -31,6 +32,7 @@ const AttendanceManagement = () => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [attendanceToDelete, setAttendanceToDelete] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [viewMode, setViewMode] = useState<'detail' | 'overview'>('detail');
   const [studentAttendance, setStudentAttendance] = useState<{
     [studentId: string]: {
       status: 'present' | 'absent' | 'late' | 'excused';
@@ -413,8 +415,56 @@ const AttendanceManagement = () => {
         </div>
       </div>
       
-      {/* Attendance Records and Student List */}
+      {/* View Mode Tabs */}
       {selectedClassId && (
+        <div className="bg-white p-6 rounded-xl shadow-lg mb-8">
+          <div className="flex space-x-1 bg-[#fedac2]/20 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode('detail')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'detail'
+                  ? 'bg-[#fc5d01] text-white shadow-sm'
+                  : 'text-[#fc5d01] hover:bg-[#fedac2]/50'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                <span>Điểm danh chi tiết</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setViewMode('overview')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'overview'
+                  ? 'bg-[#fc5d01] text-white shadow-sm'
+                  : 'text-[#fc5d01] hover:bg-[#fedac2]/50'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Bảng tổng quan</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Content based on view mode */}
+      {selectedClassId && viewMode === 'overview' && (
+        <div className="mb-8">
+          <AttendanceOverviewTable 
+            selectedClass={selectedClass}
+            attendanceRecords={attendanceRecords}
+          />
+        </div>
+      )}
+
+      {/* Attendance Records and Student List */}
+      {selectedClassId && viewMode === 'detail' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Attendance Records List */}
           <div className="bg-white p-6 rounded-xl shadow-lg">
