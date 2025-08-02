@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Attendance } from '../../../../types/attendance';
-import { Class } from '../../../../types/admin';
+import { Attendance } from '../../../types/attendance';
+import { Class } from '../../../types/admin';
 import { 
   RiCheckLine, 
   RiCloseLine, 

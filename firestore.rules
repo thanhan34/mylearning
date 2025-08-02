@@ -88,5 +88,27 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin() || isTeacher() || isAssistant();
     }
+
+    match /voiceFeedback/{voiceFeedbackId} {
+      allow read: if isSignedIn() && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid ||
+        isAdmin() ||
+        isAssistant()
+      );
+      allow create: if isSignedIn() && (
+        isTeacher() || 
+        isAdmin() || 
+        isAssistant()
+      ) && request.resource.data.teacherId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.teacherId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (
+        resource.data.teacherId == request.auth.uid ||
+        isAdmin()
+      );
+    }
   }
 }

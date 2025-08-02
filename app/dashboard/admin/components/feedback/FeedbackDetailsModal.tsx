@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 import { HomeworkSubmission } from '@/app/firebase/services/types';
 import { updateHomeworkFeedback } from '@/app/firebase/services/homework';
 import { useSession } from 'next-auth/react';
+import VoiceRecorder from '@/app/components/VoiceRecorder';
+import VoiceFeedbackPlayer from '@/app/components/VoiceFeedbackPlayer';
+import { 
+  uploadVoiceFeedback, 
+  getVoiceFeedbackForSubmission, 
+  VoiceFeedback 
+} from '@/app/firebase/services/voice-feedback';
 
 interface FeedbackDetailsModalProps {
   isOpen: boolean;
@@ -39,10 +46,41 @@ export default function FeedbackDetailsModal({
   const [localSubmissions, setLocalSubmissions] = useState<HomeworkSubmission[]>(submissions);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [voiceFeedbacks, setVoiceFeedbacks] = useState<Record<string, VoiceFeedback[]>>({});
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState<string | null>(null);
+  const [uploadingVoice, setUploadingVoice] = useState(false);
 
   useEffect(() => {
     setLocalSubmissions(submissions);
   }, [submissions]);
+
+  // Load voice feedbacks for each submission
+  useEffect(() => {
+    const loadVoiceFeedbacks = async () => {
+      if (!documentId || localSubmissions.length === 0) return;
+
+      const voiceFeedbackMap: Record<string, VoiceFeedback[]> = {};
+      
+      for (const submission of localSubmissions) {
+        const key = `${submission.type}_${submission.questionNumber}`;
+        try {
+          const feedbacks = await getVoiceFeedbackForSubmission(
+            documentId,
+            submission.type,
+            submission.questionNumber
+          );
+          voiceFeedbackMap[key] = feedbacks;
+        } catch (error) {
+          console.error('Error loading voice feedback:', error);
+          voiceFeedbackMap[key] = [];
+        }
+      }
+      
+      setVoiceFeedbacks(voiceFeedbackMap);
+    };
+
+    loadVoiceFeedbacks();
+  }, [documentId, localSubmissions]);
 
   if (!isOpen) return null;
 
@@ -86,6 +124,60 @@ export default function FeedbackDetailsModal({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleVoiceRecordingComplete = async (
+    audioBlob: Blob,
+    audioUrl: string,
+    submission: HomeworkSubmission
+  ) => {
+    if (!studentId || !documentId || !session?.user) return;
+
+    setUploadingVoice(true);
+    setError(null);
+
+    try {
+      // Calculate duration from the audio blob
+      const audio = new Audio(audioUrl);
+      await new Promise((resolve) => {
+        audio.addEventListener('loadedmetadata', resolve);
+      });
+      const duration = Math.round(audio.duration);
+
+      const voiceFeedback = await uploadVoiceFeedback(
+        audioBlob,
+        studentId,
+        studentName,
+        session.user.id || '',
+        session.user.name || session.user.email || '',
+        documentId,
+        submission.type,
+        submission.questionNumber,
+        duration
+      );
+
+      if (voiceFeedback) {
+        // Update local voice feedbacks
+        const key = `${submission.type}_${submission.questionNumber}`;
+        setVoiceFeedbacks(prev => ({
+          ...prev,
+          [key]: [voiceFeedback, ...(prev[key] || [])]
+        }));
+        
+        setShowVoiceRecorder(null);
+      } else {
+        setError('Lỗi khi tải lên feedback bằng giọng nói');
+      }
+    } catch (error) {
+      console.error('Error uploading voice feedback:', error);
+      setError('Lỗi khi tải lên feedback bằng giọng nói');
+    } finally {
+      setUploadingVoice(false);
+    }
+  };
+
+  const getSubmissionKey = (submission: HomeworkSubmission) => {
+    return `${submission.type}_${submission.questionNumber}`;
   };
 
   return (
@@ -170,19 +262,36 @@ export default function FeedbackDetailsModal({
                       <div className="flex justify-between items-center mb-1">
                         <h5 className="text-sm font-medium text-gray-500">Feedback của giảng viên</h5>
                         {studentId && (
-                          <button
-                            onClick={() => setEditingFeedback({
-                              type: submission.type,
-                              questionNumber: submission.questionNumber,
-                              feedback: submission.feedback || ''
-                            })}
-                            className="text-[#fc5d01] hover:text-[#fd7f33] text-sm"
-                          >
-                            {editingFeedback?.type === submission.type && 
-                             editingFeedback?.questionNumber === submission.questionNumber
-                              ? 'Đang chỉnh sửa'
-                              : 'Chỉnh sửa'}
-                          </button>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => setEditingFeedback({
+                                type: submission.type,
+                                questionNumber: submission.questionNumber,
+                                feedback: submission.feedback || ''
+                              })}
+                              className="text-[#fc5d01] hover:text-[#fd7f33] text-sm"
+                            >
+                              {editingFeedback?.type === submission.type && 
+                               editingFeedback?.questionNumber === submission.questionNumber
+                                ? 'Đang chỉnh sửa'
+                                : 'Chỉnh sửa'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const key = getSubmissionKey(submission);
+                                setShowVoiceRecorder(showVoiceRecorder === key ? null : key);
+                              }}
+                              className="text-[#fc5d01] hover:text-[#fd7f33] text-sm flex items-center space-x-1"
+                              disabled={uploadingVoice}
+                            >
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                              </svg>
+                              <span>
+                                {showVoiceRecorder === getSubmissionKey(submission) ? 'Ẩn ghi âm' : 'Ghi âm'}
+                              </span>
+                            </button>
+                          </div>
                         )}
                       </div>
                       
@@ -232,6 +341,37 @@ export default function FeedbackDetailsModal({
                           ) : (
                             <p className="text-gray-500 italic">Chưa có feedback</p>
                           )}
+                        </div>
+                      )}
+
+                      {/* Voice Recorder */}
+                      {showVoiceRecorder === getSubmissionKey(submission) && (
+                        <div className="mt-4">
+                          <VoiceRecorder
+                            onRecordingComplete={(audioBlob, audioUrl) => 
+                              handleVoiceRecordingComplete(audioBlob, audioUrl, submission)
+                            }
+                            maxDuration={180} // 3 minutes
+                            className="mb-4"
+                          />
+                          {uploadingVoice && (
+                            <div className="flex items-center justify-center p-4 bg-[#fedac2]/20 rounded-lg">
+                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#fc5d01]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span className="text-[#fc5d01]">Đang tải lên feedback bằng giọng nói...</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Voice Feedback Player */}
+                      {voiceFeedbacks[getSubmissionKey(submission)]?.length > 0 && (
+                        <div className="mt-4">
+                          <VoiceFeedbackPlayer
+                            voiceFeedbacks={voiceFeedbacks[getSubmissionKey(submission)]}
+                          />
                         </div>
                       )}
                     </div>
