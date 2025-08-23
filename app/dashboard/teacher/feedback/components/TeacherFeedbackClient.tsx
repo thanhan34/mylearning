@@ -12,6 +12,25 @@ import { getMultipleStudentNicknames } from '@/app/firebase/services/student-nic
 import { getVoiceFeedbackForSubmission } from '@/app/firebase/services/voice-feedback';
 import { format } from 'date-fns';
 
+// Cache for user data and classes
+const userCache = new Map<string, any>();
+const classCache = new Map<string, Class[]>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Helper function to get cached data
+const getCachedData = (key: string, cache: Map<string, any>) => {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  return null;
+};
+
+// Helper function to set cached data
+const setCachedData = (key: string, data: any, cache: Map<string, any>) => {
+  cache.set(key, { data, timestamp: Date.now() });
+};
+
 interface Class {
   id: string;
   name: string;
@@ -41,6 +60,7 @@ export default function TeacherFeedbackClient() {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [homeworkSubmissions, setHomeworkSubmissions] = useState<HomeworkData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [classesLoading, setClassesLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<HomeworkData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nicknames, setNicknames] = useState<Record<string, string>>({});
@@ -48,30 +68,87 @@ export default function TeacherFeedbackClient() {
   const [processedSubmissions, setProcessedSubmissions] = useState<Set<string>>(new Set());
   const processedSubmissionsRef = useRef<Set<string>>(new Set());
 
-  // Fetch teacher's classes
+  // Optimized class fetching with caching and session storage
   useEffect(() => {
     const fetchClasses = async () => {
-      if (session?.user?.email) {
-        try {
-          // Check user role first
-          const user = await getUserByEmail(session.user.email);
-          if (!user) {
-            console.error('User not found');
+      if (!session?.user?.email) return;
+      
+      const userEmail = session.user.email;
+      const cacheKey = `classes_${userEmail}`;
+      
+      // Check session storage first
+      try {
+        const sessionData = sessionStorage.getItem(cacheKey);
+        if (sessionData) {
+          const { classes: cachedClasses, teacherId, timestamp } = JSON.parse(sessionData);
+          if (Date.now() - timestamp < CACHE_DURATION) {
+            setClasses(cachedClasses);
+            setCurrentTeacherId(teacherId);
+            setClassesLoading(false);
             return;
           }
-
-          setCurrentTeacherId(user.id);
-
-          let teacherClasses = [];
-          if (user.role === 'assistant') {
-            teacherClasses = await getAssistantClasses(session.user.email);
-          } else {
-            teacherClasses = await getTeacherClasses(session.user.email);
-          }
-          setClasses(teacherClasses);
-        } catch (error) {
-          console.error('Error fetching classes:', error);
         }
+      } catch (error) {
+        console.error('Error reading from session storage:', error);
+      }
+      
+      // Check memory cache
+      const cachedClasses = getCachedData(cacheKey, classCache);
+      const cachedUser = getCachedData(userEmail, userCache);
+      
+      if (cachedClasses && cachedUser) {
+        setClasses(cachedClasses);
+        setCurrentTeacherId(cachedUser.id);
+        setClassesLoading(false);
+        return;
+      }
+      
+      setClassesLoading(true);
+      try {
+        // Get user data (with caching)
+        let user = cachedUser;
+        if (!user) {
+          user = await getUserByEmail(userEmail);
+          if (!user) {
+            console.error('User not found');
+            setClassesLoading(false);
+            return;
+          }
+          setCachedData(userEmail, user, userCache);
+        }
+
+        setCurrentTeacherId(user.id);
+
+        // Get classes (with caching)
+        let teacherClasses = cachedClasses;
+        if (!teacherClasses) {
+          if (user.role === 'assistant') {
+            teacherClasses = await getAssistantClasses(userEmail);
+          } else {
+            teacherClasses = await getTeacherClasses(userEmail);
+          }
+          setCachedData(cacheKey, teacherClasses, classCache);
+        }
+        
+        setClasses(teacherClasses);
+        
+        // Store in session storage for faster subsequent loads
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            classes: teacherClasses,
+            teacherId: user.id,
+            timestamp: Date.now()
+          }));
+        } catch (error) {
+          console.error('Error saving to session storage:', error);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching classes:', error);
+        // Show error state
+        setClasses([]);
+      } finally {
+        setClassesLoading(false);
       }
     };
 
@@ -361,22 +438,36 @@ export default function TeacherFeedbackClient() {
       {/* Class Selection */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-700 mb-4">Chọn lớp học</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {classes.map(cls => (
-            <div 
-              key={cls.id}
-              onClick={() => setSelectedClass(cls)}
-              className={`p-4 rounded-lg cursor-pointer transition-all ${
-                selectedClass?.id === cls.id 
-                  ? 'bg-[#fc5d01] text-white' 
-                  : 'bg-white hover:bg-[#fedac2] border border-gray-200'
-              }`}
-            >
-              <h3 className="font-semibold">{cls.name}</h3>
-              <p>Học viên: {cls.students.length}</p>
-            </div>
-          ))}
-        </div>
+        {classesLoading ? (
+          <div className="flex flex-col justify-center items-center p-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-[#fc5d01] mr-3"></div>
+            <span className="text-gray-600 mt-2">Đang tải danh sách lớp học...</span>
+            <div className="text-xs text-gray-400 mt-1">Vui lòng đợi trong giây lát</div>
+          </div>
+        ) : classes.length === 0 ? (
+          <div className="text-center p-8 text-gray-500 bg-gray-50 rounded-lg">
+            <div className="text-lg mb-2">📚</div>
+            <div>Không có lớp học nào được phân công</div>
+            <div className="text-sm mt-2">Liên hệ quản trị viên để được hỗ trợ</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {classes.map(cls => (
+              <div 
+                key={cls.id}
+                onClick={() => setSelectedClass(cls)}
+                className={`p-4 rounded-lg cursor-pointer transition-all ${
+                  selectedClass?.id === cls.id 
+                    ? 'bg-[#fc5d01] text-white' 
+                    : 'bg-white hover:bg-[#fedac2] border border-gray-200'
+                }`}
+              >
+                <h3 className="font-semibold">{cls.name}</h3>
+                <p>Học viên: {cls.students.length}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       
       {/* Homework Submissions */}

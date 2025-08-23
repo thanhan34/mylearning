@@ -81,16 +81,12 @@ export const getAssistantClasses = async (assistantEmail: string): Promise<Class
       return [];
     }
 
-    const allClasses: Class[] = [];
+    // OPTIMIZED: Use parallel requests instead of sequential
+    const classPromises = assistantDoc.assignedClassIds.map(classId => getClassById(classId));
+    const classResults = await Promise.all(classPromises);
     
-    // Get each assigned class by ID
-    for (const classId of assistantDoc.assignedClassIds) {
-      const classData = await getClassById(classId);
-      if (classData) {
-        allClasses.push(classData);
-      }
-    }
-    
+    // Filter out null results and return valid classes
+    const allClasses = classResults.filter((classData): classData is Class => classData !== null);
     
     return allClasses;
   } catch (error) {

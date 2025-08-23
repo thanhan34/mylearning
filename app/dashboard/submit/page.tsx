@@ -8,7 +8,7 @@ import ValidationErrorDialog from '../../components/ValidationErrorDialog';
 import MaxLinksErrorDialog from '../../components/MaxLinksErrorDialog';
 import AssignmentErrorDialog from '../../components/AssignmentErrorDialog';
 
-type HomeworkType = 'Read aloud' | 'Retell lecture' | 'Describe image' | 'Repeat sentence' | 'Summarize Written Text' | 'Write Essay' | 'Summarize Spoken Text';
+type HomeworkType = 'Read aloud' | 'Retell lecture' | 'Describe image' | 'Repeat sentence' | 'Summarize Written Text' | 'Write Essay' | 'Summarize Spoken Text' | 'Summarize Group Discussion' | 'Respond to a situation';
 import { getHomeworkSubmissions, saveHomeworkSubmission, getUserByEmail } from '../../firebase/services';
 import { addNotification } from '../../firebase/services/notification';
 import type { User } from '../../firebase/services/user';
@@ -158,7 +158,9 @@ export default function SubmitPage() {
         'Repeat sentence': 'RS#',
         'Summarize Written Text': 'SWT#',
         'Write Essay': 'WE#',
-        'Summarize Spoken Text': 'SST#'
+        'Summarize Spoken Text': 'SST#',
+        'Summarize Group Discussion': 'SGD#',
+        'Respond to a situation': 'RTS#'
       };
       
       const prefix = prefixMap[selectedHomeworkType];
@@ -191,7 +193,9 @@ export default function SubmitPage() {
         'Repeat sentence': 'RS#',
         'Summarize Written Text': 'SWT#',
         'Write Essay': 'WE#',
-        'Summarize Spoken Text': 'SST#'
+        'Summarize Spoken Text': 'SST#',
+        'Summarize Group Discussion': 'SGD#',
+        'Respond to a situation': 'RTS#'
       };
       
       const prefix = prefixMap[selectedHomeworkType];
@@ -223,7 +227,9 @@ export default function SubmitPage() {
         'Repeat sentence': 'Desktop: RS#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: RS#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?...',
         'Summarize Written Text': 'Desktop: SWT#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: SWT#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/7 https://www.apeuni.com/en/practice/answer_item?...',
         'Write Essay': 'Desktop: WE#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: WE#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/15 https://www.apeuni.com/en/practice/answer_item?...',
-        'Summarize Spoken Text': 'Desktop: SST#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: SST#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/10 https://www.apeuni.com/en/practice/answer_item?...'
+        'Summarize Spoken Text': 'Desktop: SST#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?...\nMobile với xuống dòng: SST#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/10 https://www.apeuni.com/en/practice/answer_item?...',
+        'Summarize Group Discussion': 'Desktop: SGD#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?model=summarize_group_discussions&answer_id=...\nMobile với xuống dòng: SGD#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?model=summarize_group_discussions&answer_id=...',
+        'Respond to a situation': 'Desktop: RTS#[số] APEUni ... AI Score [số]/90 https://www.apeuni.com/practice/answer_item?model=ptea_respond_situations&answer_id=...\nMobile với xuống dòng: RTS#[số] shared a/an answer from PTE APEUni\nAPEUni AI Score [số]/90 https://www.apeuni.com/en/practice/answer_item?model=ptea_respond_situations&answer_id=...'
       };
       setValidationErrors({
         invalidLinks,
@@ -371,6 +377,8 @@ export default function SubmitPage() {
                   <option value="Summarize Written Text">Summarize Written Text</option>
                   <option value="Write Essay">Write Essay</option>
                   <option value="Summarize Spoken Text">Summarize Spoken Text</option>
+                  <option value="Summarize Group Discussion">Summarize Group Discussion</option>
+                  <option value="Respond to a situation">Respond to a situation</option>
                 </select>
               </div>
               <div>
@@ -384,7 +392,9 @@ export default function SubmitPage() {
                     selectedHomeworkType === 'Describe image' ? 'DI' : 
                     selectedHomeworkType === 'Repeat sentence' ? 'RS' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'SWT' :
-                    selectedHomeworkType === 'Write Essay' ? 'WE' : 'SST'
+                    selectedHomeworkType === 'Write Essay' ? 'WE' :
+                    selectedHomeworkType === 'Summarize Spoken Text' ? 'SST' :
+                    selectedHomeworkType === 'Summarize Group Discussion' ? 'SGD' : 'RTS'
                   }#[số] APEUni AI Score https://www.apeuni.com/practice/answer_item?...
                 </p>
                 <p className="text-gray-400 text-sm mb-2">
@@ -394,7 +404,9 @@ export default function SubmitPage() {
                     selectedHomeworkType === 'Describe image' ? 'DI' : 
                     selectedHomeworkType === 'Repeat sentence' ? 'RS' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'SWT' :
-                    selectedHomeworkType === 'Write Essay' ? 'WE' : 'SST'
+                    selectedHomeworkType === 'Write Essay' ? 'WE' :
+                    selectedHomeworkType === 'Summarize Spoken Text' ? 'SST' :
+                    selectedHomeworkType === 'Summarize Group Discussion' ? 'SGD' : 'RTS'
                   }#[số] shared a/an answer from PTE APEUni<br />APEUni AI Score https://www.apeuni.com/en/practice/answer_item?...
                 </p>
                 <textarea
@@ -406,21 +418,39 @@ export default function SubmitPage() {
                     selectedHomeworkType === 'Describe image' ? 'DI' : 
                     selectedHomeworkType === 'Repeat sentence' ? 'RS' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'SWT' :
-                    selectedHomeworkType === 'Write Essay' ? 'WE' : 'SST'
-                  }#1445 APEUni AI Score https://www.apeuni.com/practice/answer_item?model=${
+                    selectedHomeworkType === 'Write Essay' ? 'WE' :
+                    selectedHomeworkType === 'Summarize Spoken Text' ? 'SST' :
+                    selectedHomeworkType === 'Summarize Group Discussion' ? 'SGD' : 'RTS'
+                  }#${
+                    selectedHomeworkType === 'Summarize Group Discussion' ? '54' :
+                    selectedHomeworkType === 'Respond to a situation' ? '141' : '1445'
+                  } APEUni ${
+                    selectedHomeworkType === 'Summarize Group Discussion' ? 'SGD S-ASIA V2.1 ' :
+                    selectedHomeworkType === 'Respond to a situation' ? 'RTS S-ASIA V2.1 ' : ''
+                  }AI Score ${
+                    selectedHomeworkType === 'Summarize Group Discussion' ? '63' :
+                    selectedHomeworkType === 'Respond to a situation' ? '48' : '75'
+                  }/90 https://www.apeuni.com/practice/answer_item?model=${
                     selectedHomeworkType === 'Read aloud' ? 'read_alouds' : 
                     selectedHomeworkType === 'Retell lecture' ? 'retell_lectures' : 
                     selectedHomeworkType === 'Describe image' ? 'describe_images' : 
                     selectedHomeworkType === 'Repeat sentence' ? 'repeat_sentences' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'summarize_written_texts' :
-                    selectedHomeworkType === 'Write Essay' ? 'write_essays' : 'summarize_spoken_texts'
-                  }&answer_id=2937397445\n\nExample (Mobile với xuống dòng):\n${
+                    selectedHomeworkType === 'Write Essay' ? 'write_essays' :
+                    selectedHomeworkType === 'Summarize Spoken Text' ? 'summarize_spoken_texts' :
+                    selectedHomeworkType === 'Summarize Group Discussion' ? 'summarize_group_discussions' : 'ptea_respond_situations'
+                  }&answer_id=${
+                    selectedHomeworkType === 'Summarize Group Discussion' ? '3492481792' :
+                    selectedHomeworkType === 'Respond to a situation' ? '3492483247' : '2937397445'
+                  }\n\nExample (Mobile với xuống dòng):\n${
                     selectedHomeworkType === 'Read aloud' ? 'RA' : 
                     selectedHomeworkType === 'Retell lecture' ? 'RL' : 
                     selectedHomeworkType === 'Describe image' ? 'DI' : 
                     selectedHomeworkType === 'Repeat sentence' ? 'RS' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'SWT' :
-                    selectedHomeworkType === 'Write Essay' ? 'WE' : 'SST'
+                    selectedHomeworkType === 'Write Essay' ? 'WE' :
+                    selectedHomeworkType === 'Summarize Spoken Text' ? 'SST' :
+                    selectedHomeworkType === 'Summarize Group Discussion' ? 'SGD' : 'RTS'
                   }#1014 shared an answer from PTE APEUni\nAPEUni AI Score ${
                     selectedHomeworkType === 'Summarize Written Text' ? '6.25/7' :
                     selectedHomeworkType === 'Write Essay' ? '11.8/15' :
@@ -432,7 +462,9 @@ export default function SubmitPage() {
                     selectedHomeworkType === 'Describe image' ? 'describe_images' : 
                     selectedHomeworkType === 'Repeat sentence' ? 'repeat_sentences' :
                     selectedHomeworkType === 'Summarize Written Text' ? 'swts' :
-                    selectedHomeworkType === 'Write Essay' ? 'essays' : 'ssts'
+                    selectedHomeworkType === 'Write Essay' ? 'essays' :
+                    selectedHomeworkType === 'Summarize Spoken Text' ? 'ssts' :
+                    selectedHomeworkType === 'Summarize Group Discussion' ? 'summarize_group_discussions' : 'ptea_respond_situations'
                   }&answer_id=3156378045\n\nNo limit on number of submissions`}
                   value={existingLinks}
                   onChange={(e) => setExistingLinks(e.target.value)}
