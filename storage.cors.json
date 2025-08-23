@@ -1,8 +1,30 @@
 [
   {
-    "origin": ["*"],
-    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+    "origin": [
+      "http://localhost:3000",
+      "http://localhost:3001", 
+      "https://localhost:3000",
+      "https://localhost:3001",
+      "https://*.vercel.app",
+      "https://*.netlify.app",
+      "https://*.firebaseapp.com",
+      "https://*.web.app"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
     "maxAgeSeconds": 3600,
-    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"]
+    "responseHeader": [
+      "Content-Type",
+      "Content-Length",
+      "Content-Range",
+      "Access-Control-Allow-Origin",
+      "Access-Control-Allow-Methods", 
+      "Access-Control-Allow-Headers",
+      "Access-Control-Allow-Credentials",
+      "Access-Control-Expose-Headers",
+      "Authorization",
+      "X-Requested-With",
+      "X-Firebase-Storage-Version",
+      "X-Firebase-GMPID"
+    ]
   }
 ]

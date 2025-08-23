@@ -5,11 +5,14 @@ import { useSession } from 'next-auth/react';
 import { Assignment } from '../../../types/assignment';
 import { getAssignmentsByStudent } from '../../firebase/services/assignment';
 import { getUserByEmail } from '../../firebase/services/user';
+import { getVoiceFeedbackForSubmission, VoiceFeedback } from '../../firebase/services/voice-feedback';
+import VoiceFeedbackPlayer from '../../components/VoiceFeedbackPlayer';
 
 const StudentAssignmentView: React.FC = () => {
   const { data: session } = useSession();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [voiceFeedbacks, setVoiceFeedbacks] = useState<Record<string, VoiceFeedback[]>>({});
 
   useEffect(() => {
     loadAssignments();
@@ -26,11 +29,47 @@ const StudentAssignmentView: React.FC = () => {
       const userAssignments = await getAssignmentsByStudent(userDoc.id);
       console.log('Found assignments:', userAssignments);
       setAssignments(userAssignments);
+
+      // Load voice feedback for each submission
+      await loadVoiceFeedbacks(userAssignments, userDoc.id);
     } catch (error) {
       console.error('Error loading assignments:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadVoiceFeedbacks = async (assignments: Assignment[], studentId: string) => {
+    const feedbacks: Record<string, VoiceFeedback[]> = {};
+
+    for (const assignment of assignments) {
+      const mySubmission = assignment.submissions.find(sub => 
+        sub.studentId === studentId || sub.studentName === session?.user?.name
+      );
+
+      if (mySubmission) {
+        try {
+          // Create unique submission ID using assignment ID and student ID
+          const submissionId = `${assignment.id}_${mySubmission.studentId}`;
+          console.log('🎤 Loading voice feedback for submission:', submissionId);
+          
+          const voiceFeedbackList = await getVoiceFeedbackForSubmission(
+            submissionId,
+            'assignment',
+            1 // question number for assignments
+          );
+          
+          if (voiceFeedbackList.length > 0) {
+            feedbacks[submissionId] = voiceFeedbackList;
+            console.log('✅ Found voice feedback:', voiceFeedbackList.length);
+          }
+        } catch (error) {
+          console.error('Error loading voice feedback for submission:', assignment.id, error);
+        }
+      }
+    }
+
+    setVoiceFeedbacks(feedbacks);
   };
 
   const getStatusColor = (status: string) => {
@@ -162,6 +201,32 @@ const StudentAssignmentView: React.FC = () => {
                         )}
                       </div>
                     )}
+
+                    {/* Voice Feedback Section */}
+                    {(() => {
+                      const submissionId = `${assignment.id}_${mySubmission.studentId}`;
+                      const submissionVoiceFeedbacks = voiceFeedbacks[submissionId];
+                      
+                      if (submissionVoiceFeedbacks && submissionVoiceFeedbacks.length > 0) {
+                        return (
+                          <div className="mt-4 p-4 bg-[#fedac2]/10 rounded-lg border border-[#fc5d01]/20">
+                            <div className="flex items-center mb-3">
+                              <svg className="w-5 h-5 text-[#fc5d01] mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                              </svg>
+                              <h5 className="font-medium text-[#fc5d01]">
+                                Feedback bằng giọng nói từ giáo viên
+                              </h5>
+                            </div>
+                            <VoiceFeedbackPlayer 
+                              voiceFeedbacks={submissionVoiceFeedbacks}
+                              className="mt-2"
+                            />
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 )}
               </div>

@@ -18,7 +18,7 @@ export interface VoiceFeedback {
   updatedAt: Timestamp;
 }
 
-// Upload voice feedback audio file
+// Upload voice feedback audio file (FREE VERSION - No Firebase Storage needed)
 export const uploadVoiceFeedback = async (
   audioBlob: Blob,
   studentId: string,
@@ -31,53 +31,21 @@ export const uploadVoiceFeedback = async (
   duration: number
 ): Promise<VoiceFeedback | null> => {
   try {
-    // Create unique filename
+    console.log('🎤 Uploading voice feedback (FREE version - no storage costs)...');
+    
+    // Convert audio blob to base64 (completely free!)
+    const audioUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(audioBlob);
+    });
+    
+    // Create unique filename for reference
     const timestamp = Date.now();
     const filename = `voice-feedback/${teacherId}/${studentId}/${submissionId}_${submissionType}_${submissionQuestionNumber}_${timestamp}.webm`;
     
-    // Upload to Firebase Storage with retry mechanism
-    const storageRef = ref(storage, filename);
-    
-    // Add metadata to help with CORS
-    const metadata = {
-      contentType: audioBlob.type || 'audio/webm',
-      customMetadata: {
-        'studentId': studentId,
-        'teacherId': teacherId,
-        'submissionId': submissionId,
-        'uploadedAt': new Date().toISOString()
-      }
-    };
-    
-    let uploadResult;
-    let audioUrl;
-    
-    try {
-      uploadResult = await uploadBytes(storageRef, audioBlob, metadata);
-      audioUrl = await getDownloadURL(uploadResult.ref);
-    } catch (storageError: any) {
-      console.error('Storage upload error:', storageError);
-      
-      // If CORS error, try alternative approach
-      if (storageError.code === 'storage/unauthorized' || 
-          storageError.message?.includes('CORS') ||
-          storageError.message?.includes('Access to XMLHttpRequest')) {
-        
-        // Create a data URL as fallback
-        const reader = new FileReader();
-        audioUrl = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(audioBlob);
-        });
-        
-        console.warn('Using data URL fallback due to CORS issues');
-      } else {
-        throw storageError;
-      }
-    }
-    
-    // Save metadata to Firestore
+    // Save everything to Firestore (completely free within limits!)
     const voiceFeedbackData: Omit<VoiceFeedback, 'id'> = {
       studentId,
       studentName,
@@ -86,7 +54,7 @@ export const uploadVoiceFeedback = async (
       submissionId,
       submissionType,
       submissionQuestionNumber,
-      audioUrl,
+      audioUrl, // This is now a base64 data URL - no storage needed!
       audioPath: filename,
       duration,
       createdAt: Timestamp.now(),
@@ -95,12 +63,18 @@ export const uploadVoiceFeedback = async (
     
     const docRef = await addDoc(collection(db, 'voiceFeedback'), voiceFeedbackData);
     
+    console.log('✅ Voice feedback uploaded successfully (FREE)!', {
+      id: docRef.id,
+      duration: duration,
+      size: Math.round(audioUrl.length / 1024) + 'KB'
+    });
+    
     return {
       id: docRef.id,
       ...voiceFeedbackData
     };
   } catch (error) {
-    console.error('Error uploading voice feedback:', error);
+    console.error('❌ Error uploading voice feedback:', error);
     return null;
   }
 };
@@ -203,34 +177,23 @@ export const getVoiceFeedbackByTeacher = async (
   }
 };
 
-// Delete voice feedback
+// Delete voice feedback (FREE VERSION - No storage deletion needed)
 export const deleteVoiceFeedback = async (voiceFeedbackId: string): Promise<boolean> => {
   try {
-    // First get the voice feedback to get the audio path
-    const voiceFeedbacks = await getDocs(
-      query(collection(db, 'voiceFeedback'), where('__name__', '==', voiceFeedbackId))
-    );
+    console.log('🗑️ Deleting voice feedback (FREE version)...');
     
-    if (voiceFeedbacks.empty) {
-      console.error('Voice feedback not found');
-      return false;
-    }
-    
-    const voiceFeedbackData = voiceFeedbacks.docs[0].data() as VoiceFeedback;
-    
-    // Delete from Storage
-    const storageRef = ref(storage, voiceFeedbackData.audioPath);
-    await deleteObject(storageRef);
-    
-    // Delete from Firestore
+    // Since we're using base64 storage in Firestore, we just mark as deleted
+    // No need to delete from Firebase Storage since we're not using it!
     await updateDoc(doc(db, 'voiceFeedback', voiceFeedbackId), {
       deleted: true,
-      deletedAt: Timestamp.now()
+      deletedAt: Timestamp.now(),
+      audioUrl: '', // Clear the base64 data to save space
     });
     
+    console.log('✅ Voice feedback deleted successfully (FREE)!');
     return true;
   } catch (error) {
-    console.error('Error deleting voice feedback:', error);
+    console.error('❌ Error deleting voice feedback:', error);
     return false;
   }
 };

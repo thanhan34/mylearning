@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { getTeacherClasses, getAssistantClasses } from '@/app/firebase/services/class';
 import { getUserByEmail } from '@/app/firebase/services/user';
@@ -9,6 +9,7 @@ import { db } from '@/app/firebase/config';
 import FeedbackDetailsModal from '@/app/dashboard/admin/components/feedback/FeedbackDetailsModal';
 import { HomeworkSubmission } from '@/app/firebase/services/types';
 import { getMultipleStudentNicknames } from '@/app/firebase/services/student-nickname';
+import { getVoiceFeedbackForSubmission } from '@/app/firebase/services/voice-feedback';
 import { format } from 'date-fns';
 
 interface Class {
@@ -31,6 +32,7 @@ interface HomeworkData {
   submissions: HomeworkSubmission[];
   feedbackCount?: number;
   totalCount?: number;
+  voiceCheckPending?: boolean;
 }
 
 export default function TeacherFeedbackClient() {
@@ -43,6 +45,8 @@ export default function TeacherFeedbackClient() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nicknames, setNicknames] = useState<Record<string, string>>({});
   const [currentTeacherId, setCurrentTeacherId] = useState<string>('');
+  const [processedSubmissions, setProcessedSubmissions] = useState<Set<string>>(new Set());
+  const processedSubmissionsRef = useRef<Set<string>>(new Set());
 
   // Fetch teacher's classes
   useEffect(() => {
@@ -91,18 +95,20 @@ export default function TeacherFeedbackClient() {
     fetchNicknames();
   }, [selectedClass, currentTeacherId]);
 
-  // Function to fetch homework submissions for a class
+  // Function to fetch homework submissions for a class - OPTIMIZED VERSION
   const fetchHomeworkSubmissions = async (classData: Class | null) => {
     if (!classData) return;
 
     setLoading(true);
+    // Reset processed submissions when switching classes
+    setProcessedSubmissions(new Set());
+    processedSubmissionsRef.current = new Set();
+    
     try {
       // Get all student IDs from the selected class
       const studentIds = classData.students.map(student => student.id);
       
-      
       if (studentIds.length === 0) {
-        
         setHomeworkSubmissions([]);
         setLoading(false);
         return;
@@ -125,23 +131,26 @@ export default function TeacherFeedbackClient() {
         
         const querySnapshot = await getDocs(q);
         
-        
+        // FAST LOADING: Check text feedback and filter out completed ones immediately
         querySnapshot.forEach(doc => {
           const data = doc.data() as HomeworkData;
           
-          // Calculate feedback stats
+          // Calculate feedback stats based on text feedback only (for fast loading)
           const totalCount = data.submissions?.length || 0;
-          const feedbackCount = data.submissions?.filter(sub => 
+          const textFeedbackCount = data.submissions?.filter(sub => 
             sub.feedback && sub.feedback.trim() !== ''
           ).length || 0;
           
-          // Only include submissions that need feedback (not all submissions have feedback)
-          if (feedbackCount < totalCount) {
+          // Only include submissions that don't have complete text feedback
+          // This prevents showing completed assignments initially
+          if (textFeedbackCount < totalCount) {
             submissions.push({
               ...data,
               id: doc.id,
-              feedbackCount,
-              totalCount
+              feedbackCount: textFeedbackCount,
+              totalCount,
+              // Add flag to indicate voice feedback not checked yet
+              voiceCheckPending: true
             });
           }
         });
@@ -153,13 +162,95 @@ export default function TeacherFeedbackClient() {
         return b.timestamp.seconds - a.timestamp.seconds;
       });
       
-      
+      // Set initial submissions (fast loading)
       setHomeworkSubmissions(submissions);
+      setLoading(false);
+      
+      // BACKGROUND: Check voice feedback and update progressively
+      checkVoiceFeedbackInBackground(submissions);
+      
     } catch (error) {
       console.error('Error fetching homework submissions:', error);
-    } finally {
       setLoading(false);
     }
+  };
+
+  // Background function to check voice feedback
+  const checkVoiceFeedbackInBackground = async (initialSubmissions: HomeworkData[]) => {
+    const updatedSubmissions = [...initialSubmissions];
+    
+    for (let i = 0; i < updatedSubmissions.length; i++) {
+      const submission = updatedSubmissions[i];
+      
+      // Skip submissions that have been processed by refreshSubmissionsList
+      if (processedSubmissionsRef.current.has(submission.id)) {
+        continue;
+      }
+      
+      try {
+        // Check voice feedback for each submission
+        const voiceFeedbackPromises = (submission.submissions || []).map(async (sub) => {
+          try {
+            const voiceFeedbacks = await getVoiceFeedbackForSubmission(
+              submission.id,
+              sub.type,
+              sub.questionNumber
+            );
+            return voiceFeedbacks.length > 0;
+          } catch (error) {
+            console.error('Error checking voice feedback:', error);
+            return false;
+          }
+        });
+        
+        const voiceResults = await Promise.all(voiceFeedbackPromises);
+        const voiceFeedbackCount = voiceResults.filter(Boolean).length;
+        
+        // Calculate total feedback (text + voice)
+        const textFeedbackCount = submission.submissions?.filter(sub => 
+          sub.feedback && sub.feedback.trim() !== ''
+        ).length || 0;
+        
+        // Count submissions that have either text OR voice feedback
+        let totalFeedbackCount = 0;
+        for (let j = 0; j < (submission.submissions || []).length; j++) {
+          const sub = submission.submissions![j];
+          const hasText = sub.feedback && sub.feedback.trim() !== '';
+          const hasVoice = voiceResults[j];
+          if (hasText || hasVoice) {
+            totalFeedbackCount++;
+          }
+        }
+        
+        // Update the submission
+        updatedSubmissions[i] = {
+          ...submission,
+          feedbackCount: totalFeedbackCount,
+          voiceCheckPending: false
+        };
+        
+      } catch (error) {
+        console.error('Error in background voice check:', error);
+      }
+    }
+    
+    // After checking all submissions, update the state once with filtered results
+    setHomeworkSubmissions(currentSubmissions => {
+      // Filter out submissions that are fully completed or have been processed
+      const filteredSubmissions = updatedSubmissions.filter(sub => {
+        // Skip if processed by refresh
+        if (processedSubmissionsRef.current.has(sub.id)) {
+          return false;
+        }
+        // Skip if fully completed
+        if (sub.feedbackCount! >= sub.totalCount!) {
+          return false;
+        }
+        return true;
+      });
+      
+      return [...filteredSubmissions];
+    });
   };
 
   // Fetch homework submissions when selected class changes
@@ -175,10 +266,80 @@ export default function TeacherFeedbackClient() {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedSubmission(null);
+    // Don't reload the entire list anymore
+  };
+
+  // Function to update specific submission after feedback is completed
+  const refreshSubmissionsList = async (updatedSubmissionId?: string) => {
+    if (!updatedSubmissionId) return;
     
-    // Refresh the submissions list after providing feedback
-    // This directly fetches the submissions without resetting the selected class
-    fetchHomeworkSubmissions(selectedClass);
+    // Mark this submission as processed to prevent background voice check from overriding
+    setProcessedSubmissions(prev => new Set(prev).add(updatedSubmissionId));
+    processedSubmissionsRef.current.add(updatedSubmissionId);
+    
+    // Re-fetch and check the specific submission's feedback status
+    try {
+      const submissionsRef = collection(db, 'homework');
+      const docRef = query(submissionsRef, where('__name__', '==', updatedSubmissionId));
+      const querySnapshot = await getDocs(docRef);
+      
+      if (querySnapshot.empty) return;
+      
+      const doc = querySnapshot.docs[0];
+      const updatedData = { ...doc.data(), id: doc.id } as HomeworkData;
+      
+      // Calculate feedback stats including both text and voice feedback
+      const totalCount = updatedData.submissions?.length || 0;
+      let feedbackCount = 0;
+      
+      // Check each submission for feedback (text or voice)
+      for (const submission of updatedData.submissions || []) {
+        const hasTextFeedback = submission.feedback && submission.feedback.trim() !== '';
+        
+        // Check for voice feedback
+        let hasVoiceFeedback = false;
+        try {
+          const voiceFeedbacks = await getVoiceFeedbackForSubmission(
+            updatedSubmissionId,
+            submission.type,
+            submission.questionNumber
+          );
+          hasVoiceFeedback = voiceFeedbacks.length > 0;
+        } catch (error) {
+          console.error('Error checking voice feedback:', error);
+        }
+        
+        // If either text or voice feedback exists, count it as feedback
+        if (hasTextFeedback || hasVoiceFeedback) {
+          feedbackCount++;
+        }
+      }
+      
+      // Update the submissions list
+      setHomeworkSubmissions(prevSubmissions => {
+        return prevSubmissions.map(submission => {
+          if (submission.id === updatedSubmissionId) {
+            // If all submissions now have feedback, remove from list
+            if (feedbackCount >= totalCount) {
+              return null; // Will be filtered out
+            }
+            
+            // Otherwise update the submission with new data and count
+            return {
+              ...updatedData,
+              id: doc.id,
+              feedbackCount,
+              totalCount,
+              voiceCheckPending: false
+            };
+          }
+          return submission;
+        }).filter(Boolean) as HomeworkData[]; // Remove null entries
+      });
+      
+    } catch (error) {
+      console.error('Error refreshing submission:', error);
+    }
   };
 
   const formatDate = (timestamp: any) => {
@@ -308,6 +469,7 @@ export default function TeacherFeedbackClient() {
         <FeedbackDetailsModal
           isOpen={isModalOpen}
           onClose={closeModal}
+          onFeedbackComplete={refreshSubmissionsList}
           studentName={selectedSubmission.userName}
           teacherName={session?.user?.name || 'Giảng viên'}
           className={selectedClass?.name || ''}
