@@ -25,7 +25,8 @@ import {
   RiArrowDownSLine,
   RiBookOpenLine,
   RiSettings4Line,
-  RiUserLine
+  RiUserLine,
+  RiCalendarLine
 } from "react-icons/ri";
 
 interface NavItem {
@@ -97,6 +98,7 @@ const Navigation = () => {
       label: "Quản lý",
       icon: <RiSettings4Line className="w-5 h-5" />,
       items: [
+        { href: "/dashboard/admin/schedule", label: "Lịch học", icon: <RiCalendarLine className="w-4 h-4" /> },
         { href: "/dashboard/admin/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-4 h-4" /> },
         { href: "/dashboard/admin/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-4 h-4" /> },
         { href: "/dashboard/admin/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
@@ -119,6 +121,7 @@ const Navigation = () => {
       label: "Quản lý",
       icon: <RiSettings4Line className="w-5 h-5" />,
       items: [
+        { href: "/dashboard/teacher/schedule", label: "Lịch học", icon: <RiCalendarLine className="w-4 h-4" /> },
         { href: "/dashboard/class", label: "Classes", icon: <RiTeamLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-4 h-4" /> },
@@ -143,6 +146,7 @@ const Navigation = () => {
       label: "Tiện ích",
       icon: <RiSettings4Line className="w-5 h-5" />,
       items: [
+        { href: "/dashboard/schedule", label: "Lịch học", icon: <RiCalendarLine className="w-4 h-4" /> },
         { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
       ]
     }
@@ -163,6 +167,7 @@ const Navigation = () => {
       label: "Quản lý",
       icon: <RiSettings4Line className="w-5 h-5" />,
       items: [
+        { href: "/dashboard/assistant/schedule", label: "Lịch học", icon: <RiCalendarLine className="w-4 h-4" /> },
         { href: "/dashboard/class", label: "Classes", icon: <RiTeamLine className="w-4 h-4" /> },
         { href: "/dashboard/assistant/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-4 h-4" /> },
