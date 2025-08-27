@@ -139,6 +139,40 @@ export const getTeacherClasses = async (teacherEmail: string): Promise<Class[]> 
   }
 };
 
+export const getTeacherClassesForPTE = async (teacherId: string): Promise<{ id: string; name: string; teacherName: string; }[]> => {
+  try {
+    const classesRef = collection(db, 'classes');
+    const q = query(classesRef, where('teacherId', '==', teacherId));
+    
+    // Get classes with retry logic
+    const querySnapshot = await retryOperation(() => getDocs(q));
+    
+    // Get teacher name
+    const teacherRef = doc(db, 'users', teacherId);
+    const teacherDoc = await retryOperation(() => getDoc(teacherRef));
+    const teacherName = teacherDoc.exists() ? teacherDoc.data().name : 'Unknown Teacher';
+    
+    const classes = querySnapshot.docs.map((docSnapshot: any) => ({
+      id: docSnapshot.id,
+      name: docSnapshot.data().name,
+      teacherName: teacherName
+    }));
+    
+    return classes;
+  } catch (error) {
+    console.error('Error getting teacher classes for PTE:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        teacherId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    return [];
+  }
+};
+
 export const createClass = async (classData: Omit<Class, 'id'>): Promise<string | null> => {
   try {
     // Get teacher's document ID

@@ -11,6 +11,7 @@ import {
   getPTEChecklistStats 
 } from '../../../firebase/services/pte-checklist';
 import { getAllClasses } from '../../../firebase/services/exam-tracking';
+import { getTeacherClassesForPTE } from '../../../firebase/services/class';
 import { initializeAllStudentChecklists } from '../../../firebase/services/pte-checklist-init';
 import ChecklistPTE from '../../components/ChecklistPTE';
 
@@ -40,7 +41,7 @@ const PTEChecklistManagement: React.FC = () => {
   const userRole = session?.user?.role;
   const isAdminOrTeacher = userRole === 'admin' || userRole === 'teacher' || userRole === 'assistant';
 
-  // Load classes for admin
+  // Load classes for admin and teacher
   useEffect(() => {
     if (userRole === 'admin') {
       const loadClasses = async () => {
@@ -54,10 +55,22 @@ const PTEChecklistManagement: React.FC = () => {
         }
       };
       loadClasses();
+    } else if (userRole === 'teacher' && session?.user?.id) {
+      const loadTeacherClasses = async () => {
+        try {
+          const teacherClasses = await getTeacherClassesForPTE(session.user.id!);
+          setClasses(teacherClasses);
+        } catch (error) {
+          console.error('Error loading teacher classes:', error);
+        } finally {
+          setLoadingClasses(false);
+        }
+      };
+      loadTeacherClasses();
     } else {
       setLoadingClasses(false);
     }
-  }, [userRole]);
+  }, [userRole, session?.user?.id]);
 
   useEffect(() => {
     if (!isAdminOrTeacher || !session?.user?.id) return;
@@ -79,11 +92,19 @@ const PTEChecklistManagement: React.FC = () => {
         });
       }
     } else if (userRole === 'teacher') {
-      // Teacher chỉ xem học viên mình phụ trách
-      unsubscribe = subscribeToTeacherPTEChecklistProgress(session.user.id, (progressList) => {
-        setAllProgress(progressList);
-        setLoading(false);
-      });
+      if (selectedClass) {
+        // Teacher xem học viên theo lớp được chọn
+        unsubscribe = subscribeToClassPTEChecklistProgress(selectedClass, (progressList) => {
+          setAllProgress(progressList);
+          setLoading(false);
+        });
+      } else {
+        // Teacher xem tất cả học viên mình phụ trách
+        unsubscribe = subscribeToTeacherPTEChecklistProgress(session.user.id, (progressList) => {
+          setAllProgress(progressList);
+          setLoading(false);
+        });
+      }
     } else if (userRole === 'assistant') {
       // Assistant xem học viên từ teachers/classes được gán
       unsubscribe = subscribeToAssistantPTEChecklistProgress(session.user.id, (progressList) => {
@@ -256,8 +277,8 @@ const PTEChecklistManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Class Selection for Admin */}
-      {userRole === 'admin' && (
+      {/* Class Selection for Admin and Teacher */}
+      {(userRole === 'admin' || userRole === 'teacher') && (
         <div className="bg-white rounded-lg shadow-sm border border-orange-200 mb-6">
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">🏫 Chọn lớp học</h2>
@@ -276,10 +297,15 @@ const PTEChecklistManagement: React.FC = () => {
                   }}
                   className="flex-1 max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 >
-                  <option value="">Tất cả lớp học</option>
+                  <option value="">
+                    {userRole === 'admin' ? 'Tất cả lớp học' : 'Tất cả lớp của tôi'}
+                  </option>
                   {classes.map((classOption) => (
                     <option key={classOption.id} value={classOption.id}>
-                      {classOption.name} - {classOption.teacherName}
+                      {userRole === 'admin' 
+                        ? `${classOption.name} - ${classOption.teacherName}`
+                        : classOption.name
+                      }
                     </option>
                   ))}
                 </select>
@@ -306,16 +332,18 @@ const PTEChecklistManagement: React.FC = () => {
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-800">
               Danh sách học viên
-              {userRole === 'admin' && selectedClass && (
+              {(userRole === 'admin' || userRole === 'teacher') && selectedClass && (
                 <span className="text-sm font-normal text-gray-600 ml-2">
                   - {classes.find(c => c.id === selectedClass)?.name}
                 </span>
               )}
             </h2>
-            {userRole === 'admin' && selectedClass && (
+            {(userRole === 'admin' || userRole === 'teacher') && selectedClass && (
               <div className="text-sm text-gray-600">
-                Lớp: {classes.find(c => c.id === selectedClass)?.name} 
-                ({classes.find(c => c.id === selectedClass)?.teacherName})
+                Lớp: {classes.find(c => c.id === selectedClass)?.name}
+                {userRole === 'admin' && (
+                  <span> ({classes.find(c => c.id === selectedClass)?.teacherName})</span>
+                )}
               </div>
             )}
           </div>
