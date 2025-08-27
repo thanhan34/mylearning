@@ -145,7 +145,7 @@ const ChecklistPTE: React.FC<ChecklistPTEProps> = ({
     <div className="max-w-6xl mx-auto p-6 bg-white">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          📋 Checklist 20 Phần Thi PTE
+          📋 Checklist 22 Phần Thi PTE
         </h1>
         {progress && (
           <p className="text-gray-600">

@@ -7,16 +7,27 @@ import {
   subscribeToAllPTEChecklistProgress, 
   subscribeToTeacherPTEChecklistProgress,
   subscribeToAssistantPTEChecklistProgress,
+  subscribeToClassPTEChecklistProgress,
   getPTEChecklistStats 
 } from '../../../firebase/services/pte-checklist';
+import { getAllClasses } from '../../../firebase/services/exam-tracking';
 import { initializeAllStudentChecklists } from '../../../firebase/services/pte-checklist-init';
 import ChecklistPTE from '../../components/ChecklistPTE';
+
+interface ClassOption {
+  id: string;
+  name: string;
+  teacherName: string;
+}
 
 const PTEChecklistManagement: React.FC = () => {
   const { data: session } = useSession();
   const [allProgress, setAllProgress] = useState<PTEChecklistProgress[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<PTEChecklistProgress | null>(null);
+  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [classes, setClasses] = useState<ClassOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingClasses, setLoadingClasses] = useState(true);
   const [initializing, setInitializing] = useState(false);
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -29,17 +40,44 @@ const PTEChecklistManagement: React.FC = () => {
   const userRole = session?.user?.role;
   const isAdminOrTeacher = userRole === 'admin' || userRole === 'teacher' || userRole === 'assistant';
 
+  // Load classes for admin
+  useEffect(() => {
+    if (userRole === 'admin') {
+      const loadClasses = async () => {
+        try {
+          const allClasses = await getAllClasses();
+          setClasses(allClasses);
+        } catch (error) {
+          console.error('Error loading classes:', error);
+        } finally {
+          setLoadingClasses(false);
+        }
+      };
+      loadClasses();
+    } else {
+      setLoadingClasses(false);
+    }
+  }, [userRole]);
+
   useEffect(() => {
     if (!isAdminOrTeacher || !session?.user?.id) return;
 
     let unsubscribe: () => void;
 
     if (userRole === 'admin') {
-      // Admin xem tất cả học viên
-      unsubscribe = subscribeToAllPTEChecklistProgress((progressList) => {
-        setAllProgress(progressList);
-        setLoading(false);
-      });
+      if (selectedClass) {
+        // Admin xem học viên theo lớp được chọn
+        unsubscribe = subscribeToClassPTEChecklistProgress(selectedClass, (progressList) => {
+          setAllProgress(progressList);
+          setLoading(false);
+        });
+      } else {
+        // Admin xem tất cả học viên
+        unsubscribe = subscribeToAllPTEChecklistProgress((progressList) => {
+          setAllProgress(progressList);
+          setLoading(false);
+        });
+      }
     } else if (userRole === 'teacher') {
       // Teacher chỉ xem học viên mình phụ trách
       unsubscribe = subscribeToTeacherPTEChecklistProgress(session.user.id, (progressList) => {
@@ -58,7 +96,7 @@ const PTEChecklistManagement: React.FC = () => {
     }
 
     return () => unsubscribe();
-  }, [isAdminOrTeacher, userRole, session?.user?.id]);
+  }, [isAdminOrTeacher, userRole, session?.user?.id, selectedClass]);
 
   useEffect(() => {
     const calculateStats = () => {
@@ -218,10 +256,69 @@ const PTEChecklistManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* Class Selection for Admin */}
+      {userRole === 'admin' && (
+        <div className="bg-white rounded-lg shadow-sm border border-orange-200 mb-6">
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">🏫 Chọn lớp học</h2>
+            {loadingClasses ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+                <span className="text-gray-600">Đang tải danh sách lớp...</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <select
+                  value={selectedClass}
+                  onChange={(e) => {
+                    setSelectedClass(e.target.value);
+                    setLoading(true);
+                  }}
+                  className="flex-1 max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="">Tất cả lớp học</option>
+                  {classes.map((classOption) => (
+                    <option key={classOption.id} value={classOption.id}>
+                      {classOption.name} - {classOption.teacherName}
+                    </option>
+                  ))}
+                </select>
+                {selectedClass && (
+                  <button
+                    onClick={() => {
+                      setSelectedClass('');
+                      setLoading(true);
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Xóa bộ lọc
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Students List */}
       <div className="bg-white rounded-lg shadow-sm border border-orange-200">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-800">Danh sách học viên</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-800">
+              Danh sách học viên
+              {userRole === 'admin' && selectedClass && (
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  - {classes.find(c => c.id === selectedClass)?.name}
+                </span>
+              )}
+            </h2>
+            {userRole === 'admin' && selectedClass && (
+              <div className="text-sm text-gray-600">
+                Lớp: {classes.find(c => c.id === selectedClass)?.name} 
+                ({classes.find(c => c.id === selectedClass)?.teacherName})
+              </div>
+            )}
+          </div>
         </div>
         
         {loading ? (

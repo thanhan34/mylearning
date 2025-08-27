@@ -327,6 +327,60 @@ export const subscribeToAssistantPTEChecklistProgress = (
   });
 };
 
+export const subscribeToClassPTEChecklistProgress = (
+  classId: string,
+  callback: (progressList: PTEChecklistProgress[]) => void
+): Unsubscribe => {
+  // Subscribe to PTE checklist changes and filter by class students
+  const checklistRef = collection(db, COLLECTION_NAME);
+  const checklistQuery = query(checklistRef, orderBy('userName'));
+
+  return onSnapshot(checklistQuery, async (checklistSnapshot) => {
+    try {
+      // Get students from the selected class
+      const classRef = doc(db, 'classes', classId);
+      const classDoc = await getDoc(classRef);
+      
+      if (!classDoc.exists()) {
+        callback([]);
+        return;
+      }
+
+      const classData = classDoc.data();
+      const classStudents = classData.students || [];
+      const studentIds = new Set(classStudents.map((student: any) => student.id));
+
+      if (studentIds.size === 0) {
+        callback([]);
+        return;
+      }
+
+      // Filter checklist progress for class students
+      const progressList: PTEChecklistProgress[] = [];
+      
+      checklistSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (studentIds.has(data.userId)) {
+          progressList.push({
+            id: doc.id,
+            ...data
+          } as PTEChecklistProgress);
+        }
+      });
+
+      // Sort by userName
+      progressList.sort((a, b) => a.userName.localeCompare(b.userName));
+      callback(progressList);
+    } catch (error) {
+      console.error('Error processing class PTE checklist progress:', error);
+      callback([]);
+    }
+  }, (error) => {
+    console.error('Error subscribing to class PTE checklist progress:', error);
+    callback([]);
+  });
+};
+
 export const getPTEChecklistStats = async (): Promise<{
   totalStudents: number;
   completedItems: number;

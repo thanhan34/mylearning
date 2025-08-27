@@ -3,7 +3,7 @@ import ChecklistPTE from '../components/ChecklistPTE';
 
 export const metadata: Metadata = {
   title: 'PTE Checklist - MyLearning',
-  description: 'Checklist 20 phần thi PTE cho học viên và giáo viên',
+  description: 'Checklist 22 phần thi PTE cho học viên và giáo viên',
 };
 
 export default function PTEChecklistPage() {
