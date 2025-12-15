@@ -7,6 +7,8 @@ import { addFeedback } from "../../../firebase/services/mocktest";
 
 interface Props {
   mocktestId: string;
+  studentName?: string;
+  className?: string;
   initialFeedback?: string;
   onSuccess: () => void;
   onCancel: () => void;
@@ -14,6 +16,8 @@ interface Props {
 
 export default function TeacherFeedback({
   mocktestId,
+  studentName,
+  className,
   initialFeedback = "",
   onSuccess,
   onCancel
@@ -30,7 +34,14 @@ export default function TeacherFeedback({
 
     setLoading(true);
     try {
-      await addFeedback(mocktestId, session.user.id, formData);
+      await addFeedback(
+        mocktestId, 
+        session.user.id, 
+        formData,
+        session.user.name || session.user.email || 'Giảng viên',
+        studentName,
+        className
+      );
       onSuccess();
     } catch (error) {
       console.error("Error saving feedback:", error);

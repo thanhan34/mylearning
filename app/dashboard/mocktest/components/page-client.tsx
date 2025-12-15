@@ -78,6 +78,7 @@ export default function MocktestClient({ user, classData }: Props) {
           <MocktestTable
             mocktests={mocktests}
             classId={classData.id}
+            className={classData.name}
             onUpdate={loadMocktests}
           />
           {mocktests.length === 0 && (

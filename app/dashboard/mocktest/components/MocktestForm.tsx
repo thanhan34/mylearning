@@ -7,6 +7,7 @@ import { addMocktest, updateMocktest } from "../../../firebase/services/mocktest
 
 interface Props {
   classId: string;
+  className?: string;
   initialData?: MocktestFormData;
   mocktestId?: string;
   onSuccess: () => void;
@@ -14,7 +15,8 @@ interface Props {
 }
 
 export default function MocktestForm({ 
-  classId, 
+  classId,
+  className,
   initialData, 
   mocktestId,
   onSuccess, 
@@ -69,7 +71,13 @@ export default function MocktestForm({
         await updateMocktest(mocktestId, formData);
         alert("Mocktest đã được cập nhật thành công!");
       } else {
-        await addMocktest(session.user.id, classId, formData);
+        await addMocktest(
+          session.user.id, 
+          classId, 
+          formData,
+          session.user.name || session.user.email || 'Học viên',
+          className
+        );
         alert("Mocktest đã được thêm thành công!");
       }
       onSuccess();

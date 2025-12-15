@@ -12,6 +12,7 @@ type HomeworkType = 'Read aloud' | 'Retell lecture' | 'Describe image' | 'Repeat
 import { getHomeworkSubmissions, saveHomeworkSubmission, getUserByEmail } from '../../firebase/services';
 import { addNotification } from '../../firebase/services/notification';
 import type { User } from '../../firebase/services/user';
+import { sendHomeworkNotification } from '../../firebase/services/discord';
 
 // Default homework submissions template
 const getDefaultHomeworkSubmissions = (date: string): HomeworkSubmission[] => [
@@ -277,6 +278,20 @@ export default function SubmitPage() {
       
       if (!success) {
         throw new Error('Failed to save submissions');
+      }
+
+      // Send Discord notification for homework submission
+      try {
+        await sendHomeworkNotification(
+          session.user.name,
+          selectedHomeworkType,
+          selectedDate,
+          links,
+          links.length
+        );
+      } catch (discordError) {
+        console.error('Error sending Discord notification:', discordError);
+        // Don't fail the submission if Discord fails
       }
 
       // Create notification after successful submission

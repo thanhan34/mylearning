@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { HomeworkSubmission } from '@/app/firebase/services/types';
 import { updateHomeworkFeedback } from '@/app/firebase/services/homework';
 import { useSession } from 'next-auth/react';
+import { sendHomeworkFeedbackNotification } from '@/app/firebase/services/discord';
 
 interface FeedbackDetailsModalProps {
   isOpen: boolean;
@@ -79,6 +80,20 @@ export default function FeedbackDetailsModal({
         
         setLocalSubmissions(updatedLocalSubmissions);
         setEditingFeedback(null);
+        
+        // Send Discord notification for homework feedback
+        try {
+          await sendHomeworkFeedbackNotification(
+            session?.user?.name || 'Giảng viên',
+            studentName,
+            editingFeedback.type,
+            date,
+            editingFeedback.questionNumber
+          );
+        } catch (discordError) {
+          console.error('Error sending Discord notification:', discordError);
+          // Don't fail the feedback if Discord fails
+        }
         
         // Call the callback to refresh the submissions list
         if (onFeedbackComplete) {

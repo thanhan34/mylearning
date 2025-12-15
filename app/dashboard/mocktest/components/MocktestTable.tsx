@@ -10,6 +10,7 @@ import TeacherFeedback from "./TeacherFeedback";
 interface Props {
   mocktests: Mocktest[];
   classId: string;
+  className?: string;
   isTeacher?: boolean;
   onUpdate: () => void;
 }
@@ -17,6 +18,7 @@ interface Props {
 export default function MocktestTable({
   mocktests,
   classId,
+  className,
   isTeacher = false,
   onUpdate
 }: Props) {
@@ -72,6 +74,7 @@ export default function MocktestTable({
         <div className="mb-4 p-4 bg-white rounded-lg shadow">
           <MocktestForm
             classId={classId}
+            className={className}
             onSuccess={() => {
               setShowForm(false);
               onUpdate();
@@ -85,6 +88,7 @@ export default function MocktestTable({
         <div className="mb-4 p-4 bg-white rounded-lg shadow">
           <MocktestForm
             classId={classId}
+            className={className}
             mocktestId={editingMocktest.id}
             initialData={{
               link: editingMocktest.link,
@@ -103,6 +107,8 @@ export default function MocktestTable({
         <div className="mb-4 p-4 bg-white rounded-lg shadow">
           <TeacherFeedback
             mocktestId={addingFeedback.id}
+            studentName={addingFeedback.studentId}
+            className={className}
             initialFeedback={addingFeedback.feedback}
             onSuccess={() => {
               setAddingFeedback(null);

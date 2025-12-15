@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../config";
 import { Mocktest, MocktestFormData, FeedbackFormData } from "../../../types/mocktest";
+import { sendMocktestNotification, sendMocktestFeedbackNotification } from "./discord";
 
 const COLLECTION = "mocktests";
 
@@ -93,7 +94,9 @@ export const getMocktestsByClass = async (classId: string) => {
 export const addMocktest = async (
   studentId: string,
   classId: string,
-  data: MocktestFormData
+  data: MocktestFormData,
+  studentName?: string,
+  className?: string
 ) => {
   console.log("Adding mocktest:", { studentId, classId, data });
   const mocktest = {
@@ -105,6 +108,22 @@ export const addMocktest = async (
 
   const docRef = await addDoc(collection(db, COLLECTION), mocktest);
   console.log("Added mocktest with ID:", docRef.id);
+  
+  // Send Discord notification for mocktest submission
+  if (studentName && className) {
+    try {
+      await sendMocktestNotification(
+        studentName,
+        className,
+        data.submittedAt.toLocaleDateString('vi-VN'),
+        data.link
+      );
+    } catch (discordError) {
+      console.error('Error sending Discord notification for mocktest:', discordError);
+      // Don't fail the submission if Discord fails
+    }
+  }
+  
   return {
     id: docRef.id,
     ...mocktest
@@ -133,13 +152,30 @@ export const updateMocktest = async (
 export const addFeedback = async (
   mocktestId: string,
   teacherId: string,
-  data: FeedbackFormData
+  data: FeedbackFormData,
+  teacherName?: string,
+  studentName?: string,
+  className?: string
 ) => {
   const docRef = doc(db, COLLECTION, mocktestId);
   await updateDoc(docRef, {
     feedback: data.feedback,
     teacherId
   });
+
+  // Send Discord notification for mocktest feedback
+  if (teacherName && studentName && className) {
+    try {
+      await sendMocktestFeedbackNotification(
+        teacherName,
+        studentName,
+        className
+      );
+    } catch (discordError) {
+      console.error('Error sending Discord notification for mocktest feedback:', discordError);
+      // Don't fail the feedback if Discord fails
+    }
+  }
 
   const updatedDoc = await getDoc(docRef);
   return {

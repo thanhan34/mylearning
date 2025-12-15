@@ -107,6 +107,7 @@ export default function StudentMocktestView({ student, classData }: Props) {
         <MocktestTable
           mocktests={mocktests}
           classId={classData.id}
+          className={classData.name}
           isTeacher={true}
           onUpdate={loadMocktests}
         />
