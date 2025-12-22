@@ -73,15 +73,37 @@ Chứa 4 functions chính:
 4. `sendMocktestFeedbackNotification()` - Gửi thông báo mocktest feedback
 
 ### Webhook URL Configuration
-Webhook URL được lưu trong constant:
+Hệ thống sử dụng **3 webhook URLs riêng biệt** cho từng loại thông báo:
+
+#### 1. Homework Submissions (Học viên nộp bài)
 ```typescript
-const DISCORD_WEBHOOK_URL = 
-  'https://discord.com/api/webhooks/1444027553877721088/tkea8-C4WjP9wQcViKYe4eKQhaNd-OrvwSq9aNUrpXHGxjG23fNwb_j3E5TP4KuMQsbX';
+const HOMEWORK_WEBHOOK_URL = 
+  'https://discord.com/api/webhooks/1452552521146175582/UGncmc0Zp-2ej8aoT2p3kY6ItP7DV3WQJMg_w4GLZNHyTib1eRPMOyCTIe4TEIRNgZ3J';
 ```
 
-Có thể override bằng environment variable:
+#### 2. Mocktest Submissions (Học viên nộp mocktest)
+```typescript
+const MOCKTEST_WEBHOOK_URL = 
+  'https://discord.com/api/webhooks/1452552781495013527/qyHiuI_6bGf2-opOGtKoYwhdXjx6wE_Vp3S7DMwF2E1Rx6Le-iepmNn46ntHygcvgedb';
 ```
-NEXT_PUBLIC_DISCORD_WEBHOOK_URL=your_webhook_url
+
+#### 3. Teacher Feedback (Giáo viên feedback - cả bài tập và mocktest)
+```typescript
+const FEEDBACK_WEBHOOK_URL = 
+  'https://discord.com/api/webhooks/1452552894912925828/Sm3BJemKuQ0cAuaP0KeEcwkm4pmStbdYLP0EDoFAq2s0cdSX3d8RUdLgBSlV_xhSh8d2';
+```
+
+**Lợi ích của việc phân chia webhooks**:
+- Dễ dàng quản lý và theo dõi từng loại thông báo
+- Có thể assign notification đến các Discord channels khác nhau
+- Giảm spam và tăng tính tổ chức
+- Dễ dàng filter và tìm kiếm thông báo
+
+Có thể override bằng environment variables:
+```
+NEXT_PUBLIC_HOMEWORK_WEBHOOK_URL=your_homework_webhook_url
+NEXT_PUBLIC_MOCKTEST_WEBHOOK_URL=your_mocktest_webhook_url
+NEXT_PUBLIC_FEEDBACK_WEBHOOK_URL=your_feedback_webhook_url
 ```
 
 ### Discord Embed Format
@@ -222,5 +244,5 @@ Các cải tiến có thể thêm trong tương lai:
 Nếu có vấn đề hoặc câu hỏi về Discord integration, liên hệ development team.
 
 ---
-**Last Updated**: 15/12/2025
-**Version**: 1.0.0
+**Last Updated**: 22/12/2025
+**Version**: 1.1.0 - Phân loại webhook theo loại thông báo
