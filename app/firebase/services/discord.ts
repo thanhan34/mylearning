@@ -26,23 +26,20 @@ export async function sendHomeworkNotification(
   count: number
 ): Promise<boolean> {
   try {
-    // Extract URLs from links
-    const extractedUrls = links
-      .map(link => {
-        const match = link.match(/https?:\/\/(?:www\.)?apeuni\.com\/[^\s]+/);
-        return match ? match[0] : link;
-      })
-      .filter(link => link.trim() !== '');
+    // Keep full text with links (no extraction, just filter empty ones)
+    const validLinks = links
+      .map(link => link.trim())
+      .filter(link => link !== '');
 
     // Format links for Discord (max 10 links to avoid message being too long)
-    const displayLinks = extractedUrls.slice(0, 10);
-    const hasMore = extractedUrls.length > 10;
+    const displayLinks = validLinks.slice(0, 10);
+    const hasMore = validLinks.length > 10;
     
     const linksText = displayLinks
       .map((link, index) => `${index + 1}. ${link}`)
       .join('\n');
     
-    const moreText = hasMore ? `\n... và ${extractedUrls.length - 10} links khác` : '';
+    const moreText = hasMore ? `\n... và ${validLinks.length - 10} links khác` : '';
 
     const embed = {
       title: '🎓 BÀI TẬP MỚI',
@@ -69,7 +66,7 @@ export async function sendHomeworkNotification(
           inline: true
         }
       ],
-      description: extractedUrls.length > 0 
+      description: validLinks.length > 0 
         ? `**📎 Links đã nộp:**\n${linksText}${moreText}`
         : 'Không có link',
       timestamp: new Date().toISOString(),
