@@ -8,7 +8,8 @@ import {
   orderBy, 
   Timestamp, 
   onSnapshot,
-  getDocs
+  getDocs,
+  limit
 } from 'firebase/firestore';
 import { db } from '@/app/firebase/config';
 import { Class } from '@/app/firebase/services/types';
@@ -47,6 +48,7 @@ interface AllHomeworkTableProps {
   customTitle?: string;
   customEmptyMessage?: string;
   customEmptyIcon?: string;
+  allowedClassIds?: string[]; // Danh sách class IDs được phép xem (cho teacher role)
 }
 
 export default function AllHomeworkTable({
@@ -58,7 +60,8 @@ export default function AllHomeworkTable({
   feedbackFilter,
   customTitle,
   customEmptyMessage,
-  customEmptyIcon
+  customEmptyIcon,
+  allowedClassIds
 }: AllHomeworkTableProps) {
   const [homeworkData, setHomeworkData] = useState<HomeworkData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,11 +83,12 @@ export default function AllHomeworkTable({
     dateThreshold.setDate(dateThreshold.getDate() - days);
     const dateString = dateThreshold.toISOString().split('T')[0];
 
-    // Build query for homework submissions
+    // Build query for homework submissions with limit
     const homeworkQuery = query(
       collection(db, 'homework'),
       where('date', '>=', dateString),
-      orderBy('date', 'desc')
+      orderBy('date', 'desc'),
+      limit(200) // Giới hạn 200 records để load nhanh hơn
     );
 
     // Set up real-time listener
@@ -174,7 +178,12 @@ export default function AllHomeworkTable({
       processed = processed.filter(homework => homework.feedbackCount < homework.totalCount && homework.totalCount > 0);
     }
 
-    // Apply filters
+    // Apply role-based class filtering first (for teacher role)
+    if (allowedClassIds && allowedClassIds.length > 0) {
+      processed = processed.filter(homework => allowedClassIds.includes(homework.classId));
+    }
+
+    // Apply user-selected filters
     if (selectedClass !== 'all') {
       processed = processed.filter(homework => homework.classId === selectedClass);
     }
@@ -273,9 +282,12 @@ export default function AllHomeworkTable({
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-        <div className="h-64 bg-gray-200 rounded"></div>
+      <div className="bg-white rounded-xl shadow-md overflow-hidden p-12">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#fc5d01]"></div>
+          <p className="text-gray-600 font-medium">Đang tải dữ liệu bài tập...</p>
+          <p className="text-sm text-gray-400">Vui lòng đợi trong giây lát</p>
+        </div>
       </div>
     );
   }
@@ -493,7 +505,7 @@ export default function AllHomeworkTable({
           studentName={selectedSubmission.studentName}
           teacherName={selectedSubmission.teacherName}
           className={selectedSubmission.className}
-          date={formatDate(selectedSubmission.timestamp.toDate())}
+          date={selectedSubmission.date}
           submissions={selectedSubmission.submissions}
           studentId={selectedSubmission.studentId}
           documentId={selectedSubmission.id}

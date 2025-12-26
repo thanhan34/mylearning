@@ -5,40 +5,84 @@ import { useSession } from 'next-auth/react';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/app/firebase/config';
 import { Class } from '@/app/firebase/services/types';
-import { User } from '@/app/firebase/services/user';
+import { User, getUserByEmail } from '@/app/firebase/services/user';
+import { getTeacherClasses, getAssistantClasses } from '@/app/firebase/services/class';
 
 // Import sub-components
 import FilterBar from './FilterBar';
-import StatsOverview from './StatsOverview';
-import TeacherStatsTable from './TeacherStatsTable';
-import ClassStatsTable from './ClassStatsTable';
-import RecentSubmissionsTable from './RecentSubmissionsTable';
+import OverviewStats from './OverviewStats';
 import AllHomeworkTable from './AllHomeworkTable';
 
-export default function HomeworkFeedbackTabs() {
+interface HomeworkFeedbackTabsProps {
+  userRole?: 'admin' | 'teacher' | 'assistant';
+}
+
+export default function HomeworkFeedbackTabs({ userRole = 'admin' }: HomeworkFeedbackTabsProps) {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<'overview' | 'all-homework' | 'with-feedback' | 'without-feedback'>('all-homework');
   const [classes, setClasses] = useState<Class[]>([]);
   const [teachers, setTeachers] = useState<User[]>([]);
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
-  const [selectedTimeframe, setSelectedTimeframe] = useState<string>('30');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string>('7'); // Giảm từ 30 xuống 7 ngày để load nhanh hơn
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [allowedClassIds, setAllowedClassIds] = useState<string[]>([]);
 
-  // Fetch static data (classes and teachers)
+  // Fetch static data (classes and teachers) - with role-based filtering
   useEffect(() => {
     const fetchStaticData = async () => {
       try {
-        // Fetch classes with real-time updates
-        const classesQuery = collection(db, 'classes');
-        const unsubscribeClasses = onSnapshot(classesQuery, (snapshot) => {
-          const classesData = snapshot.docs.map(doc => ({
+        if (!session?.user?.email) return;
+
+        // Get current user info
+        const user = await getUserByEmail(session.user.email);
+        if (!user) return;
+        
+        setCurrentUserId(user.id);
+
+        let classesData: Class[] = [];
+
+        if (userRole === 'admin') {
+          // Admin sees all classes - no filtering
+          const classesQuery = collection(db, 'classes');
+          const unsubscribeClasses = onSnapshot(classesQuery, (snapshot) => {
+            classesData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            })) as Class[];
+            setClasses(classesData);
+          });
+          setAllowedClassIds([]); // Empty means see all
+        } else if (userRole === 'teacher') {
+          // Teacher sees only their classes
+          classesData = await getTeacherClasses(session.user.email);
+          setClasses(classesData);
+          
+          // Set allowed class IDs for filtering homework
+          setAllowedClassIds(classesData.map(c => c.id));
+          
+          // Auto-select teacher's own ID if they're viewing
+          setSelectedTeacher(user.id);
+        } else if (userRole === 'assistant') {
+          // Assistant sees ALL classes (like admin) but gets their assigned classes
+          const assignedClasses = await getAssistantClasses(session.user.email);
+          
+          // Fetch ALL classes for assistant to see all homework
+          const allClassesQuery = collection(db, 'classes');
+          const allClassesSnapshot = await getDocs(allClassesQuery);
+          classesData = allClassesSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           })) as Class[];
+          
           setClasses(classesData);
-        });
+          setAllowedClassIds([]); // Empty means see all (assistant can see everything)
+          
+          // Auto-select assistant's teacher ID
+          setSelectedTeacher('all');
+        }
 
-        // Fetch teachers with real-time updates
+        // Fetch teachers with real-time updates (for filter dropdown)
         const teachersQuery = query(
           collection(db, 'users'),
           where('role', '==', 'teacher')
@@ -52,8 +96,7 @@ export default function HomeworkFeedbackTabs() {
         });
 
         return () => {
-          unsubscribeClasses();
-          unsubscribeTeachers();
+          if (unsubscribeTeachers) unsubscribeTeachers();
         };
       } catch (error) {
         console.error('Error fetching static data:', error);
@@ -61,7 +104,7 @@ export default function HomeworkFeedbackTabs() {
     };
 
     fetchStaticData();
-  }, []);
+  }, [session, userRole]);
 
   const tabs = [
     {
@@ -130,6 +173,7 @@ export default function HomeworkFeedbackTabs() {
           setSelectedClass={setSelectedClass}
           teachers={teachers}
           classes={classes}
+          allowedClassIds={allowedClassIds}
         />
       )}
 
@@ -143,6 +187,7 @@ export default function HomeworkFeedbackTabs() {
           setSelectedClass={setSelectedClass}
           teachers={teachers}
           classes={classes}
+          allowedClassIds={allowedClassIds}
         />
       )}
 
@@ -156,6 +201,7 @@ export default function HomeworkFeedbackTabs() {
           setSelectedClass={setSelectedClass}
           teachers={teachers}
           classes={classes}
+          allowedClassIds={allowedClassIds}
         />
       )}
 
@@ -169,13 +215,14 @@ export default function HomeworkFeedbackTabs() {
           setSelectedClass={setSelectedClass}
           teachers={teachers}
           classes={classes}
+          allowedClassIds={allowedClassIds}
         />
       )}
     </div>
   );
 }
 
-// Overview Tab Component (existing functionality)
+// Overview Tab Component
 function OverviewTab({
   selectedTimeframe,
   setSelectedTimeframe,
@@ -184,7 +231,8 @@ function OverviewTab({
   selectedClass,
   setSelectedClass,
   teachers,
-  classes
+  classes,
+  allowedClassIds
 }: {
   selectedTimeframe: string;
   setSelectedTimeframe: (value: string) => void;
@@ -194,6 +242,7 @@ function OverviewTab({
   setSelectedClass: (value: string) => void;
   teachers: User[];
   classes: Class[];
+  allowedClassIds?: string[];
 }) {
   return (
     <div className="space-y-6">
@@ -208,16 +257,14 @@ function OverviewTab({
         classes={classes}
       />
 
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="text-center text-gray-500">
-          <div className="text-4xl mb-4">🚧</div>
-          <h3 className="text-lg font-medium mb-2">Tính năng đang phát triển</h3>
-          <p className="text-sm">
-            Tab tổng quan feedback sẽ hiển thị thống kê chi tiết về feedback của giảng viên.
-            Hiện tại bạn có thể sử dụng các tab khác để xem bài tập theo trạng thái feedback.
-          </p>
-        </div>
-      </div>
+      <OverviewStats
+        selectedTimeframe={selectedTimeframe}
+        selectedTeacher={selectedTeacher}
+        selectedClass={selectedClass}
+        teachers={teachers}
+        classes={classes}
+        allowedClassIds={allowedClassIds}
+      />
     </div>
   );
 }
@@ -231,7 +278,8 @@ function AllHomeworkTab({
   selectedClass,
   setSelectedClass,
   teachers,
-  classes
+  classes,
+  allowedClassIds
 }: {
   selectedTimeframe: string;
   setSelectedTimeframe: (value: string) => void;
@@ -241,6 +289,7 @@ function AllHomeworkTab({
   setSelectedClass: (value: string) => void;
   teachers: User[];
   classes: Class[];
+  allowedClassIds?: string[];
 }) {
   return (
     <div className="space-y-6">
@@ -261,6 +310,7 @@ function AllHomeworkTab({
         selectedClass={selectedClass}
         teachers={teachers}
         classes={classes}
+        allowedClassIds={allowedClassIds}
       />
     </div>
   );
@@ -275,7 +325,8 @@ function WithFeedbackTab({
   selectedClass,
   setSelectedClass,
   teachers,
-  classes
+  classes,
+  allowedClassIds
 }: {
   selectedTimeframe: string;
   setSelectedTimeframe: (value: string) => void;
@@ -285,6 +336,7 @@ function WithFeedbackTab({
   setSelectedClass: (value: string) => void;
   teachers: User[];
   classes: Class[];
+  allowedClassIds?: string[];
 }) {
   return (
     <div className="space-y-6">
@@ -309,6 +361,7 @@ function WithFeedbackTab({
         title="Bài tập đã có feedback"
         emptyMessage="Không có bài tập nào đã được feedback trong khoảng thời gian này"
         emptyIcon="✅"
+        allowedClassIds={allowedClassIds}
       />
     </div>
   );
@@ -323,7 +376,8 @@ function WithoutFeedbackTab({
   selectedClass,
   setSelectedClass,
   teachers,
-  classes
+  classes,
+  allowedClassIds
 }: {
   selectedTimeframe: string;
   setSelectedTimeframe: (value: string) => void;
@@ -333,6 +387,7 @@ function WithoutFeedbackTab({
   setSelectedClass: (value: string) => void;
   teachers: User[];
   classes: Class[];
+  allowedClassIds?: string[];
 }) {
   return (
     <div className="space-y-6">
@@ -357,6 +412,7 @@ function WithoutFeedbackTab({
         title="Bài tập chưa có feedback"
         emptyMessage="Tuyệt vời! Tất cả bài tập đã được feedback"
         emptyIcon="🎉"
+        allowedClassIds={allowedClassIds}
       />
     </div>
   );
@@ -372,7 +428,8 @@ function FilteredHomeworkTable({
   filterType,
   title,
   emptyMessage,
-  emptyIcon
+  emptyIcon,
+  allowedClassIds
 }: {
   selectedTimeframe: string;
   selectedTeacher: string;
@@ -383,6 +440,7 @@ function FilteredHomeworkTable({
   title: string;
   emptyMessage: string;
   emptyIcon: string;
+  allowedClassIds?: string[];
 }) {
   return (
     <AllHomeworkTable
@@ -395,6 +453,7 @@ function FilteredHomeworkTable({
       customTitle={title}
       customEmptyMessage={emptyMessage}
       customEmptyIcon={emptyIcon}
+      allowedClassIds={allowedClassIds}
     />
   );
 }
