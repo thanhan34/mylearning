@@ -362,6 +362,7 @@ function WithFeedbackTab({
         emptyMessage="Không có bài tập nào đã được feedback trong khoảng thời gian này"
         emptyIcon="✅"
         allowedClassIds={allowedClassIds}
+        showFeedbackByFilter={true}
       />
     </div>
   );
@@ -429,7 +430,8 @@ function FilteredHomeworkTable({
   title,
   emptyMessage,
   emptyIcon,
-  allowedClassIds
+  allowedClassIds,
+  showFeedbackByFilter
 }: {
   selectedTimeframe: string;
   selectedTeacher: string;
@@ -441,6 +443,7 @@ function FilteredHomeworkTable({
   emptyMessage: string;
   emptyIcon: string;
   allowedClassIds?: string[];
+  showFeedbackByFilter?: boolean;
 }) {
   return (
     <AllHomeworkTable
@@ -454,6 +457,7 @@ function FilteredHomeworkTable({
       customEmptyMessage={emptyMessage}
       customEmptyIcon={emptyIcon}
       allowedClassIds={allowedClassIds}
+      showFeedbackByFilter={showFeedbackByFilter}
     />
   );
 }

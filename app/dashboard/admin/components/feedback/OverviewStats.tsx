@@ -121,27 +121,44 @@ export default function OverviewStats({
       return true;
     });
 
-    // Calculate total submissions
+    // Calculate homework records with feedback status (đồng bộ với AllHomeworkTable)
+    // Threshold: 25% để coi như đã hoàn thành feedback
+    const FEEDBACK_THRESHOLD = 0.25; // 25% (giữa 20-30%)
+    
     let totalSubmissions = 0;
-    let submissionsWithFeedback = 0;
+    let homeworkWithFullFeedback = 0;
+    let homeworkWithoutFullFeedback = 0;
     const teacherFeedbackCount: { [key: string]: number } = {};
 
     filteredHomework.forEach(hw => {
-      (hw.submissions || []).forEach(sub => {
-        totalSubmissions++;
-        if (sub.feedback && sub.feedback.trim() !== '') {
-          submissionsWithFeedback++;
+      const submissionCount = (hw.submissions || []).length;
+      const feedbackCount = (hw.submissions || []).filter(
+        sub => sub.feedback && sub.feedback.trim() !== ''
+      ).length;
 
-          // Track who gave feedback
+      totalSubmissions += submissionCount;
+
+      // Đếm homework records với threshold 25%
+      if (submissionCount > 0) {
+        const feedbackPercentage = feedbackCount / submissionCount;
+        if (feedbackPercentage >= FEEDBACK_THRESHOLD) {
+          homeworkWithFullFeedback++;
+        } else {
+          homeworkWithoutFullFeedback++;
+        }
+      }
+
+      // Track who gave feedback
+      (hw.submissions || []).forEach(sub => {
+        if (sub.feedback && sub.feedback.trim() !== '') {
           const feedbackBy = sub.feedbackByName || 'Unknown';
           teacherFeedbackCount[feedbackBy] = (teacherFeedbackCount[feedbackBy] || 0) + 1;
         }
       });
     });
 
-    const submissionsWithoutFeedback = totalSubmissions - submissionsWithFeedback;
-    const feedbackPercentage = totalSubmissions > 0 
-      ? Math.round((submissionsWithFeedback / totalSubmissions) * 100) 
+    const feedbackPercentage = (homeworkWithFullFeedback + homeworkWithoutFullFeedback) > 0
+      ? Math.round((homeworkWithFullFeedback / (homeworkWithFullFeedback + homeworkWithoutFullFeedback)) * 100) 
       : 0;
 
     // Calculate teacher stats
@@ -158,8 +175,8 @@ export default function OverviewStats({
     return {
       totalHomework: filteredHomework.length,
       totalSubmissions,
-      withFeedback: submissionsWithFeedback,
-      withoutFeedback: submissionsWithoutFeedback,
+      withFeedback: homeworkWithFullFeedback,
+      withoutFeedback: homeworkWithoutFullFeedback,
       feedbackPercentage,
       teacherStats
     };
@@ -185,6 +202,7 @@ export default function OverviewStats({
             <div>
               <p className="text-sm text-gray-600 font-medium">Tổng số bài nộp</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalHomework}</p>
+              <p className="text-sm text-gray-500 mt-1">Submissions của học viên</p>
             </div>
             <div className="bg-blue-100 rounded-full p-3">
               <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,6 +217,7 @@ export default function OverviewStats({
             <div>
               <p className="text-sm text-gray-600 font-medium">Tổng số bài tập</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalSubmissions}</p>
+              <p className="text-sm text-gray-500 mt-1">Individual exercises</p>
             </div>
             <div className="bg-purple-100 rounded-full p-3">
               <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,9 +230,9 @@ export default function OverviewStats({
         <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">Đã có feedback</p>
+              <p className="text-sm text-gray-600 font-medium">Bài nộp đã feedback đủ</p>
               <p className="text-3xl font-bold text-green-600 mt-2">{stats.withFeedback}</p>
-              <p className="text-sm text-gray-500 mt-1">{stats.feedbackPercentage}% hoàn thành</p>
+              <p className="text-sm text-gray-500 mt-1">{stats.feedbackPercentage}% hoàn thành (&ge;25%)</p>
             </div>
             <div className="bg-green-100 rounded-full p-3">
               <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,9 +245,9 @@ export default function OverviewStats({
         <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">Chưa có feedback</p>
+              <p className="text-sm text-gray-600 font-medium">Bài nộp chưa feedback đủ</p>
               <p className="text-3xl font-bold text-red-600 mt-2">{stats.withoutFeedback}</p>
-              <p className="text-sm text-gray-500 mt-1">{100 - stats.feedbackPercentage}% còn lại</p>
+              <p className="text-sm text-gray-500 mt-1">{100 - stats.feedbackPercentage}% còn lại (&lt;25%)</p>
             </div>
             <div className="bg-red-100 rounded-full p-3">
               <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,8 +273,8 @@ export default function OverviewStats({
             />
           </div>
           <div className="flex justify-between text-xs text-gray-500">
-            <span>{stats.withFeedback} bài đã feedback</span>
-            <span>{stats.withoutFeedback} bài chờ feedback</span>
+            <span>{stats.withFeedback} bài nộp hoàn tất</span>
+            <span>{stats.withoutFeedback} bài nộp chưa đủ</span>
           </div>
         </div>
       </div>

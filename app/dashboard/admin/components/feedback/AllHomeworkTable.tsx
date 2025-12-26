@@ -49,6 +49,7 @@ interface AllHomeworkTableProps {
   customEmptyMessage?: string;
   customEmptyIcon?: string;
   allowedClassIds?: string[]; // Danh sách class IDs được phép xem (cho teacher role)
+  showFeedbackByFilter?: boolean; // Hiển thị filter theo người cho feedback
 }
 
 export default function AllHomeworkTable({
@@ -61,7 +62,8 @@ export default function AllHomeworkTable({
   customTitle,
   customEmptyMessage,
   customEmptyIcon,
-  allowedClassIds
+  allowedClassIds,
+  showFeedbackByFilter = false
 }: AllHomeworkTableProps) {
   const [homeworkData, setHomeworkData] = useState<HomeworkData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +74,8 @@ export default function AllHomeworkTable({
   const [sortBy, setSortBy] = useState<'date' | 'student' | 'class' | 'feedback'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFeedbackBy, setSelectedFeedbackBy] = useState<string>('all');
+  const [selectedExerciseType, setSelectedExerciseType] = useState<string>('all');
 
   // Set up real-time listener for homework data
   useEffect(() => {
@@ -171,11 +175,21 @@ export default function AllHomeworkTable({
       } as ExtendedHomeworkData;
     }).filter(Boolean) as ExtendedHomeworkData[];
 
-    // Apply feedback filter
+    // Apply feedback filter (threshold: 25% để coi như đã hoàn thành)
+    const FEEDBACK_THRESHOLD = 0.25; // 25% (giữa 20-30%)
+    
     if (feedbackFilter === 'with-feedback') {
-      processed = processed.filter(homework => homework.feedbackCount === homework.totalCount && homework.totalCount > 0);
+      processed = processed.filter(homework => {
+        if (homework.totalCount === 0) return false;
+        const feedbackPercentage = homework.feedbackCount / homework.totalCount;
+        return feedbackPercentage >= FEEDBACK_THRESHOLD;
+      });
     } else if (feedbackFilter === 'without-feedback') {
-      processed = processed.filter(homework => homework.feedbackCount < homework.totalCount && homework.totalCount > 0);
+      processed = processed.filter(homework => {
+        if (homework.totalCount === 0) return false;
+        const feedbackPercentage = homework.feedbackCount / homework.totalCount;
+        return feedbackPercentage < FEEDBACK_THRESHOLD;
+      });
     }
 
     // Apply role-based class filtering first (for teacher role)
@@ -190,6 +204,26 @@ export default function AllHomeworkTable({
 
     if (selectedTeacher !== 'all') {
       processed = processed.filter(homework => homework.teacherId === selectedTeacher);
+    }
+
+    // Apply feedback-by filter
+    if (selectedFeedbackBy !== 'all') {
+      processed = processed.filter(homework => 
+        homework.feedbackByNames.includes(selectedFeedbackBy)
+      );
+    }
+
+    // Apply exercise type filter (chỉ áp dụng cho tab with-feedback)
+    if (selectedExerciseType !== 'all' && feedbackFilter === 'with-feedback') {
+      processed = processed.filter(homework => {
+        // Kiểm tra xem có bài tập nào với type này đã được feedback không
+        return (homework.submissions || []).some(sub => 
+          sub.feedback && 
+          sub.feedback.trim() !== '' && 
+          sub.link && 
+          sub.link.toLowerCase().includes(selectedExerciseType.toLowerCase())
+        );
+      });
     }
 
     // Apply search filter
@@ -228,7 +262,43 @@ export default function AllHomeworkTable({
     });
 
     return processed;
-  }, [homeworkData, classes, teachers, selectedClass, selectedTeacher, searchTerm, sortBy, sortOrder, feedbackFilter]);
+  }, [homeworkData, classes, teachers, selectedClass, selectedTeacher, searchTerm, sortBy, sortOrder, feedbackFilter, selectedFeedbackBy, selectedExerciseType]);
+
+  // Get unique feedback-by names for filter
+  const feedbackByOptions = useMemo(() => {
+    const names = new Set<string>();
+    processedHomework.forEach(homework => {
+      homework.feedbackByNames.forEach(name => names.add(name));
+    });
+    return Array.from(names).sort();
+  }, [processedHomework]);
+
+  // Get unique exercise types from submissions with feedback
+  const exerciseTypeOptions = useMemo(() => {
+    if (feedbackFilter !== 'with-feedback') return [];
+    
+    const types = new Set<string>();
+    const exercisePatterns = [
+      'RS', 'RL', 'ASQ', 'WFD', 'HIW', 'SMW', 'SST', 'SWT', 'WE', 
+      'FIB-R', 'FIB-RW', 'MCM', 'MCS', 'RO', 'DI', 'RA'
+    ];
+    
+    processedHomework.forEach(homework => {
+      (homework.submissions || []).forEach(sub => {
+        if (sub.feedback && sub.feedback.trim() !== '' && sub.link) {
+          // Tìm exercise type trong link
+          const link = sub.link.toUpperCase();
+          exercisePatterns.forEach(pattern => {
+            if (link.includes(pattern) || link.includes(pattern.replace('-', ''))) {
+              types.add(pattern);
+            }
+          });
+        }
+      });
+    });
+    
+    return Array.from(types).sort();
+  }, [processedHomework, feedbackFilter]);
 
   // Pagination
   const totalPages = Math.ceil(processedHomework.length / itemsPerPage);
@@ -301,6 +371,30 @@ export default function AllHomeworkTable({
               {title}
             </h3>
             <div className="flex flex-col sm:flex-row gap-2">
+              {showFeedbackByFilter && feedbackByOptions.length > 0 && (
+                <select
+                  value={selectedFeedbackBy}
+                  onChange={(e) => setSelectedFeedbackBy(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fc5d01] focus:border-transparent"
+                >
+                  <option value="all">Tất cả người feedback</option>
+                  {feedbackByOptions.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              )}
+              {feedbackFilter === 'with-feedback' && exerciseTypeOptions.length > 0 && (
+                <select
+                  value={selectedExerciseType}
+                  onChange={(e) => setSelectedExerciseType(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fc5d01] focus:border-transparent"
+                >
+                  <option value="all">Tất cả dạng bài tập</option>
+                  {exerciseTypeOptions.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              )}
               <input
                 type="text"
                 placeholder="Tìm kiếm học viên, lớp, giảng viên..."
@@ -318,7 +412,7 @@ export default function AllHomeworkTable({
               <tr>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('student')}
                 >
                   <div className="flex items-center gap-1">
@@ -328,20 +422,20 @@ export default function AllHomeworkTable({
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('class')}
                 >
                   <div className="flex items-center gap-1">
-                    Lớp học
+                    Lớp
                     <span className="text-gray-400">{getSortIcon('class')}</span>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giảng viên
+                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  GV
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('date')}
                 >
                   <div className="flex items-center gap-1">
@@ -349,35 +443,35 @@ export default function AllHomeworkTable({
                     <span className="text-gray-400">{getSortIcon('date')}</span>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Số bài tập
+                <th scope="col" className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                  Số bài
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('feedback')}
                 >
-                  <div className="flex items-center gap-1">
-                    Trạng thái feedback
+                  <div className="flex items-center justify-center gap-1">
+                    FB
                     <span className="text-gray-400">{getSortIcon('feedback')}</span>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Người cho feedback
+                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Người FB
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hành động
+                <th scope="col" className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                  Action
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedHomework.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-3 py-6 text-center text-gray-500">
                     <div className="flex flex-col items-center">
                       <div className="text-4xl mb-2">{emptyIcon}</div>
                       <div className="text-lg font-medium mb-1">{emptyMessage}</div>
-                      <div className="text-sm">Thử thay đổi bộ lọc hoặc khoảng thời gian</div>
+                      <div className="text-sm">Thử thay đổi bộ lọc</div>
                     </div>
                   </td>
                 </tr>
@@ -386,50 +480,61 @@ export default function AllHomeworkTable({
                   const status = getFeedbackStatus(homework.feedbackCount, homework.totalCount);
                   return (
                     <tr key={homework.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{homework.studentName}</div>
+                      <td className="px-3 py-3">
+                        <div className="text-sm font-medium text-gray-900 max-w-[150px] truncate" title={homework.studentName}>
+                          {homework.studentName}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-3">
                         <div className="text-sm text-gray-900">{homework.className}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{homework.teacherName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {formatDate(homework.timestamp.toDate())}
+                      <td className="px-3 py-3">
+                        <div className="text-sm text-gray-900 max-w-[100px] truncate" title={homework.teacherName}>
+                          {homework.teacherName}
                         </div>
-                        <div className="text-xs text-gray-500">{homework.date}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{homework.totalCount} bài</div>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="text-xs text-gray-900">
+                          {new Date(homework.timestamp.toDate()).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(homework.timestamp.toDate()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.color}`}>
+                      <td className="px-3 py-3 text-center">
+                        <div className="text-sm text-gray-900">{homework.totalCount}</div>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.color}`}>
                           {status.text}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-3">
                         <div className="text-sm text-gray-900">
                           {homework.feedbackByNames.length > 0 ? (
-                            <div className="space-y-1">
-                              {homework.feedbackByNames.map((name, index) => (
-                                <div key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-[#fedac2] text-[#fc5d01] mr-1 mb-1">
-                                  {name}
+                            <div className="flex flex-wrap gap-1">
+                              {homework.feedbackByNames.slice(0, 2).map((name, index) => (
+                                <div key={index} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-[#fedac2] text-[#fc5d01]" title={name}>
+                                  {name.split(' ').pop()}
                                 </div>
                               ))}
+                              {homework.feedbackByNames.length > 2 && (
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
+                                  +{homework.feedbackByNames.length - 2}
+                                </div>
+                              )}
                             </div>
                           ) : (
-                            <span className="text-gray-400 italic text-xs">Chưa có feedback</span>
+                            <span className="text-gray-400 italic text-xs">-</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-3 text-center">
                         <button
                           onClick={() => handleViewDetails(homework)}
-                          className="text-[#fc5d01] hover:text-[#fd7f33] font-medium text-sm transition-colors"
+                          className="text-[#fc5d01] hover:text-[#fd7f33] font-medium text-xs transition-colors"
                         >
-                          Xem chi tiết
+                          Xem
                         </button>
                       </td>
                     </tr>
