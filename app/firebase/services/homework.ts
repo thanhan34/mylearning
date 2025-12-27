@@ -153,8 +153,8 @@ export const saveHomeworkSubmission = async (
 };
 
 /**
- * Update feedback for a specific homework submission
- * This function is used by admins and teachers to add feedback to student submissions
+ * Update feedback for a specific homework submission using documentId
+ * This is the preferred method as it's more reliable
  */
 export const updateHomeworkFeedback = async (
   documentId: string,
@@ -214,6 +214,73 @@ export const updateHomeworkFeedback = async (
     return true;
   } catch (error) {
     console.error('Error updating homework feedback:', error);
+    return false;
+  }
+};
+
+/**
+ * Update feedback by searching with student name and date
+ * This is a fallback method for components that don't have documentId
+ * Less reliable than updateHomeworkFeedback as it depends on name matching
+ */
+export const updateHomeworkFeedbackByName = async (
+  studentName: string,
+  date: string,
+  submissionType: string,
+  questionNumber: number,
+  feedback: string,
+  feedbackBy?: string,
+  feedbackByName?: string
+): Promise<boolean> => {
+  try {
+    console.log('Updating feedback by name search:', {
+      studentName,
+      date,
+      submissionType,
+      questionNumber
+    });
+
+    // Find all homework submissions for this date
+    const submissionsRef = collection(db, 'homework');
+    const q = query(
+      submissionsRef,
+      where('date', '==', date)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      console.error('No homework submissions found for date:', date);
+      return false;
+    }
+
+    // Look for a submission that matches the student name
+    let foundDoc = null;
+    for (const docSnapshot of querySnapshot.docs) {
+      const data = docSnapshot.data();
+      
+      // Check if this document belongs to the student we're looking for
+      if (data.userName && data.userName.includes(studentName)) {
+        foundDoc = docSnapshot;
+        break;
+      }
+    }
+
+    if (!foundDoc) {
+      console.error('No matching submission found for student:', studentName);
+      return false;
+    }
+
+    // Use the main function with the found documentId
+    return await updateHomeworkFeedback(
+      foundDoc.id,
+      submissionType,
+      questionNumber,
+      feedback,
+      feedbackBy,
+      feedbackByName
+    );
+  } catch (error) {
+    console.error('Error updating homework feedback by name:', error);
     return false;
   }
 };

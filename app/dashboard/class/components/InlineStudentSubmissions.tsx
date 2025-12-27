@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getHomeworkSubmissions, getHomeworkProgress, updateHomeworkFeedback } from '@/app/firebase/services';
+import { getHomeworkSubmissions, getHomeworkProgress, updateHomeworkFeedbackByName } from '@/app/firebase/services';
 import type { HomeworkSubmission } from '@/app/firebase/services/types';
 import StudentInfo from '@/app/dashboard/admin/components/StudentInfo';
 import ProgressChart from '@/app/dashboard/components/ProgressChart';
@@ -147,8 +147,8 @@ export default function InlineStudentSubmissions({ student }: Props) {
     if (!editingFeedback) return;
 
     try {
-      // Use the updateHomeworkFeedback function
-      const success = await updateHomeworkFeedback(
+      // Use the updateHomeworkFeedbackByName function
+      const success = await updateHomeworkFeedbackByName(
         student.name,
         selectedDate,
         editingFeedback.type,
