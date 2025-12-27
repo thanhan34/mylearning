@@ -52,16 +52,20 @@ export default function FeedbackDetailsModal({
   const handleSaveFeedback = async () => {
     if (!editingFeedback) return;
     
+    if (!documentId) {
+      setError('Không tìm thấy ID bài tập. Vui lòng thử lại sau.');
+      return;
+    }
+    
     setSaving(true);
     setError(null);
 
     try {
-      console.log('Saving feedback for student:', studentName, 'date:', date);
+      console.log('Saving feedback for document:', documentId);
       
-      // Use the updateHomeworkFeedback function
+      // Use the updateHomeworkFeedback function with documentId
       const success = await updateHomeworkFeedback(
-        studentName,
-        date,
+        documentId,
         editingFeedback.type,
         editingFeedback.questionNumber,
         editingFeedback.feedback,

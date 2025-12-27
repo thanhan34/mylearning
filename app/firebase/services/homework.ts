@@ -157,8 +157,7 @@ export const saveHomeworkSubmission = async (
  * This function is used by admins and teachers to add feedback to student submissions
  */
 export const updateHomeworkFeedback = async (
-  studentName: string,
-  date: string,
+  documentId: string,
   submissionType: string,
   questionNumber: number,
   feedback: string,
@@ -166,46 +165,29 @@ export const updateHomeworkFeedback = async (
   feedbackByName?: string
 ): Promise<boolean> => {
   try {
-    console.log('Updating feedback for:', {
-      studentName,
-      date,
+    console.log('Updating feedback for document:', {
+      documentId,
       submissionType,
       questionNumber,
       feedback
     });
 
-    // First try to find all homework submissions for this date
-    const submissionsRef = collection(db, 'homework');
-    const q = query(
-      submissionsRef,
-      where('date', '==', date)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      console.error('No homework submissions found for date:', date);
+    if (!documentId) {
+      console.error('No document ID provided');
       return false;
     }
 
-    // Look for a submission that matches the student name
-    let foundDoc = null;
-    for (const docSnapshot of querySnapshot.docs) {
-      const data = docSnapshot.data();
-      
-      // Check if this document belongs to the student we're looking for
-      if (data.userName && data.userName.includes(studentName)) {
-        foundDoc = docSnapshot;
-        break;
-      }
-    }
-
-    if (!foundDoc) {
-      console.error('No matching submission found for student:', studentName);
+    // Get the document directly by ID
+    const docRef = doc(db, 'homework', documentId);
+    const docSnapshot = await getDoc(docRef);
+    
+    if (!docSnapshot.exists()) {
+      console.error('Homework document not found:', documentId);
       return false;
     }
 
     // Get the current submissions array
-    const data = foundDoc.data();
+    const data = docSnapshot.data();
     const submissions = data.submissions || [];
 
     // Find and update the specific submission
@@ -223,7 +205,6 @@ export const updateHomeworkFeedback = async (
     });
 
     // Update the document
-    const docRef = doc(db, 'homework', foundDoc.id);
     await updateDoc(docRef, {
       submissions: updatedSubmissions,
       lastUpdated: new Date().toISOString()
