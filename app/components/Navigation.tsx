@@ -158,7 +158,7 @@ const Navigation = () => {
       icon: <RiBookOpenLine className="w-5 h-5" />,
       items: [
         { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
-        { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
+        { href: "/dashboard/assistant/feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
         { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
       ]
