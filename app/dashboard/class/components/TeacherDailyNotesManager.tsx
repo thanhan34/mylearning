@@ -15,7 +15,9 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    date: '',
     content: '',
     whatLearned: '',
     whatToPractice: ''
@@ -46,12 +48,14 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
 
     setSaving(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Use editingNoteId's date if editing, otherwise use today
+      const dateToSave = editingNoteId ? formData.date : new Date().toISOString().split('T')[0];
+      
       const success = await saveDailyNote(
         studentId,
         studentName,
         session.user.id,
-        today,
+        dateToSave,
         formData.content,
         formData.whatLearned,
         formData.whatToPractice
@@ -64,17 +68,30 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
         
         // Reset form
         setFormData({
+          date: '',
           content: '',
           whatLearned: '',
           whatToPractice: ''
         });
         setShowForm(false);
+        setEditingNoteId(null);
       }
     } catch (error) {
       console.error('Error saving daily note:', error);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEdit = (note: DailyNote) => {
+    setFormData({
+      date: note.date,
+      content: note.content || '',
+      whatLearned: note.whatLearned || '',
+      whatToPractice: note.whatToPractice || ''
+    });
+    setEditingNoteId(note.id);
+    setShowForm(true);
   };
 
   if (loading) {
@@ -120,12 +137,16 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
         <div className="mb-8 p-6 border-2 border-[#fc5d01] rounded-lg bg-[#fedac2]">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-[#fc5d01]">
-              Ghi chú mới - {new Date().toLocaleDateString('vi-VN')}
+              {editingNoteId 
+                ? `✏️ Chỉnh sửa ghi chú - ${new Date(formData.date).toLocaleDateString('vi-VN')}` 
+                : `➕ Ghi chú mới - ${new Date().toLocaleDateString('vi-VN')}`
+              }
             </h3>
             <button
               onClick={() => {
                 setShowForm(false);
-                setFormData({ content: '', whatLearned: '', whatToPractice: '' });
+                setEditingNoteId(null);
+                setFormData({ date: '', content: '', whatLearned: '', whatToPractice: '' });
               }}
               className="text-gray-500 hover:text-gray-700"
             >
@@ -177,7 +198,7 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
               <button
                 onClick={() => {
                   setShowForm(false);
-                  setFormData({ content: '', whatLearned: '', whatToPractice: '' });
+                  setFormData({ date: '', content: '', whatLearned: '', whatToPractice: '' });
                 }}
                 disabled={saving}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
@@ -206,7 +227,7 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
           {notes.map((note, index) => (
             <div key={note.id} className="border-l-4 border-[#fc5d01] pl-4 py-2">
               {/* Date Header */}
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center justify-between gap-2 mb-3">
                 <span className="bg-[#fc5d01] text-white px-3 py-1 rounded-full text-sm font-medium">
                   {new Date(note.date).toLocaleDateString('vi-VN', { 
                     weekday: 'long',
@@ -215,6 +236,12 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
                     day: 'numeric'
                   })}
                 </span>
+                <button
+                  onClick={() => handleEdit(note)}
+                  className="px-3 py-1 text-sm text-[#fc5d01] hover:bg-[#fedac2] rounded-lg transition-colors"
+                >
+                  ✏️ Chỉnh sửa
+                </button>
               </div>
 
               {/* Note Content */}
