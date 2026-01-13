@@ -505,3 +505,103 @@ export const cleanupClassStudents = async (classId: string): Promise<boolean> =>
     return false;
   }
 };
+
+export const moveStudentToClass = async (
+  studentId: string,
+  fromClassId: string,
+  toClassId: string
+): Promise<boolean> => {
+  try {
+    const fromClassRef = doc(db, 'classes', fromClassId);
+    const toClassRef = doc(db, 'classes', toClassId);
+    const userRef = doc(db, 'users', studentId);
+    
+    // Get all required documents with retry logic
+    const [fromClassDoc, toClassDoc, userDoc] = await Promise.all([
+      retryOperation(() => getDoc(fromClassRef)),
+      retryOperation(() => getDoc(toClassRef)),
+      retryOperation(() => getDoc(userRef))
+    ]);
+    
+    if (!fromClassDoc.exists()) {
+      console.error('Source class not found:', fromClassId);
+      return false;
+    }
+    
+    if (!toClassDoc.exists()) {
+      console.error('Target class not found:', toClassId);
+      return false;
+    }
+    
+    if (!userDoc.exists()) {
+      console.error('User not found:', studentId);
+      return false;
+    }
+    
+    // Get class data
+    const fromClassData = fromClassDoc.data() as Class;
+    const toClassData = toClassDoc.data() as Class;
+    const userData = userDoc.data();
+    
+    // Find the student in source class
+    const student = fromClassData.students.find((s: ClassStudent) => s.id === studentId);
+    if (!student) {
+      console.error('Student not found in source class:', studentId);
+      return false;
+    }
+    
+    // Check if student already exists in target class
+    const isDuplicate = toClassData.students.some((s: ClassStudent) => s.id === studentId);
+    if (isDuplicate) {
+      console.error('Student already exists in target class:', studentId);
+      return false;
+    }
+    
+    // Remove student from source class
+    const updatedFromStudents = fromClassData.students.filter((s: ClassStudent) => s.id !== studentId);
+    
+    // Add student to target class
+    const updatedToStudents = [...toClassData.students, student];
+    
+    // Get target class teacher ID
+    const targetTeacherId = toClassData.teacherId;
+    
+    // Create a batch for all updates
+    const batch = writeBatch(db);
+    
+    // Update source class
+    batch.update(fromClassRef, { 
+      students: updatedFromStudents 
+    });
+    
+    // Update target class
+    batch.update(toClassRef, { 
+      students: updatedToStudents 
+    });
+    
+    // Update user with new class and teacher IDs
+    batch.update(userRef, { 
+      classId: toClassId,
+      teacherId: targetTeacherId
+    });
+    
+    // Commit the batch with retry logic
+    await retryOperation(() => batch.commit());
+    
+    console.log(`Successfully moved student ${studentId} from class ${fromClassId} to class ${toClassId}`);
+    return true;
+  } catch (error) {
+    console.error('Error moving student to class:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        studentId,
+        fromClassId,
+        toClassId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    return false;
+  }
+};

@@ -10,6 +10,7 @@ import ProgressChart from './ProgressChart';
 import SubmissionsCalendar from './SubmissionsCalendar';
 import SubmissionsList from './SubmissionsList';
 import MispronouncedWordsTracker from './MispronouncedWordsTracker';
+import StudentDailyNotesHistory from './StudentDailyNotesHistory';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
@@ -98,6 +99,13 @@ export default function StudentDashboard({
         <h3 className="text-lg sm:text-xl font-semibold text-[#fc5d01] mb-4 sm:mb-6">Bài tập về nhà</h3>
         <DailyHome />
       </div>
+
+      {/* Teacher's Daily Notes */}
+      {session?.user?.id && (
+        <StudentDailyNotesHistory 
+          studentId={session.user.id}
+        />
+      )}
 
       {/* Homework Submissions */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">

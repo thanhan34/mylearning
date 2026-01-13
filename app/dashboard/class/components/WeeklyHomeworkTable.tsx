@@ -14,6 +14,7 @@ interface WeeklyHomeworkTableProps {
   showPassedStudents: boolean;
   onStudentSelect?: (student: ClassStudent) => void;
   onRemoveStudent?: (studentId: string) => void;
+  onMoveStudent?: (studentId: string, studentName: string) => void;
   onStudentPassedChange?: () => void;
 }
 
@@ -26,6 +27,7 @@ const WeeklyHomeworkTable = ({
   showPassedStudents,
   onStudentSelect,
   onRemoveStudent,
+  onMoveStudent,
   onStudentPassedChange
 }: WeeklyHomeworkTableProps) => {
   const [submissions, setSubmissions] = useState<Record<string, Record<string, boolean>>>({});
@@ -264,17 +266,30 @@ const WeeklyHomeworkTable = ({
                   </td>
                 ))}
                 <td className="px-6 py-4">
-                  {onRemoveStudent && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRemoveStudent(student.id);
-                      }}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      Xóa
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {onMoveStudent && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveStudent(student.id, student.name);
+                        }}
+                        className="text-[#fc5d01] hover:text-[#fd7f33]"
+                      >
+                        Di chuyển
+                      </button>
+                    )}
+                    {onRemoveStudent && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveStudent(student.id);
+                        }}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Xóa
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

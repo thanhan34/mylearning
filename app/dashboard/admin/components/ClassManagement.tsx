@@ -8,9 +8,10 @@ import InlineStudentSubmissions from '../../class/components/InlineStudentSubmis
 import UnassignedStudentsList from '../../class/components/UnassignedStudentsList';
 import TeachersList from './TeachersList';
 import WeeklyHomeworkTable from '../../class/components/WeeklyHomeworkTable';
-import { getTeacherClasses, removeStudentFromClass, addStudentToClass, createClass } from '@/app/firebase/services/class';
+import { getTeacherClasses, removeStudentFromClass, addStudentToClass, createClass, moveStudentToClass } from '@/app/firebase/services/class';
 import { addNotification } from '@/app/firebase/services/notification';
 import SuccessNotification from '@/app/components/SuccessNotification';
+import MoveStudentModal from './MoveStudentModal';
 
 interface Student {
   id: string;
@@ -58,6 +59,8 @@ const ClassManagement = () => {
   const [showTeacherForm, setShowTeacherForm] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<User | null>(null);
   const [notification, setNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [studentToMove, setStudentToMove] = useState<{id: string, name: string} | null>(null);
 
   const fetchClasses = async () => {
     try {
@@ -413,6 +416,58 @@ const ClassManagement = () => {
     }
   };
 
+  // Handle move student button click
+  const handleMoveStudentClick = (studentId: string, studentName: string) => {
+    setStudentToMove({ id: studentId, name: studentName });
+    setShowMoveModal(true);
+  };
+
+  // Handle actual move operation
+  const handleMoveStudent = async (targetClassId: string, targetClassName: string) => {
+    if (!studentToMove || !selectedClass) return;
+
+    try {
+      const success = await moveStudentToClass(
+        studentToMove.id,
+        selectedClass.id,
+        targetClassId
+      );
+
+      if (success) {
+        const student = selectedClass.students.find(s => s.id === studentToMove.id);
+        if (student) {
+          // Add notification to student
+          await addNotification(
+            student.email, 
+            `Bạn đã được di chuyển từ lớp ${selectedClass.name} sang lớp ${targetClassName}`, 
+            'teacher'
+          );
+        }
+
+        setNotification({
+          message: `Đã di chuyển học viên ${studentToMove.name} từ lớp ${selectedClass.name} sang lớp ${targetClassName}`,
+          show: true
+        });
+
+        // Refresh data and close modal
+        fetchClasses();
+        setShowMoveModal(false);
+        setStudentToMove(null);
+      } else {
+        setNotification({
+          message: `Không thể di chuyển học viên. Vui lòng thử lại.`,
+          show: true
+        });
+      }
+    } catch (error) {
+      console.error('Error moving student:', error);
+      setNotification({
+        message: `Đã xảy ra lỗi khi di chuyển học viên`,
+        show: true
+      });
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -653,6 +708,7 @@ const ClassManagement = () => {
               teacherId={selectedClass.teacherId}
               showPassedStudents={true}
               onStudentSelect={handleStudentSelect}
+              onMoveStudent={handleMoveStudentClick}
               onRemoveStudent={async (studentId) => {
                 if (selectedClass) {
                   const student = selectedClass.students.find(s => s.id === studentId);
@@ -709,6 +765,20 @@ const ClassManagement = () => {
             setShowTeacherForm(false);
           }}
           onClose={() => setShowTeacherForm(false)}
+        />
+      )}
+
+      {/* Move Student Modal */}
+      {showMoveModal && studentToMove && selectedClass && (
+        <MoveStudentModal
+          studentName={studentToMove.name}
+          currentClassId={selectedClass.id}
+          currentClassName={selectedClass.name}
+          onMove={handleMoveStudent}
+          onClose={() => {
+            setShowMoveModal(false);
+            setStudentToMove(null);
+          }}
         />
       )}
 

@@ -7,6 +7,8 @@ import StudentInfo from '@/app/dashboard/admin/components/StudentInfo';
 import ProgressChart from '@/app/dashboard/components/ProgressChart';
 import { format, startOfMonth, getDay, getDaysInMonth } from 'date-fns';
 import { convertUrlsToLinks } from '@/app/utils/textFormatting';
+import ChecklistPTE from '@/app/dashboard/components/ChecklistPTE';
+import TeacherDailyNotesManager from './TeacherDailyNotesManager';
 
 interface Props {
   student: {
@@ -213,6 +215,20 @@ export default function InlineStudentSubmissions({ student }: Props) {
             {error}
           </div>
         )}
+
+        {/* PTE Checklist */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-[#fc5d01] mb-4">PTE Checklist</h3>
+          <ChecklistPTE targetUserId={student.id} />
+        </div>
+
+        {/* Daily Notes */}
+        <div className="mt-6">
+          <TeacherDailyNotesManager 
+            studentId={student.id}
+            studentName={student.name}
+          />
+        </div>
 
         {/* Calendar and Submissions */}
         <div className="flex gap-8">
