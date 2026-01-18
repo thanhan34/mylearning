@@ -22,6 +22,9 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
     whatLearned: '',
     whatToPractice: ''
   });
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     const loadNotes = async () => {
@@ -39,10 +42,93 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
     loadNotes();
   }, [studentId]);
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    uploadFiles(files);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
+  const uploadFiles = async (files: FileList) => {
+    setUploading(true);
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error(`File ${file.name} quá lớn. Kích thước tối đa là 5MB`);
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'mylearning');
+
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Upload thất bại');
+        }
+
+        const data = await response.json();
+        return data.secure_url;
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      setImages([...images, ...uploadedUrls]);
+    } catch (error: any) {
+      console.error('Error uploading images:', error);
+      alert(error.message || 'Lỗi upload hình ảnh');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      // Filter only image files
+      const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+      if (imageFiles.length > 0) {
+        const dataTransfer = new DataTransfer();
+        imageFiles.forEach(file => dataTransfer.items.add(file));
+        uploadFiles(dataTransfer.files);
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (!session?.user?.id) return;
-    if (!formData.content && !formData.whatLearned && !formData.whatToPractice) {
-      alert('Vui lòng nhập ít nhất một trường');
+    if (!formData.content && !formData.whatLearned && !formData.whatToPractice && images.length === 0) {
+      alert('Vui lòng nhập ít nhất một trường hoặc upload hình ảnh');
       return;
     }
 
@@ -58,7 +144,8 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
         dateToSave,
         formData.content,
         formData.whatLearned,
-        formData.whatToPractice
+        formData.whatToPractice,
+        images
       );
 
       if (success) {
@@ -73,6 +160,7 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
           whatLearned: '',
           whatToPractice: ''
         });
+        setImages([]);
         setShowForm(false);
         setEditingNoteId(null);
       }
@@ -90,6 +178,7 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
       whatLearned: note.whatLearned || '',
       whatToPractice: note.whatToPractice || ''
     });
+    setImages(note.images || []);
     setEditingNoteId(note.id);
     setShowForm(true);
   };
@@ -194,6 +283,86 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
               />
             </div>
 
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                🖼️ Hình ảnh
+              </label>
+              <div className="space-y-3">
+                <div
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
+                    isDragging 
+                      ? 'border-[#fc5d01] bg-[#fedac2] scale-105' 
+                      : 'border-gray-300 hover:border-[#fc5d01] hover:bg-gray-50'
+                  }`}
+                >
+                  <label className="w-full cursor-pointer">
+                    <div className="text-center">
+                      {uploading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-5 h-5 border-2 border-[#fc5d01] border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-sm text-gray-600">Đang tải lên...</span>
+                        </div>
+                      ) : isDragging ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <svg className="w-8 h-8 text-[#fc5d01]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <span className="text-sm font-medium text-[#fc5d01]">Thả hình ảnh vào đây</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium text-[#fc5d01]">Click để chọn</span> hoặc kéo thả hình ảnh vào đây
+                          </div>
+                          <span className="text-xs text-gray-500">Tối đa 5MB/ảnh</span>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Image Preview */}
+                {images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {images.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Upload ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="flex justify-end space-x-2 pt-2">
               <button
                 onClick={() => {
@@ -283,6 +452,33 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
                           {note.whatToPractice}
                         </p>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Images */}
+                {note.images && note.images.length > 0 && (
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[#fc5d01] font-semibold text-sm">🖼️</span>
+                      <h4 className="font-semibold text-gray-700 text-sm">Hình ảnh:</h4>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 ml-6">
+                      {note.images.map((imageUrl, imgIndex) => (
+                        <a
+                          key={imgIndex}
+                          href={imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block group"
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={`Hình ảnh ${imgIndex + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border-2 border-gray-200 group-hover:border-[#fc5d01] transition-colors cursor-pointer"
+                          />
+                        </a>
+                      ))}
                     </div>
                   </div>
                 )}

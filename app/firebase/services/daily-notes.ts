@@ -10,6 +10,7 @@ export interface DailyNote {
   content: string;
   whatLearned: string; // Học được gì
   whatToPractice: string; // Cần luyện tập gì
+  images?: string[]; // Array of image URLs
   createdAt: string;
   updatedAt: string;
 }
@@ -50,7 +51,8 @@ export const saveDailyNote = async (
   date: string,
   content: string,
   whatLearned: string,
-  whatToPractice: string
+  whatToPractice: string,
+  images?: string[]
 ): Promise<boolean> => {
   try {
     const noteId = `${studentId}_${date}`;
@@ -65,6 +67,7 @@ export const saveDailyNote = async (
         content,
         whatLearned,
         whatToPractice,
+        images: images || [],
         updatedAt: now
       });
     } else {
@@ -77,6 +80,7 @@ export const saveDailyNote = async (
         content,
         whatLearned,
         whatToPractice,
+        images: images || [],
         createdAt: now,
         updatedAt: now
       });

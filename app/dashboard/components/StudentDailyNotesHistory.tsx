@@ -111,22 +111,49 @@ export default function StudentDailyNotesHistory({ studentId }: Props) {
                 </div>
               )}
 
-              {note.whatToPractice && (
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <span className="text-blue-600 font-semibold text-sm">💡</span>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-blue-700 text-sm mb-1">Cần luyện tập:</h4>
-                      <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                        {note.whatToPractice}
-                      </p>
+                {note.whatToPractice && (
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-600 font-semibold text-sm">💡</span>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-blue-700 text-sm mb-1">Cần luyện tập:</h4>
+                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                          {note.whatToPractice}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Separator */}
+                {/* Images */}
+                {note.images && note.images.length > 0 && (
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[#fc5d01] font-semibold text-sm">🖼️</span>
+                      <h4 className="font-semibold text-gray-700 text-sm">Hình ảnh:</h4>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 ml-6">
+                      {note.images.map((imageUrl, imgIndex) => (
+                        <a
+                          key={imgIndex}
+                          href={imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block group"
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={`Hình ảnh ${imgIndex + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border-2 border-gray-200 group-hover:border-[#fc5d01] transition-colors cursor-pointer"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Separator */}
             {index < notes.length - 1 && (
               <div className="mt-6 border-b border-gray-200"></div>
             )}
