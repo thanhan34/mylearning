@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getStudentDailyNotes, saveDailyNote, DailyNote } from '@/app/firebase/services/daily-notes';
 import { useSession } from 'next-auth/react';
+import DailyNotesImageUpload from './DailyNotesImageUpload';
 
 interface Props {
   studentId: string;
@@ -22,6 +23,7 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
     whatLearned: '',
     whatToPractice: ''
   });
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -123,6 +125,23 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
         uploadFiles(dataTransfer.files);
       }
     }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (uploading) return;
+
+    const items = Array.from(e.clipboardData?.items || []);
+    const imageFiles = items
+      .filter((item) => item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => Boolean(file));
+
+    if (imageFiles.length === 0) return;
+
+    e.preventDefault();
+    const dataTransfer = new DataTransfer();
+    imageFiles.forEach((file) => dataTransfer.items.add(file));
+    uploadFiles(dataTransfer.files);
   };
 
   const handleSave = async () => {
@@ -243,7 +262,7 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4" onPaste={handlePaste}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 📌 Ghi chú chung
@@ -283,85 +302,17 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
               />
             </div>
 
-            {/* Image Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                🖼️ Hình ảnh
-              </label>
-              <div className="space-y-3">
-                <div
-                  onDragEnter={handleDragEnter}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  className={`flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
-                    isDragging 
-                      ? 'border-[#fc5d01] bg-[#fedac2] scale-105' 
-                      : 'border-gray-300 hover:border-[#fc5d01] hover:bg-gray-50'
-                  }`}
-                >
-                  <label className="w-full cursor-pointer">
-                    <div className="text-center">
-                      {uploading ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="w-5 h-5 border-2 border-[#fc5d01] border-t-transparent rounded-full animate-spin"></div>
-                          <span className="text-sm text-gray-600">Đang tải lên...</span>
-                        </div>
-                      ) : isDragging ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <svg className="w-8 h-8 text-[#fc5d01]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <span className="text-sm font-medium text-[#fc5d01]">Thả hình ảnh vào đây</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium text-[#fc5d01]">Click để chọn</span> hoặc kéo thả hình ảnh vào đây
-                          </div>
-                          <span className="text-xs text-gray-500">Tối đa 5MB/ảnh</span>
-                        </div>
-                      )}
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                {/* Image Preview */}
-                {images.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {images.map((url, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={url}
-                          alt={`Upload ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveImage(index)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <DailyNotesImageUpload
+              uploading={uploading}
+              isDragging={isDragging}
+              images={images}
+              onImageUpload={handleImageUpload}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onRemoveImage={handleRemoveImage}
+            />
 
             <div className="flex justify-end space-x-2 pt-2">
               <button
@@ -465,11 +416,10 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2 ml-6">
                       {note.images.map((imageUrl, imgIndex) => (
-                        <a
+                        <button
                           key={imgIndex}
-                          href={imageUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          type="button"
+                          onClick={() => setPreviewImage(imageUrl)}
                           className="block group"
                         >
                           <img
@@ -477,7 +427,7 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
                             alt={`Hình ảnh ${imgIndex + 1}`}
                             className="w-full h-32 object-cover rounded-lg border-2 border-gray-200 group-hover:border-[#fc5d01] transition-colors cursor-pointer"
                           />
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -497,6 +447,31 @@ export default function TeacherDailyNotesManager({ studentId, studentName }: Pro
       <div className="mt-8 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
         Tổng số {notes.length} ghi chú
       </div>
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setPreviewImage(null);
+            }}
+            className="absolute top-4 right-4 text-white text-2xl"
+            aria-label="Đóng xem ảnh"
+          >
+            ✕
+          </button>
+          <img
+            src={previewImage}
+            alt="Xem ảnh"
+            className="max-h-full max-w-full rounded-lg border-4 border-white shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
