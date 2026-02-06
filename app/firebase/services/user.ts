@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { db } from '../config';
 
 export interface User {
@@ -14,6 +14,8 @@ export interface User {
   supportClassId?: string; // ID of the support speaking class if enrolled
   supportingTeacherIds?: string[]; // IDs of teachers being supported (for assistants)
   assignedClassIds?: string[]; // Array of class IDs assigned to assistant
+  followingStudentIds?: string[];
+  missingHomeworkFollowInitialized?: boolean;
 }
 
 export const createUser = async (userData: {
@@ -40,7 +42,9 @@ export const createUser = async (userData: {
       avatar: null,
       target: null,
       teacherId: '',
-      passed: false
+      passed: false,
+      followingStudentIds: [],
+      missingHomeworkFollowInitialized: false
     };
     
     await setDoc(doc(usersRef, sanitizedEmail), newUser);
@@ -87,7 +91,9 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         passed: data.passed,
         supportClassId: data.supportClassId,
         supportingTeacherIds: data.supportingTeacherIds,
-        assignedClassIds: data.assignedClassIds
+        assignedClassIds: data.assignedClassIds,
+        followingStudentIds: data.followingStudentIds || [],
+        missingHomeworkFollowInitialized: !!data.missingHomeworkFollowInitialized
       };
     }
     
@@ -156,7 +162,9 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
         passed: data.passed,
         supportClassId: data.supportClassId,
         supportingTeacherIds: data.supportingTeacherIds,
-        assignedClassIds: data.assignedClassIds
+        assignedClassIds: data.assignedClassIds,
+        followingStudentIds: data.followingStudentIds || [],
+        missingHomeworkFollowInitialized: !!data.missingHomeworkFollowInitialized
       };
     }
 
@@ -182,7 +190,9 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
         passed: data.passed,
         supportClassId: data.supportClassId,
         supportingTeacherIds: data.supportingTeacherIds,
-        assignedClassIds: data.assignedClassIds
+        assignedClassIds: data.assignedClassIds,
+        followingStudentIds: data.followingStudentIds || [],
+        missingHomeworkFollowInitialized: !!data.missingHomeworkFollowInitialized
       };
     }
 
@@ -201,5 +211,45 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
       });
     }
     return null;
+  }
+};
+
+export const followStudentForUser = async (userId: string, studentId: string): Promise<boolean> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      followingStudentIds: arrayUnion(studentId)
+    });
+    return true;
+  } catch (error) {
+    console.error('Error following student:', error);
+    return false;
+  }
+};
+
+export const unfollowStudentForUser = async (userId: string, studentId: string): Promise<boolean> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      followingStudentIds: arrayRemove(studentId)
+    });
+    return true;
+  } catch (error) {
+    console.error('Error unfollowing student:', error);
+    return false;
+  }
+};
+
+export const initializeMissingHomeworkFollowForUser = async (userId: string, studentIds: string[]): Promise<boolean> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      followingStudentIds: studentIds,
+      missingHomeworkFollowInitialized: true,
+    });
+    return true;
+  } catch (error) {
+    console.error('Error initializing missing-homework follow list:', error);
+    return false;
   }
 };

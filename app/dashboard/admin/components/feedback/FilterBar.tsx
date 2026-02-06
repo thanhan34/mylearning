@@ -36,6 +36,7 @@ export default function FilterBar({
           className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#fc5d01] focus:outline-none focus:ring-1 focus:ring-[#fc5d01]"
         >
           <option value="7">7 ngày qua</option>
+          <option value="20">20 ngày qua</option>
           <option value="30">30 ngày qua</option>
           <option value="90">90 ngày qua</option>
           <option value="365">365 ngày qua</option>
