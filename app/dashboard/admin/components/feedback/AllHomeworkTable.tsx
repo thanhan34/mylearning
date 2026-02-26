@@ -8,7 +8,6 @@ import {
   orderBy, 
   Timestamp, 
   onSnapshot,
-  getDocs,
   limit
 } from 'firebase/firestore';
 import { db } from '@/app/firebase/config';
@@ -36,6 +35,7 @@ interface ExtendedHomeworkData extends HomeworkData {
   classId: string;
   teacherId: string;
   feedbackByNames: string[]; // Danh sách tên người đã cho feedback
+  submissionTypes: string[]; // Danh sách dạng bài tập trong ngày
 }
 
 interface AllHomeworkTableProps {
@@ -49,7 +49,6 @@ interface AllHomeworkTableProps {
   customEmptyMessage?: string;
   customEmptyIcon?: string;
   allowedClassIds?: string[]; // Danh sách class IDs được phép xem (cho teacher role)
-  showFeedbackByFilter?: boolean; // Hiển thị filter theo người cho feedback
 }
 
 export default function AllHomeworkTable({
@@ -62,8 +61,7 @@ export default function AllHomeworkTable({
   customTitle,
   customEmptyMessage,
   customEmptyIcon,
-  allowedClassIds,
-  showFeedbackByFilter = false
+  allowedClassIds
 }: AllHomeworkTableProps) {
   const [homeworkData, setHomeworkData] = useState<HomeworkData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,6 +159,12 @@ export default function AllHomeworkTable({
         })
         .filter((name, index, array) => array.indexOf(name) === index); // Loại bỏ trùng lặp
 
+      // Thu thập danh sách dạng bài tập từ submissions
+      const submissionTypes = (homework.submissions || [])
+        .map(submission => submission.type?.trim())
+        .filter((type): type is string => Boolean(type))
+        .filter((type, index, array) => array.indexOf(type) === index);
+
       return {
         ...homework,
         studentName: studentInfo.name,
@@ -171,7 +175,8 @@ export default function AllHomeworkTable({
         studentId: homework.userId,
         classId,
         teacherId,
-        feedbackByNames
+        feedbackByNames,
+        submissionTypes
       } as ExtendedHomeworkData;
     }).filter(Boolean) as ExtendedHomeworkData[];
 
@@ -213,16 +218,10 @@ export default function AllHomeworkTable({
       );
     }
 
-    // Apply exercise type filter (chỉ áp dụng cho tab with-feedback)
-    if (selectedExerciseType !== 'all' && feedbackFilter === 'with-feedback') {
+    // Apply exercise type filter
+    if (selectedExerciseType !== 'all') {
       processed = processed.filter(homework => {
-        // Kiểm tra xem có bài tập nào với type này đã được feedback không
-        return (homework.submissions || []).some(sub => 
-          sub.feedback && 
-          sub.feedback.trim() !== '' && 
-          sub.link && 
-          sub.link.toLowerCase().includes(selectedExerciseType.toLowerCase())
-        );
+        return homework.submissionTypes.some(type => type === selectedExerciseType);
       });
     }
 
@@ -273,32 +272,91 @@ export default function AllHomeworkTable({
     return Array.from(names).sort();
   }, [processedHomework]);
 
-  // Get unique exercise types from submissions with feedback
+  // Get unique exercise types from submissions
   const exerciseTypeOptions = useMemo(() => {
-    if (feedbackFilter !== 'with-feedback') return [];
-    
     const types = new Set<string>();
-    const exercisePatterns = [
-      'RS', 'RL', 'ASQ', 'WFD', 'HIW', 'SMW', 'SST', 'SWT', 'WE', 
-      'FIB-R', 'FIB-RW', 'MCM', 'MCS', 'RO', 'DI', 'RA'
-    ];
-    
+
     processedHomework.forEach(homework => {
-      (homework.submissions || []).forEach(sub => {
-        if (sub.feedback && sub.feedback.trim() !== '' && sub.link) {
-          // Tìm exercise type trong link
-          const link = sub.link.toUpperCase();
-          exercisePatterns.forEach(pattern => {
-            if (link.includes(pattern) || link.includes(pattern.replace('-', ''))) {
-              types.add(pattern);
-            }
-          });
-        }
-      });
+      homework.submissionTypes.forEach(type => types.add(type));
     });
     
     return Array.from(types).sort();
-  }, [processedHomework, feedbackFilter]);
+  }, [processedHomework]);
+
+  const escapeCsvCell = (value: string | number) => {
+    const stringValue = String(value ?? '');
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  };
+
+  const handleExportFeedbackReport = () => {
+    const feedbackRows = processedHomework.flatMap(homework =>
+      (homework.submissions || [])
+        .filter(submission => submission.feedback && submission.feedback.trim() !== '')
+        .filter(submission => selectedExerciseType === 'all' || submission.type === selectedExerciseType)
+        .filter(submission => {
+          if (selectedFeedbackBy === 'all') return true;
+          const feedbackName = submission.feedbackByName || homework.teacherName || 'Unknown Teacher';
+          return feedbackName === selectedFeedbackBy;
+        })
+        .map(submission => ({
+          date: homework.date,
+          studentName: homework.studentName,
+          className: homework.className,
+          teacherName: homework.teacherName,
+          feedbackBy: submission.feedbackByName || homework.teacherName || 'Unknown Teacher',
+          exerciseType: submission.type || 'N/A',
+          questionNumber: submission.questionNumber ?? '',
+          feedback: submission.feedback || '',
+          link: submission.link || '',
+          feedbackAt: submission.feedbackAt || '',
+        }))
+    );
+
+    if (feedbackRows.length === 0) {
+      alert('Không có dữ liệu feedback để xuất file theo bộ lọc hiện tại.');
+      return;
+    }
+
+    const headers = [
+      'Ngày',
+      'Học viên',
+      'Lớp',
+      'Giảng viên',
+      'Người feedback',
+      'Dạng bài tập',
+      'Câu',
+      'Nội dung feedback',
+      'Link bài làm',
+      'Thời gian feedback'
+    ];
+
+    const csvRows = feedbackRows.map(row => [
+      escapeCsvCell(row.date),
+      escapeCsvCell(row.studentName),
+      escapeCsvCell(row.className),
+      escapeCsvCell(row.teacherName),
+      escapeCsvCell(row.feedbackBy),
+      escapeCsvCell(row.exerciseType),
+      escapeCsvCell(row.questionNumber),
+      escapeCsvCell(row.feedback),
+      escapeCsvCell(row.link),
+      escapeCsvCell(row.feedbackAt),
+    ].join(','));
+
+    const csvContent = `\uFEFF${headers.map(escapeCsvCell).join(',')}\n${csvRows.join('\n')}`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const now = new Date();
+    const fileName = `feedback-tong-hop-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.csv`;
+
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   // Pagination
   const totalPages = Math.ceil(processedHomework.length / itemsPerPage);
@@ -371,7 +429,7 @@ export default function AllHomeworkTable({
               {title}
             </h3>
             <div className="flex flex-col sm:flex-row gap-2">
-              {showFeedbackByFilter && feedbackByOptions.length > 0 && (
+              {feedbackByOptions.length > 0 && (
                 <select
                   value={selectedFeedbackBy}
                   onChange={(e) => setSelectedFeedbackBy(e.target.value)}
@@ -383,7 +441,7 @@ export default function AllHomeworkTable({
                   ))}
                 </select>
               )}
-              {feedbackFilter === 'with-feedback' && exerciseTypeOptions.length > 0 && (
+              {exerciseTypeOptions.length > 0 && (
                 <select
                   value={selectedExerciseType}
                   onChange={(e) => setSelectedExerciseType(e.target.value)}
@@ -402,6 +460,12 @@ export default function AllHomeworkTable({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fc5d01] focus:border-transparent"
               />
+              <button
+                onClick={handleExportFeedbackReport}
+                className="px-3 py-2 rounded-lg text-sm font-medium text-white bg-[#fc5d01] hover:bg-[#fd7f33] transition-colors"
+              >
+                Xuất file feedback
+              </button>
             </div>
           </div>
         </div>
