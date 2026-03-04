@@ -47,7 +47,6 @@ const retryOperation = async (
       
       // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, etc.)
       const waitTime = initialDelay * Math.pow(2, retries - 1);
-      console.log(`Retrying operation after ${waitTime}ms (attempt ${retries})`);
       await delay(waitTime);
     }
   }
@@ -58,7 +57,6 @@ const retryOperation = async (
  */
 export const getSupportClassById = async (supportClassId: string): Promise<SupportClass | null> => {
   try {
-    console.log("Getting support class by ID:", supportClassId);
     const classRef = doc(db, 'supportClasses', supportClassId);
     
     // Get class document with retry logic
@@ -66,19 +64,12 @@ export const getSupportClassById = async (supportClassId: string): Promise<Suppo
     
     if (classDoc.exists()) {
       const classData = classDoc.data();
-      console.log("Found support class data:", {
-        id: classDoc.id,
-        name: classData.name,
-        teacherId: classData.teacherId,
-        studentCount: classData.students?.length || 0
-      });
       return {
         id: classDoc.id,
         ...classData
       } as SupportClass;
     }
     
-    console.log("No support class found with ID:", supportClassId);
     return null;
   } catch (error) {
     console.error('Error getting support class by ID:', error);
@@ -109,7 +100,6 @@ export const getAllSupportClasses = async (): Promise<SupportClass[]> => {
       ...doc.data()
     } as SupportClass));
     
-    console.log(`Retrieved ${classes.length} support classes`);
     return classes;
   } catch (error) {
     console.error('Error getting all support classes:', error);
@@ -147,7 +137,6 @@ export const getTeacherSupportClasses = async (teacherEmail: string): Promise<Su
       ...doc.data()
     } as SupportClass));
     
-    console.log(`Retrieved ${classes.length} support classes for teacher: ${teacherEmail}`);
     return classes;
   } catch (error) {
     console.error('Error getting teacher support classes:', error);
@@ -180,7 +169,6 @@ export const deleteSupportClass = async (supportClassId: string): Promise<boolea
     // Delete the class document
     await retryOperation(() => deleteDoc(classRef));
     
-    console.log(`Successfully deleted support class: ${supportClassId}`);
     return true;
   } catch (error) {
     console.error('Error deleting support class:', error);
@@ -232,7 +220,6 @@ export const createSupportClass = async (classData: Omit<SupportClass, 'id'>): P
     // Add document with retry logic
     const docRef = await retryOperation(() => addDoc(classesRef, classData));
     
-    console.log(`Successfully created support class: ${docRef.id} (${classData.name})`);
     return docRef.id;
   } catch (error) {
     console.error('Error creating support class:', error);
@@ -305,7 +292,6 @@ export const addStudentToSupportClass = async (
     const isDuplicate = students.some((s: SupportClassStudent) => s.email === student.email);
     
     if (isDuplicate) {
-      console.log(`Student ${student.email} is already in support class ${supportClassId}`);
       return true; // Already in class, consider it a success
     }
     
@@ -335,7 +321,6 @@ export const addStudentToSupportClass = async (
     // Commit the batch with retry logic
     await retryOperation(() => batch.commit());
     
-    console.log(`Successfully added student ${student.id} to support class ${supportClassId}`);
     return true;
   } catch (error) {
     console.error('Error adding student to support class:', error);
@@ -393,7 +378,6 @@ export const removeStudentFromSupportClass = async (supportClassId: string, stud
     // Commit the batch with retry logic
     await retryOperation(() => batch.commit());
     
-    console.log(`Successfully removed student ${studentId} from support class ${supportClassId}`);
     return true;
   } catch (error) {
     console.error('Error removing student from support class:', error);
@@ -438,7 +422,6 @@ export const createSupportAttendance = async (
     const existingAttendance = await retryOperation(() => getDocs(q));
     
     if (!existingAttendance.empty) {
-      console.log(`Attendance already exists for support class ${supportClassId} on ${date}`);
       return existingAttendance.docs[0].id;
     }
     
@@ -455,7 +438,6 @@ export const createSupportAttendance = async (
     
     const docRef = await retryOperation(() => addDoc(attendanceRef, attendanceData));
     
-    console.log(`Successfully created support attendance record: ${docRef.id} for class ${supportClassId} on ${date}`);
     return docRef.id;
   } catch (error) {
     console.error('Error creating support attendance record:', error);
@@ -495,7 +477,6 @@ export const updateSupportAttendance = async (
       updatedAt: Timestamp.now()
     }));
     
-    console.log(`Successfully updated support attendance record: ${attendanceId}`);
     return true;
   } catch (error) {
     console.error('Error updating support attendance record:', error);
@@ -529,7 +510,6 @@ export const getSupportAttendanceByClassAndDate = async (
     const attendanceSnapshot = await retryOperation(() => getDocs(q));
     
     if (attendanceSnapshot.empty) {
-      console.log(`No attendance found for support class ${supportClassId} on ${date}`);
       return null;
     }
     
@@ -587,7 +567,6 @@ export const getSupportAttendanceByClass = async (supportClassId: string): Promi
       } as SupportAttendance;
     });
     
-    console.log(`Retrieved ${attendanceRecords.length} attendance records for support class: ${supportClassId}`);
     return attendanceRecords;
   } catch (error) {
     console.error('Error getting support attendance by class:', error);
@@ -948,7 +927,6 @@ export const updateEvaluationNotes = async (
       updatedAt: Timestamp.now()
     }));
     
-    console.log(`Successfully updated evaluation notes: ${evaluationId}`);
     return true;
   } catch (error) {
     console.error('Error updating evaluation notes:', error);

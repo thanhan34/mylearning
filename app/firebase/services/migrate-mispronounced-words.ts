@@ -13,7 +13,6 @@ import type { MispronouncedWord, WordStatistic } from '../../../types/mispronoun
 // Migrate existing mispronounced words to create statistics
 export const migrateMispronouncedWords = async (): Promise<void> => {
   try {
-    console.log('Starting migration of mispronounced words...');
     
     // Get all existing mispronounced words
     const wordsQuery = query(
@@ -28,7 +27,6 @@ export const migrateMispronouncedWords = async (): Promise<void> => {
       words.push({ id: doc.id, ...doc.data() } as MispronouncedWord & { id: string });
     });
     
-    console.log(`Found ${words.length} words to migrate`);
     
     // Group words by word text
     const wordGroups = new Map<string, (MispronouncedWord & { id: string })[]>();
@@ -41,11 +39,9 @@ export const migrateMispronouncedWords = async (): Promise<void> => {
       wordGroups.get(normalizedWord)!.push(word);
     });
     
-    console.log(`Found ${wordGroups.size} unique words`);
     
     // Create statistics for each word group
     for (const [normalizedWord, wordList] of wordGroups) {
-      console.log(`Processing word: ${normalizedWord}`);
       
       // Group by student to count unique students
       const studentGroups = new Map<string, (MispronouncedWord & { id: string })[]>();
@@ -89,10 +85,8 @@ export const migrateMispronouncedWords = async (): Promise<void> => {
       const statsRef = doc(db, 'word-statistics', normalizedWord);
       await setDoc(statsRef, wordStats);
       
-      console.log(`Created statistics for "${normalizedWord}" with ${studentGroups.size} students`);
     }
     
-    console.log('Migration completed successfully!');
   } catch (error) {
     console.error('Error during migration:', error);
     throw error;
@@ -102,7 +96,6 @@ export const migrateMispronouncedWords = async (): Promise<void> => {
 // Function to clean up duplicate words (keep only first occurrence per student)
 export const cleanupDuplicateWords = async (): Promise<void> => {
   try {
-    console.log('Starting cleanup of duplicate words...');
     
     // Get all existing mispronounced words
     const wordsQuery = query(
@@ -134,18 +127,15 @@ export const cleanupDuplicateWords = async (): Promise<void> => {
       if (studentWords.has(normalizedWord)) {
         // This is a duplicate, mark for deletion
         wordsToDelete.push(word.id);
-        console.log(`Marking duplicate word "${word.word}" for student ${word.studentId} for deletion`);
       } else {
         // First occurrence, keep it
         studentWords.add(normalizedWord);
       }
     });
     
-    console.log(`Found ${wordsToDelete.length} duplicate words to delete`);
     
     // Delete duplicates (you would need to implement the actual deletion)
     // For now, just log what would be deleted
-    console.log('Cleanup completed!');
   } catch (error) {
     console.error('Error during cleanup:', error);
     throw error;

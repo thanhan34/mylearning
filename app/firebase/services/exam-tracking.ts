@@ -26,10 +26,8 @@ const getTeacherName = async (teacherId: string): Promise<string | undefined> =>
     
     if (teacherSnapshot.exists()) {
       const teacherData = teacherSnapshot.data() as UserProfile;
-      console.log('Teacher data found:', teacherData);
       return teacherData.name;
     }
-    console.log('No teacher found for ID:', teacherId);
     return undefined;
   } catch (error) {
     console.error('Error getting teacher:', error);
@@ -52,7 +50,6 @@ export const createExamTrackingInfo = async (
     }
 
     const userData = userSnapshot.docs[0].data() as UserProfile;
-    console.log('User data found:', userData);
     
     let className: string | undefined;
     let teacherName: string | undefined;
@@ -67,15 +64,12 @@ export const createExamTrackingInfo = async (
           const classData = classSnapshot.data() as Class;
           className = classData.name;
           teacherName = await getTeacherName(classData.teacherId);
-          console.log('Class info found:', { className, teacherName });
         } else {
-          console.log('No class found for ID:', userData.classId);
         }
       } catch (error) {
         console.error('Error fetching class:', error);
       }
     } else {
-      console.log('No classId for user:', userData);
     }
 
     // Prepare exam tracking info without calendar event ID first
@@ -110,7 +104,6 @@ export const createExamTrackingInfo = async (
         teacherName: teacherName,
       };
       
-      console.log('Attempting to create calendar event with data:', calendarData);
       const eventId = await createCalendarEventAPI(calendarData);
       
       if (eventId) {
@@ -118,7 +111,6 @@ export const createExamTrackingInfo = async (
         await updateDoc(docRef, {
           calendarEventId: eventId
         });
-        console.log('Calendar event ID saved:', eventId);
       }
     } catch (error) {
       console.error('Error creating calendar event:', error);
@@ -157,7 +149,6 @@ export const updateExamTrackingInfo = async (
     }
 
     const userData = userSnapshot.docs[0].data() as UserProfile;
-    console.log('User data found for update:', userData);
     
     let className: string | undefined;
     let teacherName: string | undefined;
@@ -172,9 +163,7 @@ export const updateExamTrackingInfo = async (
           const classData = classSnapshot.data() as Class;
           className = classData.name;
           teacherName = await getTeacherName(classData.teacherId);
-          console.log('Class info found for update:', { className, teacherName });
         } else {
-          console.log('No class found for update with ID:', userData.classId);
         }
       } catch (error) {
         console.error('Error fetching class:', error);
@@ -193,7 +182,6 @@ export const updateExamTrackingInfo = async (
       };
       try {
         await updateCalendarEventAPI(currentData.calendarEventId, calendarData);
-        console.log('Calendar event updated successfully');
       } catch (error) {
         console.error('Error updating calendar event:', error);
         // Continue with exam tracking info update even if calendar fails
@@ -210,7 +198,6 @@ export const updateExamTrackingInfo = async (
       _updatedBy: currentData.email,
     };
 
-    console.log('Updating exam tracking info:', updateData);
 
     await updateDoc(docRef, updateData);
   } catch (error) {
@@ -311,7 +298,6 @@ export const deletePastExamRecords = async (): Promise<void> => {
       if (examData.calendarEventId) {
         try {
           await deleteCalendarEventAPI(examData.calendarEventId);
-          console.log('Calendar event deleted successfully');
         } catch (error) {
           console.error('Error deleting calendar event:', error);
           // Continue with exam tracking deletion even if calendar fails
@@ -321,7 +307,6 @@ export const deletePastExamRecords = async (): Promise<void> => {
     }
 
     await batch.commit();
-    console.log(`Deleted ${querySnapshot.size} past exam records`);
   } catch (error) {
     console.error("Error deleting past exam records:", error);
     throw error;
@@ -332,7 +317,6 @@ export const getTeacherStudentsExamInfo = async (
   teacherName: string
 ): Promise<ExamTrackingInfo[]> => {
   try {
-    console.log('Getting exam info for teacher:', teacherName);
     const q = query(
       collection(db, COLLECTION_NAME),
       where("teacherName", "==", teacherName),
@@ -347,7 +331,6 @@ export const getTeacherStudentsExamInfo = async (
           ...doc.data(),
         } as ExamTrackingInfo)
     );
-    console.log('Teacher students exam info:', examInfo);
     return examInfo;
   } catch (error) {
     console.error("Error getting teacher students exam info:", error);
@@ -652,7 +635,6 @@ export const deleteExamTrackingInfo = async (id: string): Promise<void> => {
     if (examData.calendarEventId) {
       try {
         await deleteCalendarEventAPI(examData.calendarEventId);
-        console.log('Calendar event deleted successfully');
       } catch (error) {
         console.error('Error deleting calendar event:', error);
         // Continue with exam tracking deletion even if calendar fails
@@ -664,7 +646,6 @@ export const deleteExamTrackingInfo = async (id: string): Promise<void> => {
     batch.delete(docRef);
     await batch.commit();
     
-    console.log('Exam tracking record deleted successfully');
   } catch (error) {
     console.error("Error deleting exam tracking info:", error);
     throw error;

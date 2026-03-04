@@ -68,13 +68,11 @@ export default function ExamTrackingForm() {
                   };
                   setClassData(classInfo);
                 } else {
-                  console.log('No class found for ID:', data.classId);
                 }
               } catch (error) {
                 console.error('Error fetching class:', error);
               }
             } else {
-              console.log('No classId for user:', data);
             }
 
             // Fetch exam info if available
@@ -116,11 +114,9 @@ export default function ExamTrackingForm() {
       if (existingInfo?.id) {
         // Update existing record
         await updateExamTrackingInfo(existingInfo.id, formData);
-        console.log('Updated existing exam tracking info');
       } else {
         // Create new record only if none exists
         const newId = await createExamTrackingInfo(formData, session.user.email);
-        console.log('Created new exam tracking info with ID:', newId);
       }
 
       // Fetch the updated info
@@ -132,7 +128,6 @@ export default function ExamTrackingForm() {
           examDate: newInfo.examDate,
         });
         setShowSuccess(true);
-        console.log('Successfully saved exam tracking info');
       }
     } catch (error) {
       console.error("Error saving exam info:", error);

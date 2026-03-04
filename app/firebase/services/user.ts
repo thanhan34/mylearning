@@ -169,7 +169,6 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
     }
 
     // Fallback to query if direct lookup fails
-    console.log('Direct lookup failed, trying query...');
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('email', '==', email));
     const querySnapshot = await getDocs(q);
@@ -196,7 +195,6 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
       };
     }
 
-    console.log('User not found:', email);
     
     return null;
   } catch (error) {

@@ -62,10 +62,6 @@ const Navigation = () => {
             
             // Update session role if it doesn't match
             if (session.user.role !== data.role) {
-              console.log('Session role mismatch:', {
-                sessionRole: session.user.role,
-                dbRole: data.role
-              });
             }
           } else {
             console.warn('No user document found for email:', session.user.email);

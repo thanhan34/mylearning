@@ -31,7 +31,6 @@ if (typeof window !== 'undefined') {
     const { enableIndexedDbPersistence } = require('firebase/firestore');
     enableIndexedDbPersistence(db)
       .then(() => {
-        console.log('Firestore persistence enabled successfully');
       })
       .catch((err: { code: string; message: string; name: string; stack?: string }) => {
         console.error('Persistence error:', {
@@ -57,11 +56,6 @@ if (typeof window !== 'undefined') {
 }
 
 // Log Firestore initialization
-console.log('Firestore initialized with config:', {
-  experimentalForceLongPolling: true,
-  experimentalAutoDetectLongPolling: false,
-  timestamp: new Date().toISOString()
-});
 
 const storage = getStorage(app);
 

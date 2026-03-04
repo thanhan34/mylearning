@@ -28,7 +28,6 @@ export const getAdminStats = async (): Promise<AdminStats> => {
   // Check if we have cached data that's not expired
   const now = Date.now();
   if (statsCache.data && (now - statsCache.timestamp) < CACHE_EXPIRATION) {
-    console.log('Using cached admin stats');
     return statsCache.data;
   }
 

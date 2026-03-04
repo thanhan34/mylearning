@@ -47,7 +47,6 @@ export default function StudentHomeworkTable({
   // Process and filter homework data - SIMPLIFIED VERSION
   const processedHomework = useMemo(() => {    
     if (!homeworkData.length) {
-      console.log('No homework data to process');
       return [];
     }
 
@@ -75,7 +74,6 @@ export default function StudentHomeworkTable({
       processed = processed.filter(homework => 
         homework.date.includes(term)
       );
-      console.log('After search filter, processed count:', processed.length);
     }
 
     // Apply sorting
@@ -116,13 +114,11 @@ export default function StudentHomeworkTable({
   };
 
   const handleViewDetails = (homework: StudentHomeworkData) => {
-    console.log('Opening modal for homework:', homework.id);
     setSelectedSubmission(homework);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
-    console.log('Closing modal');
     setSelectedSubmission(null);
     setIsModalOpen(false);
   };
@@ -131,7 +127,6 @@ export default function StudentHomeworkTable({
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && selectedSubmission) {
-        console.log('ESC key pressed, closing modal');
         closeModal();
       }
     };
@@ -339,7 +334,6 @@ export default function StudentHomeworkTable({
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
-            console.log('Background clicked');
             if (e.target === e.currentTarget) {
               closeModal();
             }
@@ -348,7 +342,6 @@ export default function StudentHomeworkTable({
           <div 
             className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(e) => {
-              console.log('Modal content clicked');
               e.stopPropagation();
             }}
           >
@@ -357,7 +350,6 @@ export default function StudentHomeworkTable({
               <h3 className="text-xl font-semibold">Chi tiết bài tập</h3>
               <button 
                 onClick={(e) => {
-                  console.log('X button clicked');
                   e.preventDefault();
                   e.stopPropagation();
                   closeModal();
@@ -444,7 +436,6 @@ export default function StudentHomeworkTable({
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
               <button
                 onClick={(e) => {
-                  console.log('Close button clicked');
                   e.preventDefault();
                   closeModal();
                 }}

@@ -165,12 +165,6 @@ export const updateHomeworkFeedback = async (
   feedbackByName?: string
 ): Promise<boolean> => {
   try {
-    console.log('Updating feedback for document:', {
-      documentId,
-      submissionType,
-      questionNumber,
-      feedback
-    });
 
     if (!documentId) {
       console.error('No document ID provided');
@@ -210,7 +204,6 @@ export const updateHomeworkFeedback = async (
       lastUpdated: new Date().toISOString()
     });
 
-    console.log('Successfully updated feedback');
     return true;
   } catch (error) {
     console.error('Error updating homework feedback:', error);
@@ -233,12 +226,6 @@ export const updateHomeworkFeedbackByName = async (
   feedbackByName?: string
 ): Promise<boolean> => {
   try {
-    console.log('Updating feedback by name search:', {
-      studentName,
-      date,
-      submissionType,
-      questionNumber
-    });
 
     // Find all homework submissions for this date
     const submissionsRef = collection(db, 'homework');

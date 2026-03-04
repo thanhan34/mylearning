@@ -90,7 +90,6 @@ export async function sendHomeworkNotification(
       return false;
     }
 
-    console.log('Discord notification sent successfully: Homework submission');
     return true;
   } catch (error) {
     console.error('Error sending Discord notification:', error);
@@ -160,7 +159,6 @@ export async function sendHomeworkFeedbackNotification(
       return false;
     }
 
-    console.log('Discord notification sent successfully: Homework feedback');
     return true;
   } catch (error) {
     console.error('Error sending Discord notification:', error);
@@ -223,7 +221,6 @@ export async function sendMocktestNotification(
       return false;
     }
 
-    console.log('Discord notification sent successfully: Mocktest submission');
     return true;
   } catch (error) {
     console.error('Error sending Discord notification:', error);
@@ -281,7 +278,6 @@ export async function sendMocktestFeedbackNotification(
       return false;
     }
 
-    console.log('Discord notification sent successfully: Mocktest feedback');
     return true;
   } catch (error) {
     console.error('Error sending Discord notification:', error);

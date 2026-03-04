@@ -30,7 +30,6 @@ const retryOperation = async (
       
       // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, etc.)
       const waitTime = initialDelay * Math.pow(2, retries - 1);
-      console.log(`Retrying operation after ${waitTime}ms (attempt ${retries})`);
       await delay(waitTime);
     }
   }
@@ -62,7 +61,6 @@ export const createAttendance = async (
     const existingAttendance = await retryOperation(() => getDocs(q));
     
     if (!existingAttendance.empty) {
-      console.log(`Attendance already exists for class ${classId} on ${date}`);
       return existingAttendance.docs[0].id;
     }
     
@@ -79,7 +77,6 @@ export const createAttendance = async (
     
     const docRef = await retryOperation(() => addDoc(attendanceRef, attendanceData));
     
-    console.log(`Successfully created attendance record: ${docRef.id} for class ${classId} on ${date}`);
     return docRef.id;
   } catch (error) {
     console.error('Error creating attendance record:', error);
@@ -117,7 +114,6 @@ export const updateAttendance = async (
       updatedAt: Timestamp.now()
     }));
     
-    console.log(`Successfully updated attendance record: ${attendanceId}`);
     return true;
   } catch (error) {
     console.error('Error updating attendance record:', error);
@@ -148,7 +144,6 @@ export const deleteAttendance = async (attendanceId: string): Promise<boolean> =
     // Delete attendance
     await retryOperation(() => deleteDoc(attendanceRef));
     
-    console.log(`Successfully deleted attendance record: ${attendanceId}`);
     return true;
   } catch (error) {
     console.error('Error deleting attendance record:', error);
@@ -180,7 +175,6 @@ export const getAttendanceByClassAndDate = async (
     const attendanceSnapshot = await retryOperation(() => getDocs(q));
     
     if (attendanceSnapshot.empty) {
-      console.log(`No attendance found for class ${classId} on ${date}`);
       return null;
     }
     
@@ -236,7 +230,6 @@ export const getAttendanceByClass = async (classId: string): Promise<Attendance[
       } as Attendance;
     });
     
-    console.log(`Retrieved ${attendanceRecords.length} attendance records for class: ${classId}`);
     return attendanceRecords;
   } catch (error) {
     console.error('Error getting attendance by class:', error);
@@ -259,7 +252,6 @@ export const getAttendanceStatsByClass = async (classId: string): Promise<Attend
     const attendanceRecords = await getAttendanceByClass(classId);
     
     if (attendanceRecords.length === 0) {
-      console.log(`No attendance records found for class ${classId}`);
       return null;
     }
     
@@ -382,7 +374,6 @@ export const getAttendanceStatsForAllClasses = async (): Promise<AttendanceStats
     const classesSnapshot = await retryOperation(() => getDocs(classesRef));
     
     if (classesSnapshot.empty) {
-      console.log('No classes found');
       return null;
     }
     
@@ -404,7 +395,6 @@ export const getAttendanceStatsForAllClasses = async (): Promise<AttendanceStats
     const validClassStats = classStats.filter(stat => stat.stats !== null);
     
     if (validClassStats.length === 0) {
-      console.log('No attendance data found for any class');
       return null;
     }
     
@@ -487,7 +477,6 @@ export const getAttendanceStatsForTeacher = async (teacherId: string): Promise<A
     const classesSnapshot = await retryOperation(() => getDocs(q));
     
     if (classesSnapshot.empty) {
-      console.log(`No classes found for teacher ${teacherId}`);
       return null;
     }
     
@@ -509,7 +498,6 @@ export const getAttendanceStatsForTeacher = async (teacherId: string): Promise<A
     const validClassStats = classStats.filter(stat => stat.stats !== null);
     
     if (validClassStats.length === 0) {
-      console.log(`No attendance data found for teacher ${teacherId}`);
       return null;
     }
     
@@ -578,7 +566,6 @@ export const getAttendanceStatsForAssistant = async (assistantEmail: string): Pr
     const assistantSnapshot = await retryOperation(() => getDocs(assistantQuery));
     
     if (assistantSnapshot.empty) {
-      console.log(`Assistant not found: ${assistantEmail}`);
       return null;
     }
     
@@ -587,7 +574,6 @@ export const getAttendanceStatsForAssistant = async (assistantEmail: string): Pr
     
     // Check if user is an assistant and has assigned classes
     if (assistantData.role !== 'assistant' || !assistantData.assignedClassIds || assistantData.assignedClassIds.length === 0) {
-      console.log(`User is not an assistant or has no assigned classes: ${assistantEmail}`);
       return null;
     }
     
@@ -611,7 +597,6 @@ export const getAttendanceStatsForAssistant = async (assistantEmail: string): Pr
     const validClassStats = classStats.filter(stat => stat !== null && stat.stats !== null);
     
     if (validClassStats.length === 0) {
-      console.log(`No attendance data found for assistant ${assistantEmail}`);
       return null;
     }
     
@@ -755,7 +740,6 @@ export const bulkUpdateAttendanceStatus = async (
       updatedAt: Timestamp.now()
     }));
     
-    console.log(`Successfully updated ${studentUpdates.length} student attendance records for ${attendanceId}`);
     return true;
   } catch (error) {
     console.error('Error bulk updating attendance status:', error);

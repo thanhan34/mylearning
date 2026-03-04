@@ -45,7 +45,6 @@ export async function getDailyWFDSentences(): Promise<WFDSentence[]> {
       } as WFDSentence);
     });
     
-    console.log(`Fetched ${sentences.length} WFD sentences`);
     return sentences;
   } catch (error) {
     console.error('Error fetching daily WFD sentences:', error);

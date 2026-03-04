@@ -47,7 +47,6 @@ export const setStudentNickname = async (
 
     await setDoc(nicknameRef, nicknameData);
     
-    console.log(`Successfully set nickname "${nickname}" for student ${studentId} by teacher ${teacherId}`);
     return true;
   } catch (error) {
     console.error('Error setting student nickname:', error);
@@ -110,7 +109,6 @@ export const deleteStudentNickname = async (
     
     await deleteDoc(nicknameRef);
     
-    console.log(`Successfully deleted nickname for student ${studentId} by teacher ${teacherId}`);
     return true;
   } catch (error) {
     console.error('Error deleting student nickname:', error);
@@ -194,7 +192,6 @@ export const bulkUpdateStudentNicknames = async (
     
     await batch.commit();
     
-    console.log(`Successfully bulk updated ${updates.length} nicknames for teacher ${teacherId}`);
     return true;
   } catch (error) {
     console.error('Error bulk updating student nicknames:', error);

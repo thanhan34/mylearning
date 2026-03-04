@@ -23,12 +23,6 @@ export const getMocktestsByStudent = async (studentId: string, classId?: string)
     return [];
   }
 
-  console.log("Getting mocktests for student:", {
-    studentId,
-    classId,
-    collection: COLLECTION,
-    query: `where studentId == "${studentId}" AND classId == "${classId}"`
-  });
 
   // Create a composite query for both studentId and classId
   const q = query(
@@ -44,15 +38,6 @@ export const getMocktestsByStudent = async (studentId: string, classId?: string)
     ...doc.data()
   })) as Mocktest[];
   
-  console.log("Found mocktests for student:", {
-    studentId,
-    count: mocktests.length,
-    mocktests: mocktests.map(m => ({
-      id: m.id,
-      submittedAt: m.submittedAt.toDate(),
-      hasMultiple: mocktests.length > 1
-    }))
-  });
   
   return mocktests;
 };
@@ -98,7 +83,6 @@ export const addMocktest = async (
   studentName?: string,
   className?: string
 ) => {
-  console.log("Adding mocktest:", { studentId, classId, data });
   const mocktest = {
     studentId,
     classId,
@@ -107,7 +91,6 @@ export const addMocktest = async (
   };
 
   const docRef = await addDoc(collection(db, COLLECTION), mocktest);
-  console.log("Added mocktest with ID:", docRef.id);
   
   // Send Discord notification for mocktest submission
   if (studentName && className) {

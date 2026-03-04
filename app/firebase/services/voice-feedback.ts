@@ -31,7 +31,6 @@ export const uploadVoiceFeedback = async (
   duration: number
 ): Promise<VoiceFeedback | null> => {
   try {
-    console.log('🎤 Uploading voice feedback (FREE version - no storage costs)...');
     
     // Convert audio blob to base64 (completely free!)
     const audioUrl = await new Promise<string>((resolve, reject) => {
@@ -63,11 +62,6 @@ export const uploadVoiceFeedback = async (
     
     const docRef = await addDoc(collection(db, 'voiceFeedback'), voiceFeedbackData);
     
-    console.log('✅ Voice feedback uploaded successfully (FREE)!', {
-      id: docRef.id,
-      duration: duration,
-      size: Math.round(audioUrl.length / 1024) + 'KB'
-    });
     
     return {
       id: docRef.id,
@@ -180,7 +174,6 @@ export const getVoiceFeedbackByTeacher = async (
 // Delete voice feedback (FREE VERSION - No storage deletion needed)
 export const deleteVoiceFeedback = async (voiceFeedbackId: string): Promise<boolean> => {
   try {
-    console.log('🗑️ Deleting voice feedback (FREE version)...');
     
     // Since we're using base64 storage in Firestore, we just mark as deleted
     // No need to delete from Firebase Storage since we're not using it!
@@ -190,7 +183,6 @@ export const deleteVoiceFeedback = async (voiceFeedbackId: string): Promise<bool
       audioUrl: '', // Clear the base64 data to save space
     });
     
-    console.log('✅ Voice feedback deleted successfully (FREE)!');
     return true;
   } catch (error) {
     console.error('❌ Error deleting voice feedback:', error);

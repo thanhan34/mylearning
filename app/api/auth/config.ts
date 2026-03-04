@@ -34,30 +34,16 @@ export const authOptions: AuthOptions = {
       }
 
       try {
-        console.log('Sign in attempt:', {
-          email: user.email,
-          name: user.name,
-          timestamp: new Date().toISOString()
-        });
 
         // Check if user exists
         const existingUser = await getUserByEmail(user.email);
 
         if (existingUser) {
-          console.log('Existing user found:', {
-            id: existingUser.id,
-            role: existingUser.role,
-            email: existingUser.email
-          });
           user.id = existingUser.id;
           user.role = existingUser.role;
           return true;
         }
 
-        console.log('Creating new user:', {
-          email: user.email,
-          name: user.name
-        });
 
         // Create new user
         const userId = await createUser({
@@ -95,24 +81,11 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user, account }) {
       try {
         if (account && user) {
-          console.log('JWT callback - account:', {
-            access_token: account.access_token,
-            refresh_token: account.refresh_token,
-            token_type: account.token_type,
-            scope: account.scope
-          });
           
           token.accessToken = account.access_token;
           token.refreshToken = account.refresh_token;
           token.id = user.id;
           token.role = user.role;
-          console.log('JWT token created:', {
-            id: user.id,
-            role: user.role,
-            email: user.email,
-            hasAccessToken: !!token.accessToken,
-            hasRefreshToken: !!token.refreshToken
-          });
         }
         return token;
       } catch (error) {
@@ -127,13 +100,6 @@ export const authOptions: AuthOptions = {
           session.user.role = token.role as "admin" | "teacher" | "student" | "assistant";
           session.accessToken = token.accessToken;
           session.refreshToken = token.refreshToken;
-          console.log('Session created:', {
-            id: session.user.id,
-            role: session.user.role,
-            email: session.user.email,
-            hasAccessToken: !!session.accessToken,
-            hasRefreshToken: !!session.refreshToken
-          });
         }
         return session;
       } catch (error) {

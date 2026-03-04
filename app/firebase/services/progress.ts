@@ -20,7 +20,6 @@ export const getHomeworkProgress = async (userId: string): Promise<ProgressData[
     
     
     if (querySnapshot.empty) {
-      console.log('No submissions found for user:', userId);
       return [{
         date: new Date().toISOString().split('T')[0],
         completed: 0

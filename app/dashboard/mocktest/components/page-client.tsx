@@ -25,19 +25,11 @@ export default function MocktestClient({ user, classData }: Props) {
     }
     
     try {
-      console.log("Loading mocktests for user:", {
-        userId: user.id,
-        userEmail: user.email,
-        userRole: user.role,
-        hasClassData: !!classData,
-        classId: classData?.id
-      });
       if (!classData?.id) {
         console.error("No class ID available");
         return;
       }
       const data = await getMocktestsByStudent(user.id, classData.id);
-      console.log("Loaded mocktests:", data);
       setMocktests(data);
     } catch (error) {
       console.error("Error loading mocktests:", error);
@@ -47,13 +39,6 @@ export default function MocktestClient({ user, classData }: Props) {
   };
 
   useEffect(() => {
-    console.log("Component mounted with:", {
-      userId: user.id,
-      userEmail: user.email,
-      userRole: user.role,
-      hasClassData: !!classData,
-      classId: classData?.id
-    });
     loadMocktests();
   }, [user.id, classData]);
 

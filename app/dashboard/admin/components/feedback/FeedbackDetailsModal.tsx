@@ -61,7 +61,6 @@ export default function FeedbackDetailsModal({
     setError(null);
 
     try {
-      console.log('Saving feedback for document:', documentId);
       
       // Use the updateHomeworkFeedback function with documentId
       const success = await updateHomeworkFeedback(

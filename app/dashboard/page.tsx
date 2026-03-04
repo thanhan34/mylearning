@@ -53,7 +53,6 @@ export default function DashboardPage() {
       
 
       if (!progressData.length) {
-        console.log('No progress data found');
         return;
       }
 

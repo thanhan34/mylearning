@@ -61,11 +61,6 @@ export default function MocktestForm({
     setError("");
 
     try {
-      console.log("Submitting mocktest:", {
-        userId: session.user.id,
-        classId,
-        formData
-      });
       
       if (mocktestId) {
         await updateMocktest(mocktestId, formData);

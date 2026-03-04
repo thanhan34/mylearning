@@ -37,7 +37,6 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('Calendar API: POST request received');
 
     // Create calendar client with service account
     const auth = getServiceAccountAuth();
@@ -47,7 +46,6 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await req.json();
-    console.log('Calendar API: Creating event with data:', data);
 
     // Validate required fields
     if (!data.name || !data.examLocation || !data.examDate) {
@@ -108,13 +106,6 @@ ${data.teacherName ? `Teacher: ${data.teacherName}` : ''}
         sendUpdates: 'none',
       });
 
-      console.log('Calendar API: Event created:', {
-        id: result.data.id,
-        summary: result.data.summary,
-        start: result.data.start,
-        end: result.data.end,
-        status: result.data.status
-      });
 
       return NextResponse.json({ eventId: result.data.id }, { headers: corsHeaders });
     } catch (error: any) {
@@ -142,7 +133,6 @@ ${data.teacherName ? `Teacher: ${data.teacherName}` : ''}
 
 export async function PUT(req: NextRequest) {
   try {
-    console.log('Calendar API: PUT request received');
 
     // Create calendar client with service account
     const auth = getServiceAccountAuth();
@@ -152,7 +142,6 @@ export async function PUT(req: NextRequest) {
     });
 
     const { eventId, ...data } = await req.json();
-    console.log('Calendar API: Updating event:', { eventId, data });
 
     // Validate required fields
     if (!data.name || !data.examLocation || !data.examDate) {
@@ -212,7 +201,6 @@ ${data.teacherName ? `Teacher: ${data.teacherName}` : ''}
         sendUpdates: 'none',
       });
 
-      console.log('Calendar API: Event updated:', result.data);
       return NextResponse.json({ success: true }, { headers: corsHeaders });
     } catch (error: any) {
       console.error('Calendar API: Error updating event:', {
@@ -237,7 +225,6 @@ ${data.teacherName ? `Teacher: ${data.teacherName}` : ''}
 
 export async function DELETE(req: NextRequest) {
   try {
-    console.log('Calendar API: DELETE request received');
 
     // Create calendar client with service account
     const auth = getServiceAccountAuth();
@@ -247,7 +234,6 @@ export async function DELETE(req: NextRequest) {
     });
 
     const { eventId } = await req.json();
-    console.log('Calendar API: Deleting event:', eventId);
 
     try {
       await calendarClient.events.delete({
@@ -256,7 +242,6 @@ export async function DELETE(req: NextRequest) {
         sendUpdates: 'none',
       });
 
-      console.log('Calendar API: Event deleted');
       return NextResponse.json({ success: true }, { headers: corsHeaders });
     } catch (error: any) {
       console.error('Calendar API: Error deleting event:', {

@@ -65,19 +65,15 @@ const TeacherScheduleView: React.FC = () => {
       const userRole = session?.user?.role;
       let userId = session?.user?.id;
       
-      console.log('TeacherScheduleView - Loading data for:', { userEmail, userRole, userId });
       
       // Fallback: if userId is not available, use sanitized email
       if (!userId && userEmail) {
         userId = userEmail.replace(/[.#$[\]]/g, '_');
-        console.log('TeacherScheduleView - Using fallback userId:', userId);
       }
       
       if (userId && userRole) {
         // Load schedules using userId
-        console.log('TeacherScheduleView - Calling getSchedulesByUser with:', userId, userRole);
         const schedulesData = await getSchedulesByUser(userId, userRole);
-        console.log('TeacherScheduleView - Received schedules:', schedulesData);
         setSchedules(schedulesData);
 
         // Check if user can create schedules

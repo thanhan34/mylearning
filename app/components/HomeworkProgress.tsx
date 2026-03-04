@@ -9,7 +9,6 @@ interface HomeworkProgressProps {
 }
 
 const HomeworkProgress = ({ email }: HomeworkProgressProps) => {
-  console.log('HomeworkProgress mounted with email:', email);
 
   const [chartData, setChartData] = useState<{
     labels: string[];
@@ -35,9 +34,7 @@ const HomeworkProgress = ({ email }: HomeworkProgressProps) => {
     const fetchProgress = async () => {
       try {
         setError(null);
-        console.log('Fetching progress for:', email);
         const progress = await getHomeworkProgress(email);
-        console.log('Raw progress data:', progress);
         
         if (progress.length > 0) {
           // Sort by date and get last 7 days
@@ -46,7 +43,6 @@ const HomeworkProgress = ({ email }: HomeworkProgressProps) => {
             .slice(0, 7)
             .reverse();
 
-          console.log('Sorted data:', sortedData);
 
           setChartData({
             labels: sortedData.map(item => {
@@ -64,7 +60,6 @@ const HomeworkProgress = ({ email }: HomeworkProgressProps) => {
             }]
           });
         } else {
-          console.log('No progress data found');
           setError('Chưa có dữ liệu');
         }
       } catch (error) {

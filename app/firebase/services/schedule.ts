@@ -44,7 +44,6 @@ const retryOperation = async (
       }
       
       const waitTime = initialDelay * Math.pow(2, retries - 1);
-      console.log(`Retrying operation after ${waitTime}ms (attempt ${retries})`);
       await delay(waitTime);
     }
   }
@@ -182,7 +181,6 @@ export const createSchedule = async (
       
       await retryOperation(() => batch.commit());
       
-      console.log(`Successfully created recurring schedule with ${instances.length} instances: ${parentRef.id}`);
       return parentRef.id;
     } else {
       // Create single schedule
@@ -212,7 +210,6 @@ export const createSchedule = async (
       const schedulesRef = collection(db, 'schedules');
       const docRef = await retryOperation(() => addDoc(schedulesRef, newSchedule));
       
-      console.log(`Successfully created schedule: ${docRef.id}`);
       return docRef.id;
     }
   } catch (error) {
@@ -259,7 +256,6 @@ export const updateSchedule = async (
 
     await retryOperation(() => updateDoc(scheduleRef, updatedData));
     
-    console.log(`Successfully updated schedule: ${scheduleId}`);
     return true;
   } catch (error) {
     console.error('Error updating schedule:', error);
@@ -290,7 +286,6 @@ export const deleteSchedule = async (scheduleId: string): Promise<boolean> => {
 
     await retryOperation(() => deleteDoc(scheduleRef));
     
-    console.log(`Successfully deleted schedule: ${scheduleId}`);
     return true;
   } catch (error) {
     console.error('Error deleting schedule:', error);
@@ -305,7 +300,6 @@ export const getSchedulesByUser = async (
   filter?: ScheduleFilter
 ): Promise<Schedule[]> => {
   try {
-    console.log('getSchedulesByUser called with:', { userId, userRole });
     
     const schedulesRef = collection(db, 'schedules');
     let q = query(schedulesRef, orderBy('startTime', 'desc'));
@@ -345,13 +339,10 @@ export const getSchedulesByUser = async (
       
     } else if (userRole === 'teacher' || userRole === 'assistant') {
       // Teachers and assistants see schedules for their classes and schedules they're directly assigned to
-      console.log('Processing teacher/assistant schedules for userId:', userId);
       
       const user = await getUserById(userId);
-      console.log('User data retrieved:', user);
       
       if (!user) {
-        console.log('No user found for userId:', userId);
         return [];
       }
 
@@ -360,7 +351,6 @@ export const getSchedulesByUser = async (
       
       // 1. Get schedules where they're directly assigned as teachers/assistants
       try {
-        console.log('Querying schedules where teacherIds contains:', userId);
         const directAssignmentQuery = query(
           schedulesRef, 
           where('teacherIds', 'array-contains', userId), 
@@ -368,11 +358,9 @@ export const getSchedulesByUser = async (
         );
         const directQuerySnapshot = await retryOperation(() => getDocs(directAssignmentQuery));
         
-        console.log('Direct assignment query returned:', directQuerySnapshot.docs.length, 'documents');
         
         directQuerySnapshot.docs.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
           const schedule = { id: doc.id, ...doc.data() } as Schedule;
-          console.log('Found directly assigned schedule:', schedule.title, schedule.id);
           if (!processedScheduleIds.has(schedule.id)) {
             allSchedules.push(schedule);
             processedScheduleIds.add(schedule.id);
@@ -385,17 +373,14 @@ export const getSchedulesByUser = async (
       // 2. For teachers: get schedules for classes they teach
       if (userRole === 'teacher') {
         try {
-          console.log('Querying classes where teacherId equals:', userId);
           const classesRef = collection(db, 'classes');
           const teacherClassesQuery = query(classesRef, where('teacherId', '==', userId));
           const classesSnapshot = await retryOperation(() => getDocs(teacherClassesQuery));
           
           const classIds = classesSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => doc.id);
-          console.log('Teacher classes found:', classIds);
           
           for (const classId of classIds) {
             try {
-              console.log('Querying schedules for classId:', classId);
               const classScheduleQuery = query(
                 schedulesRef, 
                 where('classIds', 'array-contains', classId), 
@@ -403,11 +388,9 @@ export const getSchedulesByUser = async (
               );
               const classQuerySnapshot = await retryOperation(() => getDocs(classScheduleQuery));
               
-              console.log(`Found ${classQuerySnapshot.docs.length} schedules for class ${classId}`);
               
               classQuerySnapshot.docs.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
                 const schedule = { id: doc.id, ...doc.data() } as Schedule;
-                console.log('Found class schedule:', schedule.title, schedule.id);
                 if (!processedScheduleIds.has(schedule.id)) {
                   allSchedules.push(schedule);
                   processedScheduleIds.add(schedule.id);
@@ -446,8 +429,6 @@ export const getSchedulesByUser = async (
         }
       }
       
-      console.log('Total schedules found for teacher/assistant:', allSchedules.length);
-      console.log('Schedule titles:', allSchedules.map(s => s.title));
       
       return allSchedules.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
       
@@ -530,7 +511,6 @@ export const grantSchedulePermission = async (
       await retryOperation(() => addDoc(permissionsRef, permissionData));
     }
     
-    console.log(`Successfully granted schedule permission to user: ${userId}`);
     return true;
   } catch (error) {
     console.error('Error granting schedule permission:', error);
@@ -551,7 +531,6 @@ export const revokeSchedulePermission = async (userId: string): Promise<boolean>
       });
       await retryOperation(() => batch.commit());
       
-      console.log(`Successfully revoked schedule permission for user: ${userId}`);
       return true;
     }
     

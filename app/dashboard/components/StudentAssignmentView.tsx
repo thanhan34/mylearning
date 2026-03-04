@@ -25,9 +25,7 @@ const StudentAssignmentView: React.FC = () => {
       const userDoc = await getUserByEmail(session.user.email);
       if (!userDoc) return;
 
-      console.log('Loading assignments for student:', userDoc.id);
       const userAssignments = await getAssignmentsByStudent(userDoc.id);
-      console.log('Found assignments:', userAssignments);
       setAssignments(userAssignments);
 
       // Load voice feedback for each submission
@@ -51,7 +49,6 @@ const StudentAssignmentView: React.FC = () => {
         try {
           // Create unique submission ID using assignment ID and student ID
           const submissionId = `${assignment.id}_${mySubmission.studentId}`;
-          console.log('🎤 Loading voice feedback for submission:', submissionId);
           
           const voiceFeedbackList = await getVoiceFeedbackForSubmission(
             submissionId,
@@ -61,7 +58,6 @@ const StudentAssignmentView: React.FC = () => {
           
           if (voiceFeedbackList.length > 0) {
             feedbacks[submissionId] = voiceFeedbackList;
-            console.log('✅ Found voice feedback:', voiceFeedbackList.length);
           }
         } catch (error) {
           console.error('Error loading voice feedback for submission:', assignment.id, error);

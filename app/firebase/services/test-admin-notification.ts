@@ -2,7 +2,6 @@ import { addNotification } from './notification';
 
 export const sendTestNotificationToAdmin = async (adminEmail: string): Promise<boolean> => {
   try {
-    console.log('Sending test notification to admin:', adminEmail);
     
     const result = await addNotification(
       adminEmail,
@@ -10,7 +9,6 @@ export const sendTestNotificationToAdmin = async (adminEmail: string): Promise<b
       'admin'
     );
     
-    console.log('Test notification result:', result);
     return result;
   } catch (error) {
     console.error('Error sending test notification:', error);

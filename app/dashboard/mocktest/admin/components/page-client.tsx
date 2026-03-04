@@ -53,7 +53,6 @@ export default function AdminMocktestClient({ admin, classes }: Props) {
   };
 
   useEffect(() => {
-    console.log("All mocktests:", mocktests);
   }, [mocktests]);
 
   const getClassStats = () => {
@@ -149,14 +148,6 @@ export default function AdminMocktestClient({ admin, classes }: Props) {
               onChange={(e) => {
               const classId = e.target.value;
               const classData = classes.find(c => c.id === classId);
-              console.log("Selected class:", {
-                id: classId,
-                data: classData,
-                students: classData?.students.map(s => ({
-                  id: s.id,
-                  name: s.name || s.email
-                }))
-              });
               setSelectedClass(classData || null);
               setSelectedStudent(null);
               }}

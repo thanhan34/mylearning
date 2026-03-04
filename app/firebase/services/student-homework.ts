@@ -61,14 +61,9 @@ export const getStudentHomework = async (userId: string): Promise<StudentHomewor
       finalQuerySnapshot = querySnapshot2;
       usedUserId = convertedUserId;      
     } else if (!querySnapshot1.empty) {
-      console.log('Using original userId:', userId);
     }
     
     if (finalQuerySnapshot.empty) {
-      console.log('No homework found for either format');
-      console.log('Available userIds in database:', 
-        allHomeworkSnapshot.docs.map(doc => doc.data().userId)
-      );
       return [];
     }
 

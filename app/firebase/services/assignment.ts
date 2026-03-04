@@ -38,7 +38,6 @@ export const createAssignment = async (assignmentData: CreateAssignmentData): Pr
     // Send notifications to target students
     await sendAssignmentNotifications(docRef.id, assignmentData);
     
-    console.log('Successfully created assignment:', docRef.id);
     return docRef.id;
   } catch (error) {
     console.error('Error creating assignment:', error);
@@ -153,7 +152,6 @@ export const submitAssignment = async (
       await addNotification(teacherDoc.email, message, notificationType);
     }
     
-    console.log('Successfully submitted assignment');
     return true;
   } catch (error) {
     console.error('Error submitting assignment:', error);
@@ -209,7 +207,6 @@ export const gradeAssignment = async (
     // Note: Student notifications would need to be implemented separately
     // as the current notification system only supports teacher/admin notifications
     
-    console.log('Successfully graded assignment');
     return true;
   } catch (error) {
     console.error('Error grading assignment:', error);
@@ -261,7 +258,6 @@ export const updateAssignment = async (
     
     await updateDoc(assignmentRef, updateData);
     
-    console.log('Successfully updated assignment');
     return true;
   } catch (error) {
     console.error('Error updating assignment:', error);
@@ -287,7 +283,6 @@ export const deleteAssignment = async (assignmentId: string): Promise<boolean> =
       status: 'expired'
     });
     
-    console.log('Successfully deleted assignment');
     return true;
   } catch (error) {
     console.error('Error deleting assignment:', error);
@@ -370,7 +365,6 @@ export const updateExpiredAssignments = async (): Promise<void> => {
     });
     
     await batch.commit();
-    console.log('Updated expired assignments');
   } catch (error) {
     console.error('Error updating expired assignments:', error);
   }

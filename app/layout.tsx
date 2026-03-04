@@ -30,7 +30,6 @@ export default async function RootLayout({
             __html: `
               window.addEventListener('load', function() {
                 if (typeof Chart !== 'undefined') {
-                  console.log('Chart.js is loaded');
                 } else {
                   console.error('Chart.js is not loaded');
                 }

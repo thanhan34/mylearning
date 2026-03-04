@@ -2,7 +2,6 @@ import { CalendarEventData } from './calendar';
 
 export const createCalendarEventAPI = async (data: CalendarEventData): Promise<string | null> => {
   try {
-    console.log('Calling calendar API to create event:', data);
     const response = await fetch('/api/calendar', {
       method: 'POST',
       headers: {
@@ -26,7 +25,6 @@ export const createCalendarEventAPI = async (data: CalendarEventData): Promise<s
     }
 
     const result = await response.json();
-    console.log('Calendar API response:', result);
     return result.eventId;
   } catch (error) {
     console.error('Error creating calendar event:', error);
@@ -36,7 +34,6 @@ export const createCalendarEventAPI = async (data: CalendarEventData): Promise<s
 
 export const updateCalendarEventAPI = async (eventId: string, data: CalendarEventData): Promise<boolean> => {
   try {
-    console.log('Calling calendar API to update event:', { eventId, data });
     const response = await fetch('/api/calendar', {
       method: 'PUT',
       headers: {
@@ -60,7 +57,6 @@ export const updateCalendarEventAPI = async (eventId: string, data: CalendarEven
     }
 
     const result = await response.json();
-    console.log('Calendar API response:', result);
     return true;
   } catch (error) {
     console.error('Error updating calendar event:', error);
@@ -70,7 +66,6 @@ export const updateCalendarEventAPI = async (eventId: string, data: CalendarEven
 
 export const deleteCalendarEventAPI = async (eventId: string): Promise<boolean> => {
   try {
-    console.log('Calling calendar API to delete event:', eventId);
     const response = await fetch('/api/calendar', {
       method: 'DELETE',
       headers: {
@@ -94,7 +89,6 @@ export const deleteCalendarEventAPI = async (eventId: string): Promise<boolean> 
     }
 
     const result = await response.json();
-    console.log('Calendar API response:', result);
     return true;
   } catch (error) {
     console.error('Error deleting calendar event:', error);

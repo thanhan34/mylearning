@@ -21,12 +21,6 @@ export default function StudentMocktestView({ student, classData }: Props) {
     
     try {
       const data = await getMocktestsByStudent(student.id, classData.id);
-      console.log("Filtered mocktests for student in class:", {
-        studentId: student.id,
-        classId: classData.id,
-        count: data.length,
-        mocktests: data
-      });
       setMocktests(data);
     } catch (error) {
       console.error("Error loading student mocktests:", error);

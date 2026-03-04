@@ -29,7 +29,6 @@ const retryOperation = async (
       
       // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, etc.)
       const waitTime = initialDelay * Math.pow(2, retries - 1);
-      console.log(`Retrying operation after ${waitTime}ms (attempt ${retries})`);
       await delay(waitTime);
     }
   }
@@ -50,7 +49,6 @@ export const getClassById = async (classId: string): Promise<Class | null> => {
       } as Class;
     }
     
-    console.log("No class found with ID:", classId);
     return null;
   } catch (error) {
     console.error('Error getting class by ID:', error);
@@ -206,7 +204,6 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<string 
     // Add document with retry logic
     const docRef = await retryOperation(() => addDoc(classesRef, classData));
     
-    console.log(`Successfully created class: ${docRef.id} (${classData.name})`);
     return docRef.id;
   } catch (error) {
     console.error('Error creating class:', error);
@@ -271,7 +268,6 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
     const isDuplicate = students.some((s: ClassStudent) => s.email === student.email);
     
     if (isDuplicate) {
-      console.log(`Student ${student.email} is already in class ${classId}`);
       return true; // Already in class, consider it a success
     }
     
@@ -281,7 +277,6 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
 
     // Only add if not already in a class
     if (currentClassId && currentClassId !== '') {
-      console.log(`Student ${student.id} is already in another class: ${currentClassId}`);
       return false;
     }
     
@@ -302,7 +297,6 @@ export const addStudentToClass = async (classId: string, student: ClassStudent, 
     // Commit the batch with retry logic
     await retryOperation(() => batch.commit());
     
-    console.log(`Successfully added student ${student.id} to class ${classId}`);
     return true;
   } catch (error) {
     console.error('Error adding student to class:', error);
@@ -356,7 +350,6 @@ export const removeStudentFromClass = async (classId: string, studentId: string)
     // Commit the batch with retry logic
     await retryOperation(() => batch.commit());
     
-    console.log(`Successfully removed student ${studentId} from class ${classId}`);
     return true;
   } catch (error) {
     console.error('Error removing student from class:', error);
@@ -430,7 +423,6 @@ export const updateStudentName = async (
     // Commit the batch with retry logic
     await retryOperation(() => batch.commit());
     
-    console.log(`Successfully updated student ${userId} name to ${newName}`);
     return true;
   } catch (error) {
     console.error('Error updating student name:', error);
@@ -487,7 +479,6 @@ export const cleanupClassStudents = async (classId: string): Promise<boolean> =>
       // Commit the batch with retry logic
       await retryOperation(() => batch.commit());
       
-      console.log(`Successfully cleaned up class ${classId}, removed ${students.length - uniqueStudentsArray.length} duplicate students`);
       return true;
     }
     
@@ -588,7 +579,6 @@ export const moveStudentToClass = async (
     // Commit the batch with retry logic
     await retryOperation(() => batch.commit());
     
-    console.log(`Successfully moved student ${studentId} from class ${fromClassId} to class ${toClassId}`);
     return true;
   } catch (error) {
     console.error('Error moving student to class:', error);

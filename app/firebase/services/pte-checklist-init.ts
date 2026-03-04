@@ -18,7 +18,6 @@ export const initializeAllStudentChecklists = async (): Promise<{
     let existing = 0;
     let errors = 0;
     
-    console.log(`Found ${querySnapshot.docs.length} students to initialize checklists for`);
     
     for (const userDoc of querySnapshot.docs) {
       const userData = userDoc.data();
@@ -32,14 +31,12 @@ export const initializeAllStudentChecklists = async (): Promise<{
         
         if (existingProgress) {
           existing++;
-          console.log(`Checklist already exists for student: ${userName} (${userEmail})`);
         } else {
           // Create new checklist
           const progressId = await createPTEChecklistProgress(userId, userName, userEmail);
           
           if (progressId) {
             created++;
-            console.log(`Created checklist for student: ${userName} (${userEmail})`);
           } else {
             errors++;
             console.error(`Failed to create checklist for student: ${userName} (${userEmail})`);
@@ -51,7 +48,6 @@ export const initializeAllStudentChecklists = async (): Promise<{
       }
     }
     
-    console.log(`Initialization complete: ${created} created, ${existing} existing, ${errors} errors`);
     
     return {
       success: true,
@@ -80,7 +76,6 @@ export const initializeSingleStudentChecklist = async (
     const existingProgress = await getPTEChecklistProgress(userId);
     
     if (existingProgress) {
-      console.log(`Checklist already exists for student: ${userName}`);
       return true;
     }
     
@@ -88,7 +83,6 @@ export const initializeSingleStudentChecklist = async (
     const progressId = await createPTEChecklistProgress(userId, userName, userEmail);
     
     if (progressId) {
-      console.log(`Created checklist for student: ${userName}`);
       return true;
     } else {
       console.error(`Failed to create checklist for student: ${userName}`);

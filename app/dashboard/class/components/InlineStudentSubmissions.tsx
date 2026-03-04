@@ -70,7 +70,6 @@ export default function InlineStudentSubmissions({ student }: Props) {
         
 
         if (!progressData.length) {
-          console.log('No progress data found');
           return;
         }
 

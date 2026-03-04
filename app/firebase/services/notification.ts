@@ -9,7 +9,6 @@ export const addNotification = async (
   type: 'teacher' | 'admin' | 'assistant'
 ): Promise<boolean> => {
   try {
-    console.log('Adding notification:', { recipientEmail, type });
     
     const userDoc = await getUserByEmail(recipientEmail);
     if (!userDoc) {
@@ -39,11 +38,6 @@ export const addNotification = async (
 
     const notificationDoc = await addDoc(notificationsRef, notificationData);
 
-    console.log('Notification created successfully:', {
-      notificationId: notificationDoc.id,
-      recipientId: type === 'teacher' ? userDoc.teacherId : userDoc.id,
-      type
-    });
 
     return true;
   } catch (error) {
@@ -155,12 +149,6 @@ export const subscribeToNotifications = async (
     );
 
     return () => {
-      console.log('Unsubscribing from notifications:', {
-        email: userEmail,
-        userId: userDoc.id,
-        type,
-        timestamp: new Date().toISOString()
-      });
       unsubscribe();
     };
   } catch (error) {
@@ -179,7 +167,6 @@ export const markNotificationAsRead = async (notificationId: string): Promise<bo
   try {
     const notificationRef = doc(db, 'notifications', notificationId);
     await deleteDoc(notificationRef);
-    console.log('Notification deleted:', notificationId);
     return true;
   } catch (error) {
     console.error('Error deleting notification:', error);

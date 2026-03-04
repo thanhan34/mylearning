@@ -302,12 +302,6 @@ export default function SubmitPage() {
           ? `${session.user.name} has submitted homework for ${selectedDate}`
           : `${session.user.name} has updated their homework for ${selectedDate}`;
         
-        console.log('Creating notification:', {
-          studentEmail: session.user.email,
-          studentName: session.user.name,
-          isNewSubmission,
-          date: selectedDate
-        });
         
         const notificationSuccess = await addNotification(session.user.email, message, 'teacher');
         if (!notificationSuccess) {

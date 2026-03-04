@@ -35,7 +35,6 @@ export default function LoginButton() {
       setError(null);
       setIsLoading(true);
       
-      console.log('Initiating Google sign in...');
       
       // Direct redirect approach with error handling
       await signIn("google", { 

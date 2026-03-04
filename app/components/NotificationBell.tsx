@@ -46,7 +46,6 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
       
 
       if (!session?.user?.email || (userRole !== 'teacher' && userRole !== 'admin' && userRole !== 'assistant')) {
-        console.log('NotificationBell: Conditions not met for notifications');
         setNotifications([]);
         setIsLoading(false);
         return;

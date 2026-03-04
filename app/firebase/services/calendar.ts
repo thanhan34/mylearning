@@ -41,7 +41,6 @@ const formatEventDateTime = (dateStr: string) => {
 
 export const createCalendarEvent = async (data: CalendarEventData): Promise<string | null> => {
   try {
-    console.log('Creating calendar event:', data);
     return await createCalendarEventAPI(data);
   } catch (error) {
     console.error('Error creating calendar event:', error);
@@ -51,7 +50,6 @@ export const createCalendarEvent = async (data: CalendarEventData): Promise<stri
 
 export const updateCalendarEvent = async (eventId: string, data: CalendarEventData): Promise<boolean> => {
   try {
-    console.log('Updating calendar event:', { eventId, data });
     return await updateCalendarEventAPI(eventId, data);
   } catch (error) {
     console.error('Error updating calendar event:', error);
@@ -61,7 +59,6 @@ export const updateCalendarEvent = async (eventId: string, data: CalendarEventDa
 
 export const deleteCalendarEvent = async (eventId: string): Promise<boolean> => {
   try {
-    console.log('Deleting calendar event:', eventId);
     return await deleteCalendarEventAPI(eventId);
   } catch (error) {
     console.error('Error deleting calendar event:', error);
