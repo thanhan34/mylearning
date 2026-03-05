@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, setDoc, updateDoc, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, updateDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../config';
 
 export interface DailyNote {
@@ -148,6 +148,52 @@ export const getDailyNotesByDateRange = async (
     return notes;
   } catch (error) {
     console.error('Error getting daily notes by date range:', error);
+    return [];
+  }
+};
+
+/**
+ * Get daily notes for multiple students.
+ * Firestore 'in' query supports up to 10 values, so we split into batches.
+ */
+export const getDailyNotesForStudents = async (
+  studentIds: string[],
+  limit: number = 300
+): Promise<DailyNote[]> => {
+  try {
+    if (!studentIds.length) return [];
+
+    const notesRef = collection(db, 'dailyNotes');
+    const batchSize = 10;
+    const batchedIds: string[][] = [];
+
+    for (let i = 0; i < studentIds.length; i += batchSize) {
+      batchedIds.push(studentIds.slice(i, i + batchSize));
+    }
+
+    const snapshots = await Promise.all(
+      batchedIds.map((ids) => {
+        const q = query(notesRef, where('studentId', 'in', ids));
+        return getDocs(q);
+      })
+    );
+
+    const notes = snapshots
+      .flatMap((snapshot) =>
+        snapshot.docs.map((docSnapshot) => ({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        } as DailyNote))
+      )
+      .sort((a, b) => {
+        const dateCompare = b.date.localeCompare(a.date);
+        if (dateCompare !== 0) return dateCompare;
+        return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+      });
+
+    return notes.slice(0, limit);
+  } catch (error) {
+    console.error('Error getting daily notes for students:', error);
     return [];
   }
 };

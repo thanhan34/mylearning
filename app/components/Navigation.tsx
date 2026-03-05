@@ -86,6 +86,7 @@ const Navigation = () => {
       items: [
         { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
+        { href: "/dashboard/admin/daily-notes", label: "Nhật ký học tập", icon: <RiFileList2Line className="w-4 h-4" /> },
         { href: "/dashboard/mocktest/admin", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
         { href: "/dashboard/admin/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
       ]
@@ -109,6 +110,7 @@ const Navigation = () => {
       items: [
         { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
+        { href: "/dashboard/teacher/daily-notes", label: "Nhật ký học tập", icon: <RiFileList2Line className="w-4 h-4" /> },
         { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
       ]
@@ -155,6 +157,7 @@ const Navigation = () => {
       items: [
         { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
         { href: "/dashboard/assistant/feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
+        { href: "/dashboard/assistant/daily-notes", label: "Nhật ký học tập", icon: <RiFileList2Line className="w-4 h-4" /> },
         { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
       ]
