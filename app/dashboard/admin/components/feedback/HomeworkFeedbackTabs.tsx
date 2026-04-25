@@ -27,6 +27,8 @@ export default function HomeworkFeedbackTabs({ userRole = 'admin' }: HomeworkFee
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('7');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [allowedClassIds, setAllowedClassIds] = useState<string[]>([]);
 
   // Fetch static data (classes and teachers) - with role-based filtering
@@ -175,6 +177,10 @@ export default function HomeworkFeedbackTabs({ userRole = 'admin' }: HomeworkFee
         <OverviewTab
           selectedTimeframe={selectedTimeframe}
           setSelectedTimeframe={setSelectedTimeframe}
+          customStartDate={customStartDate}
+          setCustomStartDate={setCustomStartDate}
+          customEndDate={customEndDate}
+          setCustomEndDate={setCustomEndDate}
           selectedTeacher={selectedTeacher}
           setSelectedTeacher={setSelectedTeacher}
           selectedClass={selectedClass}
@@ -189,6 +195,10 @@ export default function HomeworkFeedbackTabs({ userRole = 'admin' }: HomeworkFee
         <AllHomeworkTab
           selectedTimeframe={selectedTimeframe}
           setSelectedTimeframe={setSelectedTimeframe}
+          customStartDate={customStartDate}
+          setCustomStartDate={setCustomStartDate}
+          customEndDate={customEndDate}
+          setCustomEndDate={setCustomEndDate}
           selectedTeacher={selectedTeacher}
           setSelectedTeacher={setSelectedTeacher}
           selectedClass={selectedClass}
@@ -203,6 +213,10 @@ export default function HomeworkFeedbackTabs({ userRole = 'admin' }: HomeworkFee
         <WithFeedbackTab
           selectedTimeframe={selectedTimeframe}
           setSelectedTimeframe={setSelectedTimeframe}
+          customStartDate={customStartDate}
+          setCustomStartDate={setCustomStartDate}
+          customEndDate={customEndDate}
+          setCustomEndDate={setCustomEndDate}
           selectedTeacher={selectedTeacher}
           setSelectedTeacher={setSelectedTeacher}
           selectedClass={selectedClass}
@@ -217,6 +231,10 @@ export default function HomeworkFeedbackTabs({ userRole = 'admin' }: HomeworkFee
         <WithoutFeedbackTab
           selectedTimeframe={selectedTimeframe}
           setSelectedTimeframe={setSelectedTimeframe}
+          customStartDate={customStartDate}
+          setCustomStartDate={setCustomStartDate}
+          customEndDate={customEndDate}
+          setCustomEndDate={setCustomEndDate}
           selectedTeacher={selectedTeacher}
           setSelectedTeacher={setSelectedTeacher}
           selectedClass={selectedClass}
@@ -231,6 +249,10 @@ export default function HomeworkFeedbackTabs({ userRole = 'admin' }: HomeworkFee
         <MissingHomeworkTab
           selectedTimeframe={selectedTimeframe}
           setSelectedTimeframe={setSelectedTimeframe}
+          customStartDate={customStartDate}
+          setCustomStartDate={setCustomStartDate}
+          customEndDate={customEndDate}
+          setCustomEndDate={setCustomEndDate}
           selectedTeacher={selectedTeacher}
           setSelectedTeacher={setSelectedTeacher}
           selectedClass={selectedClass}

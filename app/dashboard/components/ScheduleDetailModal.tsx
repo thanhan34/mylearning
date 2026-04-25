@@ -216,6 +216,34 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             </div>
           )}
 
+          {(schedule.classNames?.length || schedule.teacherNames?.length) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {schedule.classNames && schedule.classNames.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="p-2 bg-[#fc5d01] rounded-lg">
+                      <RiTeamLine className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-gray-800">Tên lớp</h3>
+                  </div>
+                  <p className="text-gray-700 font-medium">{schedule.classNames.join(', ')}</p>
+                </div>
+              )}
+
+              {schedule.teacherNames && schedule.teacherNames.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="p-2 bg-[#fc5d01] rounded-lg">
+                      <RiUserLine className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-gray-800">Giảng viên</h3>
+                  </div>
+                  <p className="text-gray-700 font-medium">{schedule.teacherNames.join(', ')}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Participants Information */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {schedule.classIds && schedule.classIds.length > 0 && (

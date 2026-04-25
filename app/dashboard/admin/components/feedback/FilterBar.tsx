@@ -6,6 +6,10 @@ import { User } from '@/app/firebase/services/user';
 interface FilterBarProps {
   selectedTimeframe: string;
   setSelectedTimeframe: (timeframe: string) => void;
+  customStartDate?: string;
+  setCustomStartDate?: (date: string) => void;
+  customEndDate?: string;
+  setCustomEndDate?: (date: string) => void;
   selectedTeacher: string;
   setSelectedTeacher: (teacherId: string) => void;
   selectedClass: string;
@@ -17,6 +21,10 @@ interface FilterBarProps {
 export default function FilterBar({
   selectedTimeframe,
   setSelectedTimeframe,
+  customStartDate = '',
+  setCustomStartDate,
+  customEndDate = '',
+  setCustomEndDate,
   selectedTeacher,
   setSelectedTeacher,
   selectedClass,
@@ -40,7 +48,31 @@ export default function FilterBar({
           <option value="30">30 ngày qua</option>
           <option value="90">90 ngày qua</option>
           <option value="365">365 ngày qua</option>
+          <option value="custom">Tùy chọn khoảng ngày</option>
         </select>
+
+        {selectedTimeframe === 'custom' && (
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <span>Từ</span>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate?.(e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#fc5d01] focus:outline-none focus:ring-1 focus:ring-[#fc5d01]"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <span>Đến</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate?.(e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#fc5d01] focus:outline-none focus:ring-1 focus:ring-[#fc5d01]"
+              />
+            </label>
+          </div>
+        )}
         
         {/* Teacher filter */}
         <select

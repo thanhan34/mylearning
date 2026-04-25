@@ -75,7 +75,15 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = 'Tiêu đề là bắt buộc';
+      newErrors.title = 'Tên lớp là bắt buộc';
+    }
+
+    if (!formData.classIds || formData.classIds.length === 0) {
+      newErrors.classIds = 'Vui lòng chọn ít nhất 1 lớp';
+    }
+
+    if (!formData.teacherIds || formData.teacherIds.length === 0) {
+      newErrors.teacherIds = 'Vui lòng chọn ít nhất 1 giảng viên hoặc hỗ trợ';
     }
 
     if (!formData.startTime) {
@@ -192,7 +200,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tiêu đề *
+              Tên lớp *
             </label>
             <input
               type="text"
@@ -201,7 +209,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
               className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#fedac2] focus:border-[#fc5d01] transition-all duration-300 ${
                 errors.title ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="Nhập tiêu đề lịch học"
+              placeholder="Ví dụ: PTE Foundation - Tối 2/4/6"
             />
             {errors.title && (
               <p className="text-red-500 text-sm mt-1">{errors.title}</p>
@@ -427,7 +435,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
               <RiTeamLine className="w-4 h-4" />
-              <span>Lớp học</span>
+              <span>Lớp học áp dụng *</span>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-40 overflow-y-auto border border-gray-200 rounded-xl p-4">
               {availableClasses.map((classItem) => (
@@ -442,6 +450,9 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
                 </label>
               ))}
             </div>
+            {errors.classIds && (
+              <p className="text-red-500 text-sm mt-1">{errors.classIds}</p>
+            )}
           </div>
         )}
 
@@ -450,7 +461,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
               <RiUserLine className="w-4 h-4" />
-              <span>Giáo viên / Trợ giảng</span>
+              <span>Giảng viên / Hỗ trợ *</span>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-40 overflow-y-auto border border-gray-200 rounded-xl p-4">
               {availableUsers
@@ -469,6 +480,9 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
                   </label>
                 ))}
             </div>
+            {errors.teacherIds && (
+              <p className="text-red-500 text-sm mt-1">{errors.teacherIds}</p>
+            )}
           </div>
         )}
 

@@ -76,7 +76,7 @@ const TeacherScheduleView: React.FC = () => {
         const schedulesData = await getSchedulesByUser(userId, userRole);
         setSchedules(schedulesData);
 
-        // Check if user can create schedules
+        // Admin, teacher, assistant can create schedules
         const hasPermission = await checkSchedulePermission(userId);
         setCanCreateSchedule(hasPermission);
 
@@ -338,11 +338,11 @@ const TeacherScheduleView: React.FC = () => {
       {viewMode === 'calendar' ? (
         <CalendarView 
           schedules={schedules} 
-          onScheduleClick={(schedule) => {
-            if (canCreateSchedule) {
-              handleEditSchedule(schedule);
-            }
-          }}
+          onScheduleClick={() => undefined}
+          onScheduleEdit={handleEditSchedule}
+          onScheduleDelete={handleDeleteSchedule}
+          canEdit={canCreateSchedule}
+          canDelete={canCreateSchedule}
         />
       ) : (
         <>

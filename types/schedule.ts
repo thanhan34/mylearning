@@ -1,6 +1,8 @@
 export interface Schedule {
   id: string;
   title: string;
+  classNames?: string[];
+  teacherNames?: string[];
   description?: string;
   startTime: string; // ISO datetime
   endTime: string;   // ISO datetime
@@ -49,6 +51,8 @@ export interface SchedulePermission {
 
 export interface CreateScheduleData {
   title: string;
+  classNames?: string[];
+  teacherNames?: string[];
   description?: string;
   startTime: string;
   endTime: string;

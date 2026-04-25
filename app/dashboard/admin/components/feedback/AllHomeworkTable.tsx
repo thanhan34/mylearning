@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   collection, 
+  QueryConstraint,
   query, 
   where, 
   orderBy, 
@@ -40,6 +41,8 @@ interface ExtendedHomeworkData extends HomeworkData {
 
 interface AllHomeworkTableProps {
   selectedTimeframe: string;
+  customStartDate?: string;
+  customEndDate?: string;
   selectedTeacher: string;
   selectedClass: string;
   teachers: User[];
@@ -53,6 +56,8 @@ interface AllHomeworkTableProps {
 
 export default function AllHomeworkTable({
   selectedTimeframe,
+  customStartDate = '',
+  customEndDate = '',
   selectedTeacher,
   selectedClass,
   teachers,
@@ -79,18 +84,40 @@ export default function AllHomeworkTable({
   useEffect(() => {
     setLoading(true);
 
-    // Calculate date threshold based on selected timeframe
-    const days = parseInt(selectedTimeframe);
-    const dateThreshold = new Date();
-    dateThreshold.setDate(dateThreshold.getDate() - days);
-    const dateString = dateThreshold.toISOString().split('T')[0];
+    let startDateString = '';
+    let endDateString = '';
+
+    if (selectedTimeframe === 'custom' && (customStartDate || customEndDate)) {
+      startDateString = customStartDate;
+      endDateString = customEndDate;
+
+      if (startDateString && endDateString && startDateString > endDateString) {
+        [startDateString, endDateString] = [endDateString, startDateString];
+      }
+    } else {
+      // Calculate date threshold based on selected timeframe
+      const days = parseInt(selectedTimeframe) || 7;
+      const dateThreshold = new Date();
+      dateThreshold.setDate(dateThreshold.getDate() - days);
+      startDateString = dateThreshold.toISOString().split('T')[0];
+    }
+
+    const queryConstraints: QueryConstraint[] = [];
+
+    if (startDateString) {
+      queryConstraints.push(where('date', '>=', startDateString));
+    }
+
+    if (endDateString) {
+      queryConstraints.push(where('date', '<=', endDateString));
+    }
+
+    queryConstraints.push(orderBy('date', 'desc'), limit(200));
 
     // Build query for homework submissions with limit
     const homeworkQuery = query(
       collection(db, 'homework'),
-      where('date', '>=', dateString),
-      orderBy('date', 'desc'),
-      limit(200) // Giới hạn 200 records để load nhanh hơn
+      ...queryConstraints
     );
 
     // Set up real-time listener
@@ -108,7 +135,7 @@ export default function AllHomeworkTable({
     });
 
     return () => unsubscribe();
-  }, [selectedTimeframe]);
+  }, [selectedTimeframe, customStartDate, customEndDate]);
 
   // Process and filter homework data
   const processedHomework = useMemo(() => {

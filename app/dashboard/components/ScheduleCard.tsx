@@ -191,6 +191,32 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
           </div>
         )}
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {schedule.classNames && schedule.classNames.length > 0 && (
+            <div className="flex items-start space-x-3">
+              <div className="p-2 bg-[#fedac2] rounded-lg">
+                <RiTeamLine className="w-4 h-4 text-[#fc5d01]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Tên lớp</p>
+                <p className="text-sm text-gray-600">{schedule.classNames.join(', ')}</p>
+              </div>
+            </div>
+          )}
+
+          {schedule.teacherNames && schedule.teacherNames.length > 0 && (
+            <div className="flex items-start space-x-3">
+              <div className="p-2 bg-[#fedac2] rounded-lg">
+                <RiUserLine className="w-4 h-4 text-[#fc5d01]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Giảng viên</p>
+                <p className="text-sm text-gray-600">{schedule.teacherNames.join(', ')}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Participants Info */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
           {schedule.classIds && schedule.classIds.length > 0 && (

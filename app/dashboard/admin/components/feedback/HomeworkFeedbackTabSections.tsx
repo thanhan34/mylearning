@@ -10,6 +10,10 @@ import OverviewStats from './OverviewStats';
 interface BaseTabProps {
   selectedTimeframe: string;
   setSelectedTimeframe: (value: string) => void;
+  customStartDate: string;
+  setCustomStartDate: (value: string) => void;
+  customEndDate: string;
+  setCustomEndDate: (value: string) => void;
   selectedTeacher: string;
   setSelectedTeacher: (value: string) => void;
   selectedClass: string;
@@ -22,6 +26,10 @@ interface BaseTabProps {
 export function MissingHomeworkTab({
   selectedTimeframe,
   setSelectedTimeframe,
+  customStartDate,
+  setCustomStartDate,
+  customEndDate,
+  setCustomEndDate,
   selectedTeacher,
   setSelectedTeacher,
   selectedClass,
@@ -35,6 +43,10 @@ export function MissingHomeworkTab({
       <FilterBar
         selectedTimeframe={selectedTimeframe}
         setSelectedTimeframe={setSelectedTimeframe}
+        customStartDate={customStartDate}
+        setCustomStartDate={setCustomStartDate}
+        customEndDate={customEndDate}
+        setCustomEndDate={setCustomEndDate}
         selectedTeacher={selectedTeacher}
         setSelectedTeacher={setSelectedTeacher}
         selectedClass={selectedClass}
@@ -45,6 +57,8 @@ export function MissingHomeworkTab({
 
       <MissingHomeworkTable
         selectedTimeframe={selectedTimeframe}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
         selectedTeacher={selectedTeacher}
         selectedClass={selectedClass}
         classes={classes}
@@ -58,6 +72,10 @@ export function MissingHomeworkTab({
 export function OverviewTab({
   selectedTimeframe,
   setSelectedTimeframe,
+  customStartDate,
+  setCustomStartDate,
+  customEndDate,
+  setCustomEndDate,
   selectedTeacher,
   setSelectedTeacher,
   selectedClass,
@@ -71,6 +89,10 @@ export function OverviewTab({
       <FilterBar
         selectedTimeframe={selectedTimeframe}
         setSelectedTimeframe={setSelectedTimeframe}
+        customStartDate={customStartDate}
+        setCustomStartDate={setCustomStartDate}
+        customEndDate={customEndDate}
+        setCustomEndDate={setCustomEndDate}
         selectedTeacher={selectedTeacher}
         setSelectedTeacher={setSelectedTeacher}
         selectedClass={selectedClass}
@@ -81,6 +103,8 @@ export function OverviewTab({
 
       <OverviewStats
         selectedTimeframe={selectedTimeframe}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
         selectedTeacher={selectedTeacher}
         selectedClass={selectedClass}
         teachers={teachers}
@@ -94,6 +118,10 @@ export function OverviewTab({
 export function AllHomeworkTab({
   selectedTimeframe,
   setSelectedTimeframe,
+  customStartDate,
+  setCustomStartDate,
+  customEndDate,
+  setCustomEndDate,
   selectedTeacher,
   setSelectedTeacher,
   selectedClass,
@@ -107,6 +135,10 @@ export function AllHomeworkTab({
       <FilterBar
         selectedTimeframe={selectedTimeframe}
         setSelectedTimeframe={setSelectedTimeframe}
+        customStartDate={customStartDate}
+        setCustomStartDate={setCustomStartDate}
+        customEndDate={customEndDate}
+        setCustomEndDate={setCustomEndDate}
         selectedTeacher={selectedTeacher}
         setSelectedTeacher={setSelectedTeacher}
         selectedClass={selectedClass}
@@ -117,6 +149,8 @@ export function AllHomeworkTab({
 
       <AllHomeworkTable
         selectedTimeframe={selectedTimeframe}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
         selectedTeacher={selectedTeacher}
         selectedClass={selectedClass}
         teachers={teachers}
@@ -133,6 +167,10 @@ export function WithFeedbackTab(props: BaseTabProps) {
       <FilterBar
         selectedTimeframe={props.selectedTimeframe}
         setSelectedTimeframe={props.setSelectedTimeframe}
+        customStartDate={props.customStartDate}
+        setCustomStartDate={props.setCustomStartDate}
+        customEndDate={props.customEndDate}
+        setCustomEndDate={props.setCustomEndDate}
         selectedTeacher={props.selectedTeacher}
         setSelectedTeacher={props.setSelectedTeacher}
         selectedClass={props.selectedClass}
@@ -143,6 +181,8 @@ export function WithFeedbackTab(props: BaseTabProps) {
 
       <FilteredHomeworkTable
         selectedTimeframe={props.selectedTimeframe}
+        customStartDate={props.customStartDate}
+        customEndDate={props.customEndDate}
         selectedTeacher={props.selectedTeacher}
         selectedClass={props.selectedClass}
         teachers={props.teachers}
@@ -162,6 +202,10 @@ export function WithoutFeedbackTab(props: BaseTabProps) {
       <FilterBar
         selectedTimeframe={props.selectedTimeframe}
         setSelectedTimeframe={props.setSelectedTimeframe}
+        customStartDate={props.customStartDate}
+        setCustomStartDate={props.setCustomStartDate}
+        customEndDate={props.customEndDate}
+        setCustomEndDate={props.setCustomEndDate}
         selectedTeacher={props.selectedTeacher}
         setSelectedTeacher={props.setSelectedTeacher}
         selectedClass={props.selectedClass}
@@ -172,6 +216,8 @@ export function WithoutFeedbackTab(props: BaseTabProps) {
 
       <FilteredHomeworkTable
         selectedTimeframe={props.selectedTimeframe}
+        customStartDate={props.customStartDate}
+        customEndDate={props.customEndDate}
         selectedTeacher={props.selectedTeacher}
         selectedClass={props.selectedClass}
         teachers={props.teachers}
@@ -188,6 +234,8 @@ export function WithoutFeedbackTab(props: BaseTabProps) {
 
 function FilteredHomeworkTable({
   selectedTimeframe,
+  customStartDate,
+  customEndDate,
   selectedTeacher,
   selectedClass,
   teachers,
@@ -199,6 +247,8 @@ function FilteredHomeworkTable({
   allowedClassIds,
 }: {
   selectedTimeframe: string;
+  customStartDate: string;
+  customEndDate: string;
   selectedTeacher: string;
   selectedClass: string;
   teachers: User[];
@@ -212,6 +262,8 @@ function FilteredHomeworkTable({
   return (
     <AllHomeworkTable
       selectedTimeframe={selectedTimeframe}
+      customStartDate={customStartDate}
+      customEndDate={customEndDate}
       selectedTeacher={selectedTeacher}
       selectedClass={selectedClass}
       teachers={teachers}

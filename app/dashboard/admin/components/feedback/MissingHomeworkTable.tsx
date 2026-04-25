@@ -14,6 +14,8 @@ import {
 
 interface MissingHomeworkTableProps {
   selectedTimeframe: string;
+  customStartDate?: string;
+  customEndDate?: string;
   selectedTeacher: string;
   selectedClass: string;
   classes: Class[];
@@ -23,6 +25,8 @@ interface MissingHomeworkTableProps {
 
 export default function MissingHomeworkTable({
   selectedTimeframe,
+  customStartDate,
+  customEndDate,
   selectedTeacher,
   selectedClass,
   classes,
@@ -38,6 +42,23 @@ export default function MissingHomeworkTable({
   const [followingStudentIds, setFollowingStudentIds] = useState<string[]>([]);
   const [showUnfollowed, setShowUnfollowed] = useState(false);
   const [followInitialized, setFollowInitialized] = useState(false);
+
+  const effectiveTimeframeDays = useMemo(() => {
+    if (selectedTimeframe !== 'custom') {
+      return parseInt(selectedTimeframe) || 7;
+    }
+
+    const referenceDate = customStartDate || customEndDate;
+    if (!referenceDate) {
+      return 7;
+    }
+
+    const targetDate = new Date(`${referenceDate}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return Math.max(1, Math.ceil((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24)));
+  }, [customEndDate, customStartDate, selectedTimeframe]);
 
   const teacherMap = useMemo(() => {
     return teachers.reduce((acc, teacher) => {
@@ -77,7 +98,7 @@ export default function MissingHomeworkTable({
       try {
         const rows = await getMissingHomeworkStudents({
           classes,
-          timeframeDays: parseInt(selectedTimeframe),
+          timeframeDays: effectiveTimeframeDays,
           allowedClassIds,
           selectedTeacher,
           selectedClass,
@@ -92,7 +113,7 @@ export default function MissingHomeworkTable({
     };
 
     load();
-  }, [allowedClassIds, classes, selectedClass, selectedTeacher, selectedTimeframe]);
+  }, [allowedClassIds, classes, effectiveTimeframeDays, selectedClass, selectedTeacher]);
 
   useEffect(() => {
     const initializeDefaultFollow = async () => {
@@ -178,7 +199,7 @@ export default function MissingHomeworkTable({
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h3 className="text-lg font-semibold text-[#fc5d01]">
-          Học viên chưa nộp bài trong {selectedTimeframe} ngày (đang follow: {followedData.length})
+          Học viên chưa nộp bài trong {effectiveTimeframeDays} ngày (đang follow: {followedData.length})
         </h3>
         <div className="flex items-center gap-2">
           <button
@@ -231,7 +252,7 @@ export default function MissingHomeworkTable({
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#fedac2] text-[#fc5d01]">
-                      {item.daysSinceLastSubmission ?? `>${selectedTimeframe}`} ngày
+                      {item.daysSinceLastSubmission ?? `>${effectiveTimeframeDays}`} ngày
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   collection, 
+  QueryConstraint,
   query, 
   where, 
   orderBy, 
@@ -16,6 +17,8 @@ import { HomeworkSubmission } from '@/app/firebase/services/types';
 
 interface OverviewStatsProps {
   selectedTimeframe: string;
+  customStartDate?: string;
+  customEndDate?: string;
   selectedTeacher: string;
   selectedClass: string;
   teachers: User[];
@@ -33,6 +36,8 @@ interface HomeworkData {
 
 export default function OverviewStats({
   selectedTimeframe,
+  customStartDate = '',
+  customEndDate = '',
   selectedTeacher,
   selectedClass,
   teachers,
@@ -46,16 +51,38 @@ export default function OverviewStats({
   useEffect(() => {
     setLoading(true);
 
-    const days = parseInt(selectedTimeframe);
-    const dateThreshold = new Date();
-    dateThreshold.setDate(dateThreshold.getDate() - days);
-    const dateString = dateThreshold.toISOString().split('T')[0];
+    let startDateString = '';
+    let endDateString = '';
+
+    if (selectedTimeframe === 'custom' && (customStartDate || customEndDate)) {
+      startDateString = customStartDate;
+      endDateString = customEndDate;
+
+      if (startDateString && endDateString && startDateString > endDateString) {
+        [startDateString, endDateString] = [endDateString, startDateString];
+      }
+    } else {
+      const days = parseInt(selectedTimeframe) || 7;
+      const dateThreshold = new Date();
+      dateThreshold.setDate(dateThreshold.getDate() - days);
+      startDateString = dateThreshold.toISOString().split('T')[0];
+    }
+
+    const queryConstraints: QueryConstraint[] = [];
+
+    if (startDateString) {
+      queryConstraints.push(where('date', '>=', startDateString));
+    }
+
+    if (endDateString) {
+      queryConstraints.push(where('date', '<=', endDateString));
+    }
+
+    queryConstraints.push(orderBy('date', 'desc'), limit(200));
 
     const homeworkQuery = query(
       collection(db, 'homework'),
-      where('date', '>=', dateString),
-      orderBy('date', 'desc'),
-      limit(200)
+      ...queryConstraints
     );
 
     const unsubscribe = onSnapshot(homeworkQuery, (snapshot) => {
@@ -72,7 +99,7 @@ export default function OverviewStats({
     });
 
     return () => unsubscribe();
-  }, [selectedTimeframe]);
+  }, [selectedTimeframe, customStartDate, customEndDate]);
 
   // Calculate statistics
   const stats = useMemo(() => {

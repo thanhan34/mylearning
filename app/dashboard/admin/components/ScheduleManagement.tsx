@@ -2,17 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Schedule, CreateScheduleData, SchedulePermission } from '../../../../types/schedule';
+import { Schedule, CreateScheduleData } from '../../../../types/schedule';
 import { Class } from '../../../firebase/services/types';
 import { User } from '../../../firebase/services/user';
 import { 
   createSchedule, 
   updateSchedule, 
   deleteSchedule, 
-  getSchedulesByUser,
-  getSchedulePermissions,
-  grantSchedulePermission,
-  revokeSchedulePermission
+  getSchedulesByUser
 } from '../../../firebase/services/schedule';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../../firebase/config';
@@ -26,8 +23,6 @@ import {
   RiAddLine, 
   RiSearchLine,
   RiFilterLine,
-  RiUserAddLine,
-  RiSettings4Line,
   RiGridLine,
   RiCalendar2Line
 } from 'react-icons/ri';
@@ -35,12 +30,10 @@ import {
 const ScheduleManagement: React.FC = () => {
   const { data: session } = useSession();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [permissions, setPermissions] = useState<SchedulePermission[]>([]);
   const [availableClasses, setAvailableClasses] = useState<Class[]>([]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [showPermissions, setShowPermissions] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -73,10 +66,6 @@ const ScheduleManagement: React.FC = () => {
         const schedulesData = await getSchedulesByUser(sanitizedEmail, 'admin');
         setSchedules(schedulesData);
       }
-
-      // Load permissions
-      const permissionsData = await getSchedulePermissions();
-      setPermissions(permissionsData);
 
       // Load classes
       const classesSnapshot = await getDocs(collection(db, 'classes'));
@@ -181,48 +170,6 @@ const ScheduleManagement: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleGrantPermission = async (userId: string) => {
-    try {
-      const userEmail = session?.user?.email;
-      let adminUserId = session?.user?.id;
-      
-      if (!userEmail) return;
-
-      // If adminUserId is not available, use sanitized email as fallback
-      if (!adminUserId) {
-        adminUserId = userEmail.replace(/[.#$[\]]/g, '_');
-      }
-
-      const success = await grantSchedulePermission(userId, adminUserId);
-      
-      if (success) {
-        showNotification('Cấp quyền thành công!', 'success');
-        await loadData();
-      } else {
-        showNotification('Lỗi khi cấp quyền', 'error');
-      }
-    } catch (error) {
-      console.error('Error granting permission:', error);
-      showNotification('Lỗi khi cấp quyền', 'error');
-    }
-  };
-
-  const handleRevokePermission = async (userId: string) => {
-    try {
-      const success = await revokeSchedulePermission(userId);
-      
-      if (success) {
-        showNotification('Thu hồi quyền thành công!', 'success');
-        await loadData();
-      } else {
-        showNotification('Lỗi khi thu hồi quyền', 'error');
-      }
-    } catch (error) {
-      console.error('Error revoking permission:', error);
-      showNotification('Lỗi khi thu hồi quyền', 'error');
-    }
-  };
-
   const filteredSchedules = schedules.filter(schedule => {
     const matchesSearch = schedule.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -257,83 +204,13 @@ const ScheduleManagement: React.FC = () => {
     );
   }
 
-  if (showPermissions) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-[#fc5d01] flex items-center space-x-2">
-            <RiUserAddLine className="w-6 h-6" />
-            <span>Quản lý quyền tạo lịch</span>
-          </h2>
-          <button
-            onClick={() => setShowPermissions(false)}
-            className="px-4 py-2 text-gray-600 hover:text-[#fc5d01] transition-all duration-300"
-          >
-            Quay lại
-          </button>
-        </div>
-
-        {/* Grant Permission Section */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Cấp quyền cho người dùng</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableUsers
-              .filter(user => (user.role === 'teacher' || user.role === 'assistant') && !permissions.find(p => p.userId === user.id))
-              .map(user => (
-                <div key={user.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-800">{user.name || user.email}</p>
-                      <p className="text-sm text-gray-600 capitalize">{user.role}</p>
-                    </div>
-                    <button
-                      onClick={() => handleGrantPermission(user.id)}
-                      className="px-3 py-1 bg-[#fc5d01] text-white rounded-lg hover:bg-[#fd7f33] transition-all duration-300"
-                    >
-                      Cấp quyền
-                    </button>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        {/* Current Permissions */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Quyền hiện tại</h3>
-          <div className="space-y-4">
-            {permissions.map(permission => (
-              <div key={permission.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-800">{permission.userName}</p>
-                    <p className="text-sm text-gray-600">{permission.userEmail}</p>
-                    <p className="text-xs text-gray-500">
-                      Cấp bởi: {permission.grantedByName} - {new Date(permission.grantedAt).toLocaleDateString('vi-VN')}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleRevokePermission(permission.userId)}
-                    className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300"
-                  >
-                    Thu hồi
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-[#fc5d01] flex items-center space-x-3">
           <RiCalendarLine className="w-8 h-8" />
-          <span>Quản lý lịch học</span>
+          <span>Quản lý thời khóa biểu</span>
         </h1>
         <div className="flex items-center space-x-4">
           {/* View Mode Toggle */}
@@ -362,13 +239,6 @@ const ScheduleManagement: React.FC = () => {
             </button>
           </div>
           
-          <button
-            onClick={() => setShowPermissions(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-300 flex items-center space-x-2"
-          >
-            <RiSettings4Line className="w-4 h-4" />
-            <span>Quản lý quyền</span>
-          </button>
           <button
             onClick={() => setShowForm(true)}
             className="px-6 py-3 bg-gradient-to-r from-[#fc5d01] to-[#fd7f33] text-white rounded-xl hover:from-[#fd7f33] hover:to-[#fc5d01] transition-all duration-300 flex items-center space-x-2"
@@ -431,7 +301,11 @@ const ScheduleManagement: React.FC = () => {
       {viewMode === 'calendar' ? (
         <CalendarView 
           schedules={schedules} 
-          onScheduleClick={handleEditSchedule}
+          onScheduleClick={() => undefined}
+          onScheduleEdit={handleEditSchedule}
+          onScheduleDelete={handleDeleteSchedule}
+          canEdit={true}
+          canDelete={true}
         />
       ) : (
         <>

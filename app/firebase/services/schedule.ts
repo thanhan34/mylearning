@@ -20,6 +20,27 @@ import { getUserById, User } from './user';
 import { getClassById } from './class';
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from './calendar';
 
+const enrichScheduleDisplayData = async (scheduleData: CreateScheduleData) => {
+  const classNames = await Promise.all(
+    (scheduleData.classIds || []).map(async (classId) => {
+      const classItem = await getClassById(classId);
+      return classItem?.name || null;
+    })
+  );
+
+  const teacherNames = await Promise.all(
+    (scheduleData.teacherIds || []).map(async (teacherId) => {
+      const user = await getUserById(teacherId);
+      return user?.name || user?.email || null;
+    })
+  );
+
+  return {
+    classNames: classNames.filter(Boolean) as string[],
+    teacherNames: teacherNames.filter(Boolean) as string[],
+  };
+};
+
 // Helper function to delay execution (for rate limiting)
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -146,9 +167,13 @@ export const createSchedule = async (
 ): Promise<string | null> => {
   try {
     const now = new Date().toISOString();
+    const displayData = await enrichScheduleDisplayData(scheduleData);
     
     // Clean the schedule data to remove undefined values
-    const cleanedScheduleData = cleanDataForFirebase(scheduleData);
+    const cleanedScheduleData = cleanDataForFirebase({
+      ...scheduleData,
+      ...displayData,
+    });
     
     // Handle recurring schedules
     if (cleanedScheduleData.isRecurring) {
@@ -191,8 +216,8 @@ export const createSchedule = async (
           examLocation: scheduleData.location || '',
           examDate: scheduleData.startTime.split('T')[0],
           target: scheduleData.description || '',
-          className: '', // Will be populated if classIds exist
-          teacherName: '' // Will be populated if teacherIds exist
+          className: displayData.classNames[0] || '',
+          teacherName: displayData.teacherNames[0] || ''
         });
       } catch (error) {
         console.warn('Failed to create Google Calendar event:', error);
@@ -232,6 +257,20 @@ export const updateSchedule = async (
     }
 
     const currentSchedule = scheduleDoc.data() as Schedule;
+    const mergedData = {
+      title: updateData.title ?? currentSchedule.title,
+      description: updateData.description ?? currentSchedule.description,
+      startTime: updateData.startTime ?? currentSchedule.startTime,
+      endTime: updateData.endTime ?? currentSchedule.endTime,
+      location: updateData.location ?? currentSchedule.location,
+      type: updateData.type ?? currentSchedule.type,
+      classIds: updateData.classIds ?? currentSchedule.classIds,
+      studentIds: updateData.studentIds ?? currentSchedule.studentIds,
+      teacherIds: updateData.teacherIds ?? currentSchedule.teacherIds,
+      isRecurring: updateData.isRecurring ?? currentSchedule.isRecurring,
+      recurringPattern: updateData.recurringPattern ?? currentSchedule.recurringPattern,
+    } as CreateScheduleData;
+    const displayData = await enrichScheduleDisplayData(mergedData);
     
     // Update Google Calendar event if it exists
     if (currentSchedule.googleEventId && (updateData.title || updateData.startTime || updateData.location)) {
@@ -241,18 +280,19 @@ export const updateSchedule = async (
           examLocation: updateData.location || currentSchedule.location || '',
           examDate: updateData.startTime ? updateData.startTime.split('T')[0] : currentSchedule.startTime.split('T')[0],
           target: updateData.description || currentSchedule.description || '',
-          className: '',
-          teacherName: ''
+          className: displayData.classNames[0] || currentSchedule.classNames?.[0] || '',
+          teacherName: displayData.teacherNames[0] || currentSchedule.teacherNames?.[0] || ''
         });
       } catch (error) {
         console.warn('Failed to update Google Calendar event:', error);
       }
     }
 
-    const updatedData = {
+    const updatedData = cleanDataForFirebase({
       ...updateData,
+      ...displayData,
       updatedAt: new Date().toISOString()
-    };
+    });
 
     await retryOperation(() => updateDoc(scheduleRef, updatedData));
     
@@ -559,9 +599,9 @@ export const getSchedulePermissions = async (): Promise<SchedulePermission[]> =>
 
 export const checkSchedulePermission = async (userId: string): Promise<boolean> => {
   try {
-    // Admins always have permission
+    // Admins, teachers, and assistants can create schedules
     const user = await getUserById(userId);
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'assistant') {
       return true;
     }
 

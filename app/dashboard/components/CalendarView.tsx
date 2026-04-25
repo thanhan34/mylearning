@@ -205,7 +205,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                           setSelectedSchedule(schedule);
                           setModalSchedule(schedule);
                           setIsModalOpen(true);
-                          onScheduleClick?.(schedule);
                         }}
                         className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity truncate"
                         style={{
@@ -265,6 +264,16 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                 <h4 className="text-xl font-bold text-gray-800 mb-2">
                   {selectedSchedule.title}
                 </h4>
+                {selectedSchedule.classNames && selectedSchedule.classNames.length > 0 && (
+                  <p className="text-sm text-gray-600 mb-1">
+                    <span className="font-medium">Lớp:</span> {selectedSchedule.classNames.join(', ')}
+                  </p>
+                )}
+                {selectedSchedule.teacherNames && selectedSchedule.teacherNames.length > 0 && (
+                  <p className="text-sm text-gray-600 mb-2">
+                    <span className="font-medium">Giảng viên:</span> {selectedSchedule.teacherNames.join(', ')}
+                  </p>
+                )}
                 {selectedSchedule.description && (
                   <div className="text-gray-600 text-sm">
                     {renderTextWithLinks(selectedSchedule.description)}
@@ -363,6 +372,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           }}
           onEdit={canEdit ? onScheduleEdit : undefined}
           onDelete={canDelete ? onScheduleDelete : undefined}
+          canEdit={canEdit}
+          canDelete={canDelete}
         />
       )}
     </div>
