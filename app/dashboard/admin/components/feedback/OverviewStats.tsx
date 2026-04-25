@@ -34,6 +34,20 @@ interface HomeworkData {
   submissions: HomeworkSubmission[];
 }
 
+interface TeacherExerciseTypeStat {
+  type: string;
+  count: number;
+  percentageOfTeacher: number;
+  percentageOfTotal: number;
+}
+
+interface TeacherFeedbackStat {
+  name: string;
+  count: number;
+  percentage: number;
+  typeStats: TeacherExerciseTypeStat[];
+}
+
 export default function OverviewStats({
   selectedTimeframe,
   customStartDate = '',
@@ -46,6 +60,7 @@ export default function OverviewStats({
 }: OverviewStatsProps) {
   const [homeworkData, setHomeworkData] = useState<HomeworkData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTeacherDetail, setSelectedTeacherDetail] = useState<TeacherFeedbackStat | null>(null);
 
   // Fetch homework data
   useEffect(() => {
@@ -110,7 +125,7 @@ export default function OverviewStats({
         withFeedback: 0,
         withoutFeedback: 0,
         feedbackPercentage: 0,
-        teacherStats: [] as { name: string; count: number; percentage: number }[]
+        teacherStats: [] as TeacherFeedbackStat[]
       };
     }
 
@@ -156,6 +171,7 @@ export default function OverviewStats({
     let homeworkWithFullFeedback = 0;
     let homeworkWithoutFullFeedback = 0;
     const teacherFeedbackCount: { [key: string]: number } = {};
+    const teacherFeedbackTypeCount: { [teacherName: string]: { [exerciseType: string]: number } } = {};
 
     filteredHomework.forEach(hw => {
       const submissionCount = (hw.submissions || []).length;
@@ -179,7 +195,14 @@ export default function OverviewStats({
       (hw.submissions || []).forEach(sub => {
         if (sub.feedback && sub.feedback.trim() !== '') {
           const feedbackBy = sub.feedbackByName || 'Unknown';
+          const exerciseType = sub.type?.trim() || 'Không rõ dạng bài';
+
           teacherFeedbackCount[feedbackBy] = (teacherFeedbackCount[feedbackBy] || 0) + 1;
+
+          if (!teacherFeedbackTypeCount[feedbackBy]) {
+            teacherFeedbackTypeCount[feedbackBy] = {};
+          }
+          teacherFeedbackTypeCount[feedbackBy][exerciseType] = (teacherFeedbackTypeCount[feedbackBy][exerciseType] || 0) + 1;
         }
       });
     });
@@ -190,13 +213,29 @@ export default function OverviewStats({
 
     // Calculate teacher stats
     const teacherStats = Object.entries(teacherFeedbackCount)
-      .map(([name, count]) => ({
-        name,
-        count,
-        percentage: totalSubmissions > 0 
+      .map(([name, count]) => {
+        const typeStats = Object.entries(teacherFeedbackTypeCount[name] || {})
+          .map(([type, typeCount]) => ({
+            type,
+            count: typeCount,
+            percentageOfTeacher: count > 0
+              ? Math.round((typeCount / count) * 100)
+              : 0,
+            percentageOfTotal: totalSubmissions > 0
+              ? Math.round((typeCount / totalSubmissions) * 100)
+              : 0
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        return {
+          name,
+          count,
+          percentage: totalSubmissions > 0 
           ? Math.round((count / totalSubmissions) * 100) 
-          : 0
-      }))
+          : 0,
+          typeStats
+        };
+      })
       .sort((a, b) => b.count - a.count);
 
     return {
@@ -317,7 +356,12 @@ export default function OverviewStats({
         ) : (
           <div className="space-y-4">
             {stats.teacherStats.map((teacher, index) => (
-              <div key={index} className="border-b border-gray-100 pb-4 last:border-0">
+              <button
+                key={index}
+                type="button"
+                onClick={() => setSelectedTeacherDetail(teacher)}
+                className="w-full text-left border-b border-gray-100 pb-4 last:border-0 rounded-lg transition-colors hover:bg-[#fedac2]/20 focus:outline-none focus:ring-2 focus:ring-[#fc5d01]/40"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#fc5d01] to-[#fd7f33] flex items-center justify-center text-white font-bold">
@@ -325,7 +369,7 @@ export default function OverviewStats({
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{teacher.name}</p>
-                      <p className="text-sm text-gray-500">{teacher.count} bài tập đã feedback</p>
+                      <p className="text-sm text-gray-500">{teacher.count} bài tập đã feedback • Bấm để xem chi tiết</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -339,11 +383,100 @@ export default function OverviewStats({
                     style={{ width: `${teacher.percentage}%` }}
                   />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
       </div>
+
+      {selectedTeacherDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-[#fc5d01] to-[#fd7f33] text-white">
+              <div>
+                <h3 className="text-xl font-semibold">Chi tiết feedback của {selectedTeacherDetail.name}</h3>
+                <p className="text-sm text-white/90 mt-1">
+                  {selectedTeacherDetail.count} bài đã feedback • {selectedTeacherDetail.percentage}% của tổng số bài trong bộ lọc
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTeacherDetail(null)}
+                className="text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white/60 rounded-md p-1"
+                aria-label="Đóng chi tiết trainer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="bg-[#fedac2]/30 border border-[#fdbc94] rounded-xl p-4">
+                  <p className="text-sm text-gray-600">Tổng bài đã feedback</p>
+                  <p className="text-2xl font-bold text-[#fc5d01] mt-1">{selectedTeacherDetail.count}</p>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <p className="text-sm text-gray-600">% của tổng số bài</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{selectedTeacherDetail.percentage}%</p>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <p className="text-sm text-gray-600">Số dạng bài</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{selectedTeacherDetail.typeStats.length}</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-[#fedac2]/30">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Dạng bài tập</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Số bài đã feedback</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">% trong trainer</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">% của tổng số</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {selectedTeacherDetail.typeStats.map((typeStat) => (
+                      <tr key={typeStat.type} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{typeStat.type}</td>
+                        <td className="px-4 py-3 text-center text-sm text-gray-700">{typeStat.count}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="bg-[#fc5d01] h-full rounded-full"
+                                style={{ width: `${typeStat.percentageOfTeacher}%` }}
+                              />
+                            </div>
+                            <span className="w-10 text-right text-sm font-semibold text-[#fc5d01]">{typeStat.percentageOfTeacher}%</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center text-sm font-semibold text-gray-700">{typeStat.percentageOfTotal}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="text-xs text-gray-500 mt-4">
+                “% trong trainer” = số bài dạng đó / tổng số bài trainer đã feedback. “% của tổng số” = số bài dạng đó / tổng số bài tập trong bộ lọc hiện tại.
+              </p>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedTeacherDetail(null)}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
