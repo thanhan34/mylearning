@@ -5,19 +5,32 @@
 
 // Webhook URLs cho từng loại thông báo
 // Lưu trong .env.local để dễ thay đổi và tránh hard-code webhook secrets trong source code.
-function getRequiredEnv(name: string): string {
-  const value = process.env[name];
+type DiscordWebhookType = 'homework' | 'mocktest' | 'feedback';
+
+function getWebhookUrl(type: DiscordWebhookType): string | null {
+  // Next.js chỉ inline biến NEXT_PUBLIC_* ở client bundle khi truy cập bằng key tĩnh.
+  // Không dùng process.env[name] ở đây vì dynamic key có thể trả undefined trong browser.
+  const webhookUrls: Record<DiscordWebhookType, string | undefined> = {
+    homework: process.env.NEXT_PUBLIC_HOMEWORK_WEBHOOK_URL,
+    mocktest: process.env.NEXT_PUBLIC_MOCKTEST_WEBHOOK_URL,
+    feedback: process.env.NEXT_PUBLIC_FEEDBACK_WEBHOOK_URL,
+  };
+
+  const envNames: Record<DiscordWebhookType, string> = {
+    homework: 'NEXT_PUBLIC_HOMEWORK_WEBHOOK_URL',
+    mocktest: 'NEXT_PUBLIC_MOCKTEST_WEBHOOK_URL',
+    feedback: 'NEXT_PUBLIC_FEEDBACK_WEBHOOK_URL',
+  };
+
+  const value = webhookUrls[type];
 
   if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+    console.warn(`Discord notification skipped: missing environment variable ${envNames[type]}`);
+    return null;
   }
 
   return value;
 }
-
-const HOMEWORK_WEBHOOK_URL = getRequiredEnv('NEXT_PUBLIC_HOMEWORK_WEBHOOK_URL');
-const MOCKTEST_WEBHOOK_URL = getRequiredEnv('NEXT_PUBLIC_MOCKTEST_WEBHOOK_URL');
-const FEEDBACK_WEBHOOK_URL = getRequiredEnv('NEXT_PUBLIC_FEEDBACK_WEBHOOK_URL');
 
 const ORANGE_COLOR = 0xfc5d01; // Màu cam của hệ thống
 
@@ -32,6 +45,9 @@ export async function sendHomeworkNotification(
   count: number
 ): Promise<boolean> {
   try {
+    const webhookUrl = getWebhookUrl('homework');
+    if (!webhookUrl) return false;
+
     // Keep full text with links (no extraction, just filter empty ones)
     const validLinks = links
       .map(link => link.trim())
@@ -81,7 +97,7 @@ export async function sendHomeworkNotification(
       }
     };
 
-    const response = await fetch(HOMEWORK_WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -114,6 +130,9 @@ export async function sendHomeworkFeedbackNotification(
   questionNumber: number
 ): Promise<boolean> {
   try {
+    const webhookUrl = getWebhookUrl('feedback');
+    if (!webhookUrl) return false;
+
     const embed = {
       title: '✏️ FEEDBACK BÀI TẬP',
       color: ORANGE_COLOR,
@@ -150,7 +169,7 @@ export async function sendHomeworkFeedbackNotification(
       }
     };
 
-    const response = await fetch(FEEDBACK_WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -182,6 +201,9 @@ export async function sendMocktestNotification(
   link: string
 ): Promise<boolean> {
   try {
+    const webhookUrl = getWebhookUrl('mocktest');
+    if (!webhookUrl) return false;
+
     // Extract URL if it's in APEUni format
     const extractedUrl = link.match(/https?:\/\/(?:www\.)?apeuni\.com\/[^\s]+/)?.[0] || link;
 
@@ -212,7 +234,7 @@ export async function sendMocktestNotification(
       }
     };
 
-    const response = await fetch(MOCKTEST_WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -243,6 +265,9 @@ export async function sendMocktestFeedbackNotification(
   className: string
 ): Promise<boolean> {
   try {
+    const webhookUrl = getWebhookUrl('feedback');
+    if (!webhookUrl) return false;
+
     const embed = {
       title: '💬 FEEDBACK MOCKTEST',
       color: ORANGE_COLOR,
@@ -269,7 +294,7 @@ export async function sendMocktestFeedbackNotification(
       }
     };
 
-    const response = await fetch(FEEDBACK_WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
