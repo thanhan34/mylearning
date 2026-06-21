@@ -4,14 +4,20 @@
  */
 
 // Webhook URLs cho từng loại thông báo
-const HOMEWORK_WEBHOOK_URL = process.env.NEXT_PUBLIC_HOMEWORK_WEBHOOK_URL || 
-  'https://discord.com/api/webhooks/1452552521146175582/UGncmc0Zp-2ej8aoT2p3kY6ItP7DV3WQJMg_w4GLZNHyTib1eRPMOyCTIe4TEIRNgZ3J';
+// Lưu trong .env.local để dễ thay đổi và tránh hard-code webhook secrets trong source code.
+function getRequiredEnv(name: string): string {
+  const value = process.env[name];
 
-const MOCKTEST_WEBHOOK_URL = process.env.NEXT_PUBLIC_MOCKTEST_WEBHOOK_URL || 
-  'https://discord.com/api/webhooks/1452552781495013527/qyHiuI_6bGf2-opOGtKoYwhdXjx6wE_Vp3S7DMwF2E1Rx6Le-iepmNn46ntHygcvgedb';
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
 
-const FEEDBACK_WEBHOOK_URL = process.env.NEXT_PUBLIC_FEEDBACK_WEBHOOK_URL || 
-  'https://discord.com/api/webhooks/1452552894912925828/Sm3BJemKuQ0cAuaP0KeEcwkm4pmStbdYLP0EDoFAq2s0cdSX3d8RUdLgBSlV_xhSh8d2';
+  return value;
+}
+
+const HOMEWORK_WEBHOOK_URL = getRequiredEnv('NEXT_PUBLIC_HOMEWORK_WEBHOOK_URL');
+const MOCKTEST_WEBHOOK_URL = getRequiredEnv('NEXT_PUBLIC_MOCKTEST_WEBHOOK_URL');
+const FEEDBACK_WEBHOOK_URL = getRequiredEnv('NEXT_PUBLIC_FEEDBACK_WEBHOOK_URL');
 
 const ORANGE_COLOR = 0xfc5d01; // Màu cam của hệ thống
 

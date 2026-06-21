@@ -73,24 +73,21 @@ Chứa 4 functions chính:
 4. `sendMocktestFeedbackNotification()` - Gửi thông báo mocktest feedback
 
 ### Webhook URL Configuration
-Hệ thống sử dụng **3 webhook URLs riêng biệt** cho từng loại thông báo:
+Hệ thống sử dụng **3 webhook URLs riêng biệt** cho từng loại thông báo và đọc từ environment variables trong `.env.local`. Không hard-code webhook URL trực tiếp trong source code hoặc tài liệu.
 
 #### 1. Homework Submissions (Học viên nộp bài)
 ```typescript
-const HOMEWORK_WEBHOOK_URL = 
-  'https://discord.com/api/webhooks/1452552521146175582/UGncmc0Zp-2ej8aoT2p3kY6ItP7DV3WQJMg_w4GLZNHyTib1eRPMOyCTIe4TEIRNgZ3J';
+const HOMEWORK_WEBHOOK_URL = getRequiredEnv('NEXT_PUBLIC_HOMEWORK_WEBHOOK_URL');
 ```
 
 #### 2. Mocktest Submissions (Học viên nộp mocktest)
 ```typescript
-const MOCKTEST_WEBHOOK_URL = 
-  'https://discord.com/api/webhooks/1452552781495013527/qyHiuI_6bGf2-opOGtKoYwhdXjx6wE_Vp3S7DMwF2E1Rx6Le-iepmNn46ntHygcvgedb';
+const MOCKTEST_WEBHOOK_URL = getRequiredEnv('NEXT_PUBLIC_MOCKTEST_WEBHOOK_URL');
 ```
 
 #### 3. Teacher Feedback (Giáo viên feedback - cả bài tập và mocktest)
 ```typescript
-const FEEDBACK_WEBHOOK_URL = 
-  'https://discord.com/api/webhooks/1452552894912925828/Sm3BJemKuQ0cAuaP0KeEcwkm4pmStbdYLP0EDoFAq2s0cdSX3d8RUdLgBSlV_xhSh8d2';
+const FEEDBACK_WEBHOOK_URL = getRequiredEnv('NEXT_PUBLIC_FEEDBACK_WEBHOOK_URL');
 ```
 
 **Lợi ích của việc phân chia webhooks**:
@@ -99,7 +96,7 @@ const FEEDBACK_WEBHOOK_URL =
 - Giảm spam và tăng tính tổ chức
 - Dễ dàng filter và tìm kiếm thông báo
 
-Có thể override bằng environment variables:
+Thiết lập trong `.env.local`:
 ```
 NEXT_PUBLIC_HOMEWORK_WEBHOOK_URL=your_homework_webhook_url
 NEXT_PUBLIC_MOCKTEST_WEBHOOK_URL=your_mocktest_webhook_url
@@ -198,7 +195,7 @@ Discord có rate limit cho webhooks (30 requests/minute). Nếu gặp rate limit
 ## Maintenance
 
 ### Thay đổi Webhook URL
-Update constant trong `app/firebase/services/discord.ts` hoặc set environment variable.
+Update các biến webhook trong `.env.local` hoặc environment variables trên hosting provider.
 
 ### Customize Message Format
 Edit các functions trong `app/firebase/services/discord.ts` để thay đổi:
