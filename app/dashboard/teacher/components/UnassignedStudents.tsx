@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { User } from '../../../../types/admin';
 import { db } from '../../../../app/firebase/config';
-import { collection, query, where, getDocs, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, arrayUnion } from '@/app/firebase/firestore';
 import { useSession } from 'next-auth/react';
 
 const UnassignedStudents = () => {

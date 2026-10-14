@@ -8,6 +8,1179 @@
   --secondary-light: #fedac2;
   --secondary-medium: #fdbc94;
   --secondary-lighter: #ffac7b;
+  --ui-background: #ffffff;
+  --ui-text: #111827;
+  --ui-border: var(--secondary-light);
+  --ui-glass: rgba(255, 255, 255, 0.9);
+  --ui-radius: 8px;
+  --ui-blur: 20px;
+  --ui-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --guide-background: linear-gradient(120deg, #ffffff 35%, rgba(254, 218, 194, 0.45));
+  --guide-surface: var(--ui-background);
+  --guide-text: var(--ui-text);
+  --guide-border: rgba(254, 218, 194, 0.7);
+  --guide-glass: var(--ui-glass);
+  --guide-radius: 16px;
+  --guide-blur: var(--ui-blur);
+  --guide-shadow: 0 2px 4px rgba(17, 24, 39, 0.02), 0 12px 32px rgba(17, 24, 39, 0.04);
+  --student-nav-background: var(--ui-glass);
+  --student-nav-border: var(--ui-border);
+  --student-nav-radius: 12px;
+  --student-nav-shadow: 0 2px 12px rgba(17, 24, 39, 0.04);
+  /* Match the student dashboard's WelcomeHeader, cards and DailyHome buttons. */
+  --feedback-background: linear-gradient(to right, #ffffff, #fedac2);
+  --feedback-surface: #ffffff;
+  --feedback-warm-surface: #fedac2;
+  --feedback-featured-surface: #ffffff;
+  --feedback-page-background: #ffffff;
+  --feedback-text: var(--ui-text);
+  --feedback-border: var(--secondary-light);
+  --feedback-highlight-border: var(--secondary-medium);
+  --feedback-panel-radius: 20px;
+  --feedback-radius: 16px;
+  --feedback-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --feedback-accent: #fc5d01;
+  --feedback-accent-soft: rgba(254, 218, 194, 0.3);
+  --feedback-glass: rgba(255, 255, 255, 0.9);
+  --feedback-blur: var(--ui-blur);
+  --feedback-glow: 0 0 0 1px rgba(252, 93, 1, 0.12), 0 0 20px rgba(252, 93, 1, 0.12), 0 8px 24px rgba(252, 93, 1, 0.08);
+  --feedback-glow-strong: 0 0 0 1px rgba(252, 93, 1, 0.28), 0 0 24px rgba(252, 93, 1, 0.28), 0 8px 24px rgba(252, 93, 1, 0.16);
+  --feedback-focus-shadow: 0 0 0 3px rgba(252, 93, 1, 0.2), 0 0 20px rgba(252, 93, 1, 0.2);
+  --mocktest-background: var(--feedback-background);
+  --mocktest-surface: var(--ui-background);
+  --mocktest-text: var(--ui-text);
+  --mocktest-border: var(--secondary-light);
+  --mocktest-accent: var(--primary-color);
+  --mocktest-accent-soft: var(--feedback-accent-soft);
+  --mocktest-radius: 16px;
+  --mocktest-shadow: var(--feedback-shadow);
+  --attendance-guide-background: linear-gradient(115deg, #ffffff 45%, #fff7f2);
+  --attendance-guide-surface: var(--ui-background);
+  --attendance-guide-text: #14213d;
+  --attendance-guide-border: #eaecef;
+  --attendance-guide-peach: #ffd9c2;
+  --attendance-guide-soft: #fff7f2;
+  --attendance-guide-radius: 16px;
+  --attendance-guide-shadow: var(--guide-shadow);
+  --directory-page-background: #fafbfc;
+  --directory-background: linear-gradient(110deg, #ffffff 50%, #fff8f4);
+  --directory-surface: var(--ui-background);
+  --directory-text: #14213d;
+  --directory-border: #eaecef;
+  --directory-soft: #fff0e6;
+  --directory-peach: #ffd9c2;
+  --directory-glass: rgba(255, 255, 255, 0.95);
+  --directory-blur: var(--ui-blur);
+  --directory-radius: 16px;
+  --directory-shadow: var(--guide-shadow);
+  --teacher-background: var(--guide-background);
+  --teacher-surface: var(--ui-background);
+  --teacher-text: var(--ui-text);
+  --teacher-border: var(--guide-border);
+  --teacher-radius: 16px;
+  --teacher-shadow: var(--guide-shadow);
+  --staff-background: linear-gradient(115deg, #ffffff 45%, #fff7f2 85%, #fff1e8);
+  --staff-muted-surface: #fff7f2;
+  --staff-border: #f0e7e2;
+  --staff-peach: #ffd9c2;
+  --staff-heading: #14213d;
+  --staff-glass: var(--ui-glass);
+  --staff-blur: var(--ui-blur);
+  --admin-page-background: #fcfcfd;
+  --admin-primary-hover: #e65300;
+  --admin-peach: #ffd9c2;
+  --admin-body-text: #475569;
+  --admin-muted-text: #8491a5;
+  --admin-background: linear-gradient(110deg, #ffffff 35%, #fff7f2 75%, #fff1e8);
+  --admin-surface: var(--ui-background);
+  --admin-text: #14213d;
+  --admin-border: #f0e7e2;
+  --admin-radius: 16px;
+  --admin-shadow: 0 2px 4px rgba(20, 33, 61, 0.02), 0 8px 24px rgba(20, 33, 61, 0.035);
+  --admin-glass: var(--ui-glass);
+  --admin-blur: var(--ui-blur);
+  --admin-muted-surface: #fff7f2;
+  --admin-selected-background: linear-gradient(135deg, #fff7f2, #fff1e8);
+  --admin-action-background: #fc5d01;
+  --admin-action-shadow: 0 2px 4px rgba(252, 93, 1, 0.08), 0 8px 20px rgba(252, 93, 1, 0.12);
+}
+
+@layer components {
+  .attendance-stats-table { background: var(--admin-surface); color: var(--admin-body-text); }
+  .attendance-stats-table:focus-visible { @apply outline-none ring-2 ring-primary ring-offset-2; }
+  .attendance-stats-table tbody tr:hover { background: var(--admin-muted-surface); }
+  .teacher-mocktests { color: var(--staff-heading); }
+  .teacher-mocktest-hero { background: var(--staff-background); border-color: var(--staff-border); box-shadow: var(--guide-shadow); }
+  .teacher-mocktests .ui-card.teacher-mocktest-surface { background: white; border-color: var(--staff-border); border-radius: 16px; box-shadow: var(--guide-shadow); overflow-wrap: anywhere; }
+  .teacher-mocktest-icon { @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-primary; background: #fff1e8; }
+  .teacher-mocktest-notice { background: var(--staff-muted-surface); }
+  .teacher-mocktest-status { @apply inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-medium text-orange-800; }
+  .teacher-mocktest-reviewed { @apply border-green-100 bg-green-50 text-green-800; }
+  .teacher-mocktest-comment { @apply border border-gray-100 bg-gray-50/70; }
+  .teacher-mocktests .ui-input { @apply min-h-11 rounded-xl border-gray-200 focus:border-primary; }
+  .teacher-mocktests .ui-button { @apply min-h-11 rounded-xl; transition-duration: 180ms; }
+  .teacher-mocktests .ui-button.bg-primary { background: var(--primary-color); color: white; }
+  .teacher-mocktests .ui-button.bg-primary:hover { background: #e65300; }
+  .teacher-mocktests .teacher-mocktest-open { @apply border border-primary text-primary; }
+  .teacher-mocktests .teacher-mocktest-open:hover { background: var(--primary-color); color: white; }
+  .teacher-mocktests a:focus-visible { @apply outline-none ring-2 ring-primary ring-offset-2; }
+  .teacher-mocktests .ui-button:disabled { @apply shadow-none; }
+  .admin-app-shell {
+    background: var(--admin-page-background);
+  }
+  .admin-app-shell > main,
+  .admin-top-navigation .admin-nav-container {
+    max-width: 1440px;
+  }
+  .admin-app-shell .admin-system-notice {
+    @apply flex items-start gap-3 px-4 py-3 text-xs leading-relaxed sm:text-sm;
+    background: var(--admin-muted-surface);
+    border-color: var(--admin-border);
+  }
+  .admin-system-notice svg { color: var(--primary-color); }
+  .admin-top-navigation {
+    background: white;
+    border-bottom: 1px solid var(--admin-border);
+    box-shadow: 0 2px 12px rgba(20, 33, 61, 0.025);
+  }
+  .admin-top-navigation .admin-nav-logo:hover { transform: none; }
+  .admin-top-navigation .admin-nav-links { @apply ml-6 gap-1 space-x-0; }
+  .admin-top-navigation .admin-nav-links a,
+  .admin-top-navigation .admin-nav-links button {
+    @apply min-h-11 text-sm shadow-none;
+    color: var(--admin-body-text);
+    transition-duration: 180ms;
+  }
+  .admin-top-navigation .admin-nav-links .bg-gradient-to-r {
+    background: var(--admin-selected-background);
+    color: var(--primary-color);
+  }
+  .admin-top-navigation .admin-nav-links a:hover,
+  .admin-top-navigation .admin-nav-links button:hover { background: var(--admin-muted-surface); }
+  .admin-top-navigation .admin-nav-profile {
+    @apply gap-3 space-x-0 border-0 p-2 shadow-none;
+    background: white;
+  }
+  .admin-top-navigation .admin-nav-profile > div:last-child { @apply min-w-0 max-w-40; }
+  .admin-top-navigation .admin-nav-profile > div:last-child > span { @apply truncate; color: var(--admin-body-text); }
+  .admin-top-navigation .admin-nav-profile > div:last-child > span:nth-child(2) { @apply hidden; }
+  .admin-top-navigation .admin-nav-profile > div:first-child { @apply h-10 w-10 shadow-none ring-1; transform: none; }
+  .admin-top-navigation .admin-nav-logout {
+    @apply min-h-11 whitespace-nowrap shadow-none;
+    background: var(--primary-color);
+  }
+  .admin-top-navigation .admin-nav-logout:hover { background: var(--admin-primary-hover); transform: none; }
+  .admin-top-navigation .admin-nav-dropdown-open { visibility: visible; opacity: 1; }
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .admin-top-navigation .admin-nav-profile { display: none; }
+  }
+  .admin-top-navigation .admin-nav-links > .group:focus-within .admin-nav-dropdown { visibility: visible; opacity: 1; }
+  .admin-top-navigation a:focus-visible,
+  .admin-top-navigation button:focus-visible,
+  .admin-dashboard summary:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 3px; }
+  .admin-menu-toggle {
+    @apply mb-3 flex min-h-11 cursor-pointer items-center justify-between rounded-xl border px-3 text-sm font-semibold;
+    border-color: var(--admin-border);
+    list-style: none;
+  }
+  .admin-menu-toggle::-webkit-details-marker { display: none; }
+  .admin-management-menu[open] .admin-menu-toggle svg { transform: rotate(90deg); }
+  @screen lg {
+    .admin-menu-toggle { display: none; }
+    .admin-management-menu:not([open]) > div { display: grid; }
+  }
+  .admin-dashboard {
+    color: var(--admin-text);
+  }
+  /* Reference refinement: compact account rows and warm, restrained decoration. */
+  .admin-sidebar-tip { border-radius: 12px; background: var(--admin-muted-surface); }
+  .admin-dashboard .account-stat { position: relative; overflow: hidden; }
+  .admin-dashboard .account-stat::after {
+    content: '';
+    position: absolute;
+    right: -24px;
+    bottom: -48px;
+    width: 144px;
+    height: 96px;
+    border-radius: 50%;
+    background: var(--admin-muted-surface);
+    transform: rotate(-28deg);
+    pointer-events: none;
+  }
+  .admin-dashboard .account-stat > * { position: relative; z-index: 1; }
+  .admin-dashboard .ui-card.account-record { padding: 16px; }
+  .admin-dashboard .account-record .account-actions { border-top: 0; padding-top: 0; }
+  .admin-dashboard .account-record .account-avatar { background: #fff1e8; }
+  @screen sm {
+    .admin-dashboard .account-record .account-actions { margin-left: 60px; margin-top: 8px; }
+  }
+  @screen lg {
+    .admin-dashboard-hero .admin-hero-content { min-height: 160px; }
+    .admin-dashboard-hero .admin-hero-content > div:first-child { margin-bottom: 24px; }
+    .admin-dashboard-hero .admin-dashboard-badge { display: none; }
+    .admin-dashboard-hero .admin-hero-content > div:nth-child(2) > div:first-child { max-width: 55%; }
+    .admin-dashboard-hero .admin-hero-actions {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin-top: 0;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: space-between;
+      z-index: 2;
+    }
+    .admin-dashboard-hero .admin-hero-illustration { position: absolute; right: 144px; top: 0; width: 256px; opacity: .85; }
+  }
+  .admin-dashboard h1,
+  .admin-dashboard h2,
+  .admin-dashboard h3,
+  .admin-dashboard .account-stat-value { color: var(--admin-text); }
+  .admin-dashboard-hero {
+    background: var(--admin-background);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    box-shadow: var(--admin-shadow);
+  }
+  .admin-dashboard-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--primary-color);
+  }
+  .admin-dashboard-hero::after {
+    content: '';
+    position: absolute;
+    width: 256px;
+    height: 256px;
+    top: -128px;
+    right: -64px;
+    border: 32px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .admin-primary-action {
+    @apply rounded-xl border border-primary text-white hover:border-primary;
+    background: var(--admin-action-background);
+    box-shadow: var(--admin-action-shadow);
+  }
+  .admin-primary-action:hover { background: var(--admin-primary-hover); }
+  .admin-secondary-action {
+    @apply rounded-xl border bg-white text-gray-700 hover:bg-primary-light/20;
+    border-color: var(--admin-border);
+  }
+  .admin-dashboard-badge {
+    @apply inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-light/70 bg-white/80 px-3 py-1 text-xs font-medium text-gray-700;
+  }
+  .admin-dashboard-navigation {
+    @apply rounded-2xl border p-4;
+    border-color: var(--admin-border);
+    background: var(--admin-surface);
+  }
+  @screen lg {
+    .admin-dashboard-navigation {
+      position: sticky;
+      top: 160px;
+      max-height: calc(100dvh - 184px);
+      overflow-y: auto;
+    }
+  }
+  .admin-workspace {
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    box-shadow: var(--admin-shadow);
+    overflow-wrap: anywhere;
+    scroll-margin-top: 104px;
+  }
+  .admin-workspace-heading {
+    border-bottom: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius) var(--admin-radius) 0 0;
+    background: var(--admin-surface);
+  }
+  .admin-dashboard .ui-card.admin-surface {
+    background: var(--admin-surface);
+    border-color: var(--admin-border);
+    border-radius: var(--admin-radius);
+    box-shadow: var(--admin-shadow);
+    overflow-wrap: anywhere;
+  }
+  .admin-dashboard-icon {
+    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-primary;
+    background: var(--admin-muted-surface);
+  }
+  .admin-section-icon {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-primary;
+    background: var(--admin-muted-surface);
+  }
+  .admin-section-button {
+    @apply flex min-h-11 min-w-0 items-start gap-3 border p-3 text-left transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-md active:translate-y-0.5 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none;
+    background: var(--admin-surface);
+    border-color: var(--admin-border);
+    border-radius: var(--admin-radius);
+    box-shadow: var(--admin-shadow);
+  }
+  .admin-section-button[aria-pressed='true'] {
+    border-color: var(--admin-peach);
+    background: var(--admin-selected-background);
+    box-shadow: inset 3px 0 0 var(--primary-color), var(--admin-shadow);
+  }
+  .admin-section-button[aria-pressed='true'] .admin-section-icon {
+    @apply border-primary bg-primary text-white;
+  }
+  .admin-dashboard .account-introduction {
+    @apply text-sm;
+  }
+  .admin-dashboard .account-introduction h2 { display: none; }
+  .admin-dashboard .account-introduction p { margin-top: 0; }
+  .admin-dashboard .account-management [aria-label='Thống kê tài khoản đã tải'] .ui-card {
+    @apply relative items-start gap-3 p-4;
+    background: var(--admin-surface);
+    border-color: var(--admin-border);
+    box-shadow: var(--admin-shadow);
+  }
+  .admin-dashboard .account-stat-value {
+    @apply mt-2 text-3xl font-bold tabular-nums tracking-tight text-gray-900;
+  }
+  .admin-dashboard .ui-card.account-filters {
+    background: var(--admin-surface);
+    box-shadow: none;
+  }
+  .admin-dashboard .ui-card.account-record {
+    border-color: var(--admin-border);
+    transition: border-color 180ms, box-shadow 180ms;
+  }
+  .admin-dashboard .ui-card.account-record:hover { border-color: var(--admin-peach); box-shadow: var(--admin-shadow); }
+  .account-avatar { border-radius: 999px; }
+  .account-status { @apply inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-xs font-semibold; }
+  .account-status-pending { @apply border-orange-100 bg-orange-50 text-orange-800; }
+  .account-status-approved { @apply border-green-100 bg-green-50 text-green-800; }
+  .account-status-staff { @apply border-slate-200 bg-slate-50 text-slate-700; }
+  .admin-dashboard .account-search { @apply border-t pt-4; border-color: var(--admin-border); }
+  .admin-dashboard .account-management .ui-button {
+    @apply rounded-xl text-sm;
+  }
+  .admin-dashboard .account-management .ui-button.bg-primary {
+    @apply border border-primary text-white hover:border-primary;
+    background: var(--admin-action-background);
+  }
+  .admin-dashboard .account-management .ui-button.bg-primary:hover { background: var(--admin-primary-hover); }
+  .admin-dashboard .account-management [aria-label='Quản lý tài khoản'] .ui-button {
+    @apply rounded-xl;
+  }
+  .admin-dashboard .account-management [aria-label='Quản lý tài khoản'] .ui-button[aria-pressed='true'] {
+    box-shadow: var(--admin-action-shadow);
+  }
+  .account-management .ui-input {
+    @apply rounded-xl border-gray-200 hover:border-primary-light;
+  }
+  .admin-dashboard .ui-input:focus-visible { @apply border-primary outline-none ring-2 ring-primary/20; }
+  .admin-dashboard .ui-button:disabled { @apply shadow-none; }
+  @media (max-width: 639px) {
+    .admin-dashboard .account-actions { @apply flex-col items-stretch; }
+    .admin-dashboard .account-role { @apply w-full; }
+    .admin-dashboard .account-actions .ui-button { @apply w-full; }
+  }
+  .admin-type-option {
+    @apply flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-gray-200 p-3 text-sm text-gray-700 transition-all hover:-translate-y-0.5 hover:border-primary-light hover:shadow-sm active:translate-y-0.5 active:shadow-none focus-within:ring-2 focus-within:ring-primary;
+  }
+  .admin-type-option-selected {
+    @apply border-primary-light bg-primary-light/20;
+  }
+  .account-management fieldset:disabled .admin-type-option {
+    @apply pointer-events-none translate-y-0 opacity-50 shadow-none;
+  }
+  .teacher-workspace {
+    color: var(--teacher-text);
+  }
+  .teacher-workspace-hero {
+    background: var(--teacher-background);
+    border: 1px solid var(--teacher-border);
+    border-radius: var(--teacher-radius);
+    box-shadow: var(--teacher-shadow);
+  }
+  .teacher-workspace .ui-card {
+    background: var(--teacher-surface);
+    border-color: var(--teacher-border);
+    border-radius: var(--teacher-radius);
+    box-shadow: var(--teacher-shadow);
+    overflow-wrap: anywhere;
+  }
+  .teacher-workspace-icon {
+    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary-light/60 bg-primary-light/20 text-primary;
+  }
+  .teacher-workspace-chip {
+    @apply inline-flex w-fit items-center rounded-full border border-primary-light/60 bg-primary-light/20 px-3 py-1 text-xs font-medium text-gray-700;
+  }
+  .teacher-workspace .ui-input {
+    @apply rounded-xl border-gray-200 hover:border-primary-light;
+  }
+  .teacher-workspace .staff-feedback-card > label {
+    @apply border-t border-gray-100 pt-4;
+  }
+  .teacher-workspace .staff-feedback-card textarea {
+    @apply bg-gray-50/60 leading-relaxed;
+  }
+  .staff-workspace {
+    --teacher-background: var(--staff-background);
+    --teacher-border: var(--staff-border);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .staff-workspace h1,
+  .staff-workspace h2,
+  .staff-workspace h3 { color: var(--staff-heading); }
+  .staff-hero-content { position: relative; z-index: 1; }
+  .staff-hero-illustration { @apply pointer-events-none absolute right-8 top-1/2 hidden w-60 -translate-y-1/2 lg:block; }
+  @screen lg {
+    .staff-hero-content { padding-right: 272px; }
+  }
+  .staff-workspace .staff-hero-actions .ui-button { @apply text-sm; }
+  .staff-workspace .teacher-workspace-hero {
+    @apply relative overflow-hidden;
+    border-left: 4px solid var(--primary-color);
+  }
+  .staff-workspace-badge {
+    @apply mb-4 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700;
+    border-color: var(--staff-border);
+  }
+  .staff-workspace .teacher-workspace-icon {
+    @apply border-0;
+    background: #fff1e8;
+  }
+  .staff-workspace .ui-card.staff-workspace-stat {
+    background: white;
+    box-shadow: var(--teacher-shadow);
+    transition: box-shadow 180ms, border-color 180ms;
+  }
+  .staff-workspace .ui-card.staff-workspace-stat:hover { border-color: var(--staff-peach); }
+  .staff-workspace-stat .tabular-nums { font-size: 30px; color: var(--staff-heading); }
+  .staff-workspace .ui-card.staff-workspace-assignment {
+    background: white;
+    box-shadow: none;
+  }
+  .staff-workspace .teacher-workspace-chip {
+    @apply text-gray-800;
+    background: var(--staff-muted-surface);
+    border-color: var(--staff-border);
+  }
+  .staff-workspace .teacher-workspace-chip[data-status='reviewed'] {
+    @apply border-green-100 bg-green-50 text-green-800;
+  }
+  .staff-workspace .teacher-workspace-chip[data-status='pending'] { @apply border-orange-100 bg-orange-50 text-orange-800; }
+  .staff-workspace .ui-card.staff-feedback-card {
+    border: 1px solid var(--staff-border);
+    transition: box-shadow 180ms, border-color 180ms;
+  }
+  .staff-workspace .ui-card.staff-feedback-card:focus-within { border-color: var(--staff-peach); }
+  .staff-workspace .ui-input {
+    @apply border-gray-200 bg-white hover:border-primary-light focus:border-primary;
+  }
+  .staff-workspace .staff-feedback-card textarea {
+    background: #fcfcfd;
+  }
+  .staff-workspace .ui-button.bg-primary {
+    @apply border border-primary text-white;
+    background: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(252, 93, 1, 0.12);
+  }
+  .staff-workspace .ui-button.bg-primary:hover { background: #e65300; }
+  .staff-workspace .ui-button { @apply rounded-xl text-sm; transition-duration: 180ms; }
+  .staff-workspace .staff-status-tabs .ui-button { @apply min-h-11; }
+  .staff-workspace .staff-filter-panel { box-shadow: none; }
+  .staff-workspace .staff-workspace-pagination { @apply rounded-2xl border bg-white p-4; border-color: var(--staff-border); }
+  .staff-workspace .ui-input:focus-visible { @apply outline-none ring-2 ring-primary/20; }
+  @media (max-width: 639px) {
+    .staff-workspace .staff-hero-actions .ui-button { width: 100%; }
+    .staff-workspace-pagination nav { flex-wrap: wrap; }
+  }
+  .staff-workspace .ui-button.bg-primary:disabled {
+    box-shadow: none;
+  }
+  .staff-workspace .ui-button.bg-primary:active {
+    box-shadow: none;
+  }
+  .student-directory {
+    color: var(--directory-text);
+  }
+  .directory-app-shell { background: var(--directory-page-background); }
+  .directory-layout { @apply grid items-start gap-6; }
+  .directory-sidebar {
+    @apply min-w-0 rounded-2xl border bg-white p-4;
+    border-color: var(--directory-border);
+    box-shadow: var(--directory-shadow);
+  }
+  .directory-sidebar summary { @apply flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold; list-style: none; }
+  .directory-sidebar summary::-webkit-details-marker { display: none; }
+  .directory-sidebar-eyebrow { @apply mb-4 hidden text-xs font-semibold uppercase tracking-wider text-gray-500; }
+  .directory-sidebar-menu > div { @apply pt-4; }
+  .directory-sidebar-link {
+    @apply flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-gray-600;
+    transition: background-color 180ms, color 180ms;
+  }
+  .directory-sidebar-link:hover { background: var(--directory-soft); color: var(--primary-color); }
+  .directory-sidebar-link[aria-current='page'] { background: var(--primary-color); color: white; }
+  .directory-sidebar-help { @apply mt-8 hidden items-start gap-2 rounded-xl p-3 text-xs leading-relaxed text-gray-600; background: var(--directory-soft); }
+  @screen lg {
+    .directory-layout { grid-template-columns: 240px minmax(0, 1fr); }
+    .directory-sidebar { position: sticky; top: 104px; }
+    .directory-sidebar summary { display: none; }
+    .directory-sidebar-menu > div { padding-top: 0; }
+    .directory-sidebar-menu:not([open]) > div { display: block; }
+    .directory-sidebar-eyebrow { display: block; }
+    .directory-sidebar-help { display: flex; }
+  }
+  .directory-illustration { @apply pointer-events-none absolute right-4 top-1/2 hidden w-36 -translate-y-1/2 md:block; }
+  .student-directory h1,
+  .student-directory h2,
+  .student-directory h3 { color: var(--directory-text); }
+  .student-directory .directory-search-panel { box-shadow: none; }
+  .directory-table-container,
+  .directory-loading {
+    @apply overflow-hidden rounded-2xl border bg-white;
+    border-color: var(--directory-border);
+    box-shadow: var(--directory-shadow);
+  }
+  .directory-table { @apply w-full table-fixed text-left text-sm; }
+  .directory-table thead { @apply bg-slate-50 text-xs font-semibold text-slate-500; }
+  .directory-table th,
+  .directory-table td { @apply px-4 py-4 align-middle; }
+  .directory-table thead th:first-child { width: 42%; }
+  .directory-table thead th:nth-child(2) { width: 34%; }
+  .directory-table thead th:last-child { width: 24%; }
+  .directory-table tbody th { @apply font-normal; }
+  .directory-table tbody tr { border-top: 1px solid var(--directory-border); transition: background-color 180ms; }
+  .directory-table tbody tr:hover { background: #fff8f4; }
+  .directory-table .directory-email { @apply text-gray-600; }
+  .directory-table .directory-row-action { @apply text-right; }
+  .student-directory .ui-button.directory-homework-action {
+    @apply border-primary bg-white text-primary;
+    white-space: nowrap;
+    transform: none;
+  }
+  .student-directory .ui-button.directory-homework-action:hover { background: var(--primary-color); color: white; }
+  .directory-clear-search { @apply rounded-xl text-gray-500 hover:text-primary; }
+  .directory-pagination { @apply rounded-2xl border bg-white p-4; border-color: var(--directory-border); }
+  .directory-page-number { @apply flex h-11 min-w-11 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-white; }
+  .student-directory a:focus-visible,
+  .student-directory summary:focus-visible,
+  .directory-clear-search:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 3px; }
+  .student-directory .ui-button:disabled { @apply shadow-none; }
+  @media (max-width: 767px) {
+    .directory-table,
+    .directory-table tbody,
+    .directory-table tr,
+    .directory-table tbody th,
+    .directory-table td { display: block; width: 100%; }
+    .directory-table thead { @apply sr-only; }
+    .directory-table tbody tr { padding: 16px; }
+    .directory-table tbody tr:first-child { border-top: 0; }
+    .directory-table tbody th,
+    .directory-table td { padding: 0; }
+    .directory-table .directory-email { margin: 12px 0; padding-left: 60px; }
+    .directory-table .directory-row-action .ui-button { width: 100%; }
+  }
+  .directory-hero {
+    background: var(--directory-background);
+    border: 1px solid var(--directory-border);
+    border-radius: var(--directory-radius);
+    box-shadow: var(--directory-shadow);
+  }
+  .student-directory .ui-card.directory-surface,
+  .directory-homework > .ui-card {
+    background: var(--directory-surface);
+    border-color: var(--directory-border);
+    border-radius: var(--directory-radius);
+    box-shadow: var(--directory-shadow);
+    overflow-wrap: anywhere;
+  }
+  .directory-avatar {
+    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-primary;
+    background: var(--directory-soft);
+  }
+  .directory-avatar svg {
+    color: var(--primary-color);
+  }
+  .student-directory .ui-card.directory-student-card {
+    @apply transition-shadow hover:border-primary-light hover:shadow-md focus-within:border-primary-light;
+  }
+  .student-directory .ui-input {
+    @apply rounded-xl border-gray-200 hover:border-primary-light;
+  }
+  .attendance-guide {
+    color: var(--attendance-guide-text);
+    scroll-margin-top: 96px;
+  }
+  .attendance-guide-hero {
+    @apply relative overflow-hidden border p-6 sm:p-8;
+    background: var(--attendance-guide-background);
+    border-color: var(--attendance-guide-border);
+    border-radius: var(--attendance-guide-radius);
+    box-shadow: var(--attendance-guide-shadow);
+  }
+  .attendance-guide-hero::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--primary-color); }
+  .attendance-guide-hero > div { position: relative; z-index: 1; }
+  .attendance-guide-illustration { @apply pointer-events-none absolute right-8 top-8 hidden w-44 lg:block; }
+  @screen lg {
+    .attendance-guide-hero-copy { padding-right: 96px; }
+  }
+  .attendance-guide h1,
+  .attendance-guide h2,
+  .attendance-guide h3 { color: var(--attendance-guide-text); }
+  .attendance-guide .attendance-guide-stat { transition: border-color 180ms, box-shadow 180ms; }
+  .attendance-guide .attendance-guide-stat:hover { border-color: var(--attendance-guide-peach); }
+  .attendance-guide-stat > div > p { @apply text-3xl; color: var(--attendance-guide-text); }
+  .attendance-guide-menu summary { @apply mb-4 flex min-h-11 cursor-pointer items-center justify-between text-sm font-semibold; list-style: none; }
+  .attendance-guide-menu summary::-webkit-details-marker { display: none; }
+  .attendance-guide-menu > div > h2 { display: none; }
+  @screen lg {
+    .attendance-guide-menu summary { display: none; }
+    .attendance-guide-menu > div > h2 { display: block; }
+    .attendance-guide-menu:not([open]) > div { display: block; }
+  }
+  .attendance-guide-tip { background: var(--attendance-guide-soft); border-color: var(--attendance-guide-border); }
+  .attendance-guide .ui-button { @apply min-h-11 rounded-xl text-sm; transition-duration: 180ms; }
+  .attendance-guide .ui-button.bg-primary { background: var(--primary-color); }
+  .attendance-guide .ui-button.bg-primary:hover { background: #e65300; }
+  .attendance-guide .attendance-guide-purpose { border-left: 3px solid var(--primary-color); }
+  .attendance-guide .ui-card {
+    background: var(--attendance-guide-surface);
+    border-color: var(--attendance-guide-border);
+    border-radius: var(--attendance-guide-radius);
+    box-shadow: var(--attendance-guide-shadow);
+  }
+  .attendance-guide-icon {
+    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-primary;
+    background: var(--attendance-guide-soft);
+  }
+  .attendance-guide-badge {
+    @apply inline-flex w-fit items-center gap-2 rounded-full border border-primary-light bg-white px-3 py-2 text-xs font-medium text-gray-600;
+  }
+  .attendance-guide-topic {
+    @apply flex min-h-11 items-start gap-3 rounded-xl border border-transparent p-3 text-sm font-medium leading-relaxed text-gray-600 transition-all hover:-translate-y-0.5 hover:border-primary-light hover:bg-primary-light/20 hover:text-gray-900 hover:shadow-sm active:translate-y-0.5 active:shadow-none;
+  }
+  .attendance-guide-number {
+    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary-light/40 text-xs font-semibold text-gray-700;
+  }
+  .attendance-guide-reader .ui-card {
+    @apply text-sm leading-7 sm:p-6;
+    overflow-wrap: anywhere;
+  }
+  .attendance-guide-reader .ui-card.attendance-guide-summary {
+    @apply border-l-4 border-l-primary;
+    background: var(--attendance-guide-soft);
+  }
+  .attendance-guide-reader section > .ui-card > h2 {
+    @apply border-b border-gray-100 pb-4 text-lg font-bold leading-relaxed tracking-tight sm:text-xl;
+  }
+  .attendance-guide-reader section:target > .ui-card {
+    border-color: var(--primary-color);
+  }
+  .attendance-guide .homework-guide-step {
+    @apply rounded-xl border-gray-100 bg-gray-50/70 text-sm leading-7;
+  }
+  .attendance-guide .homework-guide-step > h3 {
+    @apply border-b border-gray-200/60 pb-3;
+  }
+  .attendance-deadline-table tbody tr:nth-child(even) {
+    @apply bg-gray-50/70;
+  }
+  .attendance-deadline-table tbody td:last-child {
+    background: var(--attendance-guide-soft);
+  }
+  .attendance-guide .attendance-deadline-table { border-color: var(--attendance-guide-border); }
+  .attendance-guide .attendance-deadline-table thead { @apply bg-slate-50 text-xs text-slate-600; }
+  .attendance-guide .attendance-deadline-table tbody tr { border-color: var(--attendance-guide-border); }
+  .attendance-guide .attendance-deadline-table tbody tr:hover { background: var(--attendance-guide-soft); }
+  .attendance-guide summary:focus-visible { @apply outline-none ring-2 ring-primary ring-offset-2; }
+  .attendance-guide a:focus-visible,
+  .attendance-deadline-table:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+  .student-mocktests {
+    color: var(--mocktest-text);
+  }
+  .student-mocktests .mocktest-hero h1,
+  .student-mocktests h2,
+  .student-mocktests .mocktest-entry h3 {
+    color: var(--mocktest-accent);
+  }
+  .student-mocktests .ui-card.mocktest-stat[data-emphasis='true'] {
+    box-shadow: inset 0 3px 0 var(--mocktest-accent), var(--mocktest-shadow);
+  }
+  .student-mocktests .mocktest-stat[data-emphasis='true'] .mocktest-stat-number {
+    color: var(--mocktest-accent);
+  }
+  .student-mocktests .mocktest-entry[data-feedback-status='reviewed'] {
+    border-left: 3px solid var(--mocktest-accent);
+  }
+  .student-mocktests .ui-button {
+    @apply rounded-xl;
+  }
+  .student-mocktests .ui-button.bg-primary {
+    @apply border border-primary text-white;
+    background: var(--mocktest-accent);
+    box-shadow: var(--ui-shadow);
+  }
+  .student-mocktests .ui-button.bg-primary:hover {
+    background: var(--primary-light);
+  }
+  .student-mocktests .ui-button:active,
+  .student-mocktests .ui-button:disabled {
+    box-shadow: none;
+  }
+  .student-mocktests [aria-label='Lọc trạng thái Mocktest'] .ui-button {
+    @apply rounded-full;
+  }
+  .student-mocktests .mocktest-guide {
+    background: var(--mocktest-accent-soft);
+    border-color: var(--mocktest-border);
+  }
+  .mocktest-hero {
+    background: var(--mocktest-background);
+    border: 1px solid var(--mocktest-border);
+    border-radius: var(--mocktest-radius);
+    box-shadow: var(--mocktest-shadow);
+  }
+  .student-mocktests .ui-card.mocktest-surface {
+    background: var(--mocktest-surface);
+    border-color: var(--mocktest-border);
+    border-radius: var(--mocktest-radius);
+    box-shadow: var(--mocktest-shadow);
+  }
+  .mocktest-icon {
+    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary-light bg-primary-light/30 text-primary;
+  }
+  .mocktest-badge {
+    @apply inline-flex w-fit items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600;
+  }
+  .mocktest-badge-reviewed {
+    @apply border-primary-light bg-primary-light/30 text-gray-900;
+  }
+  .student-mocktests .mocktest-badge-reviewed svg {
+    color: var(--mocktest-accent);
+  }
+  .mocktest-comment {
+    @apply rounded-xl border border-gray-100 bg-gray-50 p-4 sm:p-6;
+    overflow-wrap: anywhere;
+  }
+  .mocktest-comment-reviewed {
+    @apply border-primary-light;
+    background: var(--mocktest-accent-soft);
+  }
+  .student-mocktests .ui-input {
+    @apply rounded-xl border-primary-light bg-white hover:border-primary-medium focus:border-primary;
+  }
+  .student-feedback {
+    color: var(--feedback-text);
+    background: var(--feedback-page-background);
+    border-radius: var(--feedback-panel-radius);
+    padding: 16px;
+  }
+  @screen sm {
+    .student-feedback {
+      padding: 24px;
+    }
+  }
+  .feedback-hero {
+    @apply relative overflow-hidden;
+    background: var(--feedback-background);
+    border: 1px solid var(--feedback-highlight-border);
+    border-radius: var(--feedback-panel-radius);
+    box-shadow: var(--feedback-shadow);
+  }
+  .feedback-hero::before {
+    content: '';
+    position: absolute;
+    inset: 32px auto 32px 0;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--feedback-accent);
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .student-feedback .ui-card.feedback-surface {
+    background: var(--feedback-surface);
+    border-color: var(--feedback-border);
+    border-radius: var(--feedback-radius);
+    box-shadow: var(--feedback-shadow);
+  }
+  .feedback-icon {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-primary;
+    background: var(--feedback-accent-soft);
+    border-color: var(--feedback-border);
+    box-shadow: none;
+  }
+  .feedback-icon svg {
+    filter: none;
+  }
+  .student-feedback .ui-card.feedback-stat {
+    background: var(--feedback-surface);
+    border-color: var(--feedback-highlight-border);
+    box-shadow: var(--feedback-shadow);
+    border-radius: var(--feedback-panel-radius);
+  }
+  .student-feedback .ui-card.feedback-stat[data-emphasis='true'] {
+    border-color: var(--feedback-highlight-border);
+    background: var(--feedback-featured-surface);
+    box-shadow: inset 0 3px 0 var(--feedback-accent), var(--feedback-shadow);
+  }
+  .feedback-stat[data-emphasis='true'] .feedback-icon {
+    border-color: var(--feedback-highlight-border);
+    box-shadow: none;
+  }
+  .student-feedback .feedback-stat p {
+    @apply text-gray-800;
+  }
+  .student-feedback .feedback-stat .feedback-stat-number {
+    @apply text-gray-900;
+  }
+  .student-feedback .feedback-stat[data-emphasis='true'] .feedback-icon {
+    @apply border-primary-light bg-primary-light text-primary;
+  }
+  .student-feedback .feedback-hero h1,
+  .student-feedback h2,
+  .student-feedback .feedback-entry h3,
+  .student-feedback .feedback-stat[data-emphasis='true'] .feedback-stat-number {
+    color: var(--feedback-accent);
+  }
+  .student-feedback .feedback-hero .feedback-eyebrow,
+  .student-feedback .feedback-hero > div > p:not(.feedback-eyebrow) {
+    @apply text-gray-700;
+  }
+  .feedback-eyebrow {
+    @apply flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500;
+  }
+  .feedback-brand-mark {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-primary;
+    background: var(--feedback-accent-soft);
+  }
+  .feedback-title-accent {
+    @apply relative inline-block;
+    isolation: isolate;
+  }
+  .feedback-title-accent::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 8px;
+    background: linear-gradient(90deg, var(--feedback-accent), rgba(252, 93, 1, 0.15));
+    border-radius: 4px;
+    z-index: -1;
+  }
+  .feedback-journey {
+    @apply rounded-2xl border border-white p-5 sm:p-6;
+    background: var(--feedback-glass);
+    backdrop-filter: blur(var(--feedback-blur));
+    box-shadow: var(--feedback-shadow);
+  }
+  .feedback-journey-steps {
+    @apply relative grid grid-cols-3 gap-2 text-center;
+    isolation: isolate;
+  }
+  .feedback-journey-steps::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 16.666%;
+    right: 16.666%;
+    height: 1px;
+    background: var(--feedback-highlight-border);
+    z-index: -1;
+  }
+  .feedback-journey-node {
+    @apply mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-500;
+  }
+  .feedback-journey-node[data-highlight='true'] {
+    @apply border-primary text-primary;
+    background: var(--feedback-warm-surface);
+    box-shadow: none;
+  }
+  .feedback-content-grid {
+    @apply grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)];
+  }
+  .feedback-content-grid > section {
+    min-width: 0;
+  }
+  .student-feedback .ui-card.feedback-filters {
+    background: var(--feedback-surface);
+    border-color: var(--feedback-highlight-border);
+    backdrop-filter: blur(var(--feedback-blur));
+    border-radius: var(--feedback-panel-radius);
+  }
+  .student-feedback .feedback-filters > p {
+    @apply text-gray-700;
+  }
+  .student-feedback .feedback-filters .ui-input {
+    @apply border-primary-light bg-white;
+  }
+  .student-feedback .feedback-filters > .grid {
+    @apply grid-cols-1;
+  }
+  @screen lg {
+    .student-feedback .feedback-filters {
+      position: sticky;
+      top: 160px;
+      max-height: calc(100dvh - 184px);
+      overflow-y: auto;
+    }
+  }
+  .student-feedback .ui-card.feedback-entry[data-feedback-status='reviewed'] {
+    border-left: 3px solid var(--feedback-accent);
+    box-shadow: var(--feedback-shadow);
+  }
+  .student-feedback .feedback-primary-action {
+    @apply rounded-xl border border-primary text-white;
+    background: var(--feedback-accent);
+    box-shadow: var(--ui-shadow);
+  }
+  .student-feedback .ui-button.feedback-primary-action:hover {
+    background: var(--primary-light);
+    box-shadow: var(--ui-shadow);
+  }
+  .student-feedback .ui-button {
+    @apply rounded-xl hover:border-primary;
+  }
+  .student-feedback .ui-button:hover {
+    box-shadow: var(--ui-shadow);
+  }
+  .student-feedback .ui-button:active {
+    box-shadow: none;
+  }
+  .student-feedback .ui-button:focus-visible {
+    box-shadow: var(--feedback-focus-shadow);
+  }
+  .student-feedback .ui-button:disabled {
+    box-shadow: none;
+  }
+  .feedback-status {
+    @apply inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600;
+  }
+  .feedback-status-done {
+    @apply bg-primary-light/30 text-gray-900;
+    border-color: var(--feedback-highlight-border);
+  }
+  .feedback-status-done svg {
+    color: var(--feedback-accent);
+  }
+  .feedback-comment {
+    @apply rounded-xl border p-4 sm:p-6;
+    border-color: var(--feedback-highlight-border);
+    background: var(--feedback-accent-soft);
+    overflow-wrap: anywhere;
+  }
+  .feedback-comment-pending {
+    @apply border-gray-100 bg-gray-50;
+  }
+  .student-feedback .feedback-entry .feedback-comment:not(.feedback-comment-pending) {
+    background: var(--feedback-accent-soft);
+  }
+  .feedback-pagination {
+    @apply rounded-2xl border-primary-light p-4;
+    background: var(--feedback-warm-surface);
+  }
+  .student-feedback .ui-input {
+    @apply rounded-xl border-gray-200 hover:border-primary focus:border-primary;
+  }
+  .student-feedback .ui-input:focus-visible {
+    box-shadow: var(--feedback-focus-shadow);
+  }
+  .student-feedback .ui-input:disabled {
+    box-shadow: none;
+  }
+  .student-navigation {
+    background: var(--student-nav-background);
+    border-bottom: 1px solid var(--student-nav-border);
+    box-shadow: var(--student-nav-shadow);
+    backdrop-filter: blur(var(--ui-blur));
+    color: var(--ui-text);
+  }
+  .student-nav-link {
+    @apply flex min-h-11 items-center gap-2 border border-transparent px-4 py-3 text-sm font-medium text-gray-600 transition-all hover:-translate-y-0.5 hover:border-primary-light hover:bg-primary-light/20 hover:text-gray-900 hover:shadow-sm active:translate-y-0.5 active:shadow-none;
+    border-radius: var(--student-nav-radius);
+  }
+  .student-nav-link-active {
+    @apply border-primary-light bg-primary-light/40 font-semibold text-gray-900;
+    box-shadow: inset 0 -3px 0 var(--primary-color);
+  }
+  .student-nav-link-active svg {
+    color: var(--primary-color);
+  }
+  .student-nav-profile {
+    @apply flex min-h-11 min-w-0 items-center gap-3 rounded-xl border border-transparent p-2 transition-all hover:-translate-y-0.5 hover:border-primary-light hover:bg-primary-light/20 hover:shadow-sm active:translate-y-0.5 active:shadow-none;
+  }
+  .student-nav-profile[aria-current='page'] {
+    @apply border-primary-light bg-primary-light/30;
+  }
+  .student-nav-toggle {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-primary-light bg-white text-gray-700 transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-primary-light/30 hover:shadow-sm active:translate-y-0.5 active:shadow-none;
+  }
+  .student-navigation a:focus-visible,
+  .student-nav-toggle:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+  .student-nav-mobile {
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  @screen lg {
+    .student-navigation ~ main .guides-page > .grid > aside {
+      top: 160px;
+    }
+    .student-navigation ~ main #guide-content {
+      scroll-margin-top: 160px;
+    }
+  }
+  .ui-card {
+    background: var(--ui-background);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    box-shadow: var(--ui-shadow);
+    color: var(--ui-text);
+  }
+  .ui-button {
+    @apply min-h-[44px] rounded-lg px-4 py-2 font-medium transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0.5 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none;
+  }
+  .ui-input {
+    @apply min-h-[44px] rounded-lg border border-primary-light bg-white px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50;
+  }
+  .ui-card.submission-group {
+    padding: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+  .ui-card.homework-guide {
+    @apply rounded-xl shadow-lg;
+  }
+  .homework-guide-step {
+    @apply space-y-3 rounded-xl border border-primary-light p-4 text-sm leading-relaxed text-gray-700 sm:p-6 sm:text-base;
+  }
+  .homework-guide-example {
+    @apply inline-block rounded-lg bg-primary-light/50 px-2 py-1 text-sm font-semibold text-gray-900;
+  }
+  .guide-topic {
+    @apply flex min-h-[44px] h-full items-start gap-3 rounded-xl border border-transparent p-3 text-gray-700 transition-all hover:-translate-y-0.5 hover:border-primary-light hover:bg-primary-light/20 hover:shadow-sm active:translate-y-0.5 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+  }
+  .guide-topic-selected {
+    @apply border-primary bg-primary-light/30 text-gray-900;
+  }
+  .guide-reader .ui-card.homework-guide {
+    box-shadow: var(--ui-shadow);
+  }
+  .guide-reader .homework-guide > ol {
+    @apply grid-cols-1;
+  }
+  .guide-reader .homework-guide-step {
+    @apply col-span-1;
+  }
+  .guides-page {
+    color: var(--guide-text);
+  }
+  .guide-hero {
+    @apply relative overflow-hidden border p-6 sm:p-8;
+    background: var(--guide-background);
+    border-color: var(--guide-border);
+    border-radius: var(--guide-radius);
+    box-shadow: var(--guide-shadow);
+  }
+  .guide-badge {
+    @apply rounded-full border border-primary-light/70 px-3 py-1 text-xs font-medium text-gray-600;
+    background: var(--guide-glass);
+    backdrop-filter: blur(var(--guide-blur));
+  }
+  .guides-page .ui-card.guide-directory,
+  .guides-page .guide-reader .ui-card.homework-guide {
+    background: var(--guide-surface);
+    border-color: var(--guide-border);
+    border-radius: var(--guide-radius);
+    box-shadow: var(--guide-shadow);
+  }
+  .guides-page .guide-topic {
+    @apply items-start gap-3 p-3 hover:bg-primary-light/20;
+  }
+  .guides-page .guide-topic-selected {
+    @apply border-primary-light bg-primary-light/30;
+    box-shadow: inset 3px 0 0 var(--primary-color);
+  }
+  .guide-topic-icon {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-100 bg-gray-50 text-gray-500;
+  }
+  .guide-topic-selected .guide-topic-icon {
+    @apply border-primary-light bg-white text-primary;
+  }
+  .guide-tip {
+    @apply border border-primary-light/60 bg-primary-light/20;
+  }
+  .guide-reader-summary {
+    @apply rounded-xl border border-primary-light/60 bg-primary-light/10 p-4 sm:p-6;
+  }
+  .guides-page .guide-reader .ui-card.homework-guide {
+    @apply p-4 sm:p-8;
+  }
+  .guides-page .homework-guide > header {
+    @apply mb-6 border-b border-gray-100 pb-6;
+  }
+  .guides-page .homework-guide > header h2 {
+    @apply text-xl font-bold leading-snug tracking-tight text-gray-900 sm:text-2xl;
+  }
+  .guides-page .guide-reader .homework-guide > ol {
+    @apply gap-6;
+  }
+  .guides-page .homework-guide-step {
+    @apply min-w-0 border-gray-100 bg-gray-50/60 p-4 leading-7 sm:p-6;
+    overflow-wrap: anywhere;
+  }
+  .guides-page .homework-guide-step > h3 {
+    @apply border-b border-gray-200/60 pb-3 text-base font-semibold leading-relaxed;
+  }
+  .guides-page .homework-guide-step strong {
+    @apply font-semibold text-gray-900;
+  }
+  .guides-page .homework-guide > aside {
+    @apply border-primary-light/70 bg-primary-light/20;
+  }
+  .guides-page .homework-guide > p:last-child {
+    @apply border-t border-gray-100 pt-6 text-xs font-medium tracking-wide text-gray-500;
+  }
+  .guide-pagination {
+    @apply flex min-h-[80px] flex-col justify-center rounded-xl p-4 sm:px-6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teacher-mocktests a,
+  .teacher-mocktests button { transition: none; transform: none; }
+  .attendance-guide .attendance-guide-stat { transition: none; }
+  .staff-workspace .staff-workspace-stat,
+  .staff-workspace .staff-feedback-card { transition: none; }
+  .directory-student-row,
+  .directory-sidebar-link {
+    transition: none;
+  }
+  .admin-top-navigation *,
+  .admin-dashboard .account-record,
+  .student-navigation a,
+  .student-navigation button,
+  .student-feedback a,
+  .student-feedback button,
+  .student-mocktests a,
+  .student-mocktests button,
+  .attendance-guide a,
+  .student-directory a,
+  .student-directory button,
+  .student-directory .directory-student-card,
+  .teacher-workspace a,
+  .teacher-workspace button,
+  .admin-dashboard a,
+  .admin-dashboard button,
+  .admin-type-option,
+  .guides-page a {
+    transition: none;
+    transform: none;
+  }
 }
 
 html {

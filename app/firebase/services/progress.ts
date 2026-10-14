@@ -1,19 +1,23 @@
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where } from '@/app/firebase/firestore';
 import { db } from '../config';
-import { HomeworkSubmission } from './types';
+import { cachedRequest } from '@/lib/client-cache';
 
 export interface ProgressData {
   date: string;
   completed: number;
 }
 
-export const getHomeworkProgress = async (userId: string): Promise<ProgressData[]> => {
+export const getHomeworkProgress = async (userId: string, lookbackDays?: number): Promise<ProgressData[]> => {
   try {
+    return await cachedRequest(`homework:progress:${userId}:${lookbackDays || 'all'}:${new Date().toISOString().slice(0, 10)}`, 300000, async () => {
+    const start = new Date();
+    if (lookbackDays) start.setUTCDate(start.getUTCDate() - lookbackDays);
     // Query homework collection for user's submissions
     const submissionsRef = collection(db, 'homework');
     const q = query(
       submissionsRef,
-      where('userId', '==', userId)
+      where('userId', '==', userId),
+      ...(lookbackDays ? [where('date', '>=', start.toISOString().slice(0, 10))] : [])
     );
     
     const querySnapshot = await getDocs(q);
@@ -50,6 +54,7 @@ export const getHomeworkProgress = async (userId: string): Promise<ProgressData[
 
     
     return result;
+    });
   } catch (error) {
     console.error('Error getting homework progress:', error);
     return [{
@@ -69,7 +74,8 @@ export const getWeeklyProgress = async (userId: string): Promise<ProgressData[]>
     const submissionsRef = collection(db, 'homework');
     const q = query(
       submissionsRef,
-      where('userId', '==', userId)
+      where('userId', '==', userId),
+      where('date', '>=', lastWeekStr)
     );
     
     const querySnapshot = await getDocs(q);
@@ -108,7 +114,8 @@ export const getDailyProgress = async (userId: string): Promise<ProgressData | n
     const submissionsRef = collection(db, 'homework');
     const q = query(
       submissionsRef,
-      where('userId', '==', userId)
+      where('userId', '==', userId),
+      where('date', '==', today)
     );
     
     const querySnapshot = await getDocs(q);

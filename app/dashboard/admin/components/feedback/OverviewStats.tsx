@@ -9,7 +9,7 @@ import {
   orderBy, 
   onSnapshot,
   limit
-} from 'firebase/firestore';
+} from '@/app/firebase/firestore';
 import { db } from '@/app/firebase/config';
 import { Class } from '@/app/firebase/services/types';
 import { User } from '@/app/firebase/services/user';

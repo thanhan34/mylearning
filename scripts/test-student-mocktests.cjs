@@ -1,0 +1,57 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const ts = require('typescript');
+const React = require('react');
+const { renderToStaticMarkup } = require('react-dom/server');
+const root = path.resolve(__dirname, '..');
+function load(file) {
+  const compiled = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX }, reportDiagnostics: true,
+  });
+  assert.equal((compiled.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
+  const module = { exports: {} };
+  new Function('require', 'exports', 'module', compiled.outputText)(name => name === './ui' ? load('components/ui/index.tsx') : require(name), module.exports, module);
+  return module.exports;
+}
+const { default: Page, MocktestCard, mocktestUrl, mocktestDate } = load('components/StudentMocktests.tsx');
+const record = { id: 'test', studentId: 'student', link: 'https://example.com/results', submittedAt: '2026-10-01T18:00:00Z', feedback: 'Chú ý phát âm.\nLuyện tập đều đặn.', feedbackByName: 'Admin' };
+const props = { records: [record], loading: false, busy: false, error: '', message: '', text: '', onTextChange: () => {}, onSubmit: async () => {}, onReload: async () => {} };
+const render = extra => renderToStaticMarkup(React.createElement(Page, { ...props, ...extra }));
+const html = render({});
+for (const text of ['Mocktest của bạn', 'Nộp Mocktest mới', 'Lịch sử Mocktest', 'Lọc trạng thái Mocktest', 'Đã có nhận xét', 'Chú ý phát âm.\nLuyện tập đều đặn.', 'Người nhận xét: Admin', 'tối đa 500 bài']) assert.ok(html.includes(text), text);
+assert.match(html, /type="url" required="" maxLength="10000"/);
+assert.match(html, /target="_blank" rel="noopener noreferrer"/);
+assert.doesNotMatch(html, /textarea|Tìm học viên|Lưu feedback/);
+assert.equal((html.match(/mocktest-stat flex/g) || []).length, 3);
+assert.equal((html.match(/data-emphasis="true"/g) || []).length, 1);
+assert.match(html, /mocktest-guide/);
+assert.match(html, /data-feedback-status="reviewed"/);
+assert.match(render({ records: [] }), /Bắt đầu với bài Mocktest đầu tiên/);
+assert.match(render({ loading: true }), /Đang tải Mocktest/);
+assert.doesNotMatch(render({ loading: true, records: [] }), /Bắt đầu với bài Mocktest đầu tiên/);
+assert.match(render({ error: 'Network error' }), /role="alert"/);
+assert.match(render({ error: 'Network error' }), /Thử lại/);
+assert.match(render({ busy: true, text: 'https://example.com' }), /Đang gửi/);
+assert.match(render({ message: 'Đã lưu thành công.' }), /Đã lưu thành công/);
+const pending = renderToStaticMarkup(React.createElement(MocktestCard, { record: { ...record, feedback: '   ', link: 'javascript:alert(1)' } }));
+assert.match(pending, /Bài nộp đang chờ nhận xét/);
+assert.match(pending, /data-feedback-status="pending"/);
+assert.match(pending, /Liên kết bài nộp không hợp lệ/);
+assert.doesNotMatch(pending, /href="javascript:/);
+const escaped = renderToStaticMarkup(React.createElement(MocktestCard, { record: { ...record, feedback: '<script>alert(1)</script>' } }));
+assert.doesNotMatch(escaped, /<script>/);
+assert.equal(mocktestDate(record), '02/10/2026');
+assert.equal(mocktestDate({}), 'Chưa có ngày nộp');
+assert.equal(mocktestDate({ submittedAt: 'invalid' }), 'Chưa có ngày nộp');
+for (const value of ['', 'not a url', 'javascript:alert(1)', 'ftp://example.com']) assert.equal(mocktestUrl(value), null);
+assert.equal(mocktestUrl('https://example.com'), 'https://example.com/');
+const css = fs.readFileSync(path.join(root, 'app/globals.css'), 'utf8');
+assert.match(css, /--mocktest-background: var\(--feedback-background\);/);
+assert.match(css, /--feedback-background: linear-gradient\(to right, #ffffff, #fedac2\);/);
+assert.match(css, /--mocktest-border: var\(--secondary-light\);/);
+assert.match(css, /--mocktest-shadow: var\(--feedback-shadow\);/);
+assert.match(css, /\.student-mocktests \.ui-button\.bg-primary\s*\{[^}]*background: var\(--mocktest-accent\);/);
+assert.match(css, /\.student-mocktests \.ui-button\.bg-primary:hover\s*\{[^}]*background: var\(--primary-light\);/);
+assert.match(css, /\.student-mocktests \.mocktest-hero h1,/);
+console.log('PASS: student Mocktest layout, read-only feedback, safe links, Vietnam dates, loading/error/empty/busy states and URL validation.');

@@ -18,7 +18,7 @@ import {
   addDoc, 
   deleteDoc,
   DocumentData 
-} from 'firebase/firestore';
+} from '@/app/firebase/firestore';
 import { db } from './config';
 
 export const getUserByEmail = async (email: string) => {

@@ -5,6 +5,9 @@ export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
+    if (path.startsWith('/dashboard/assistant') && !['admin', 'teacher', 'assistant'].includes(token?.role as string)) {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
 
     // Role-based route protection
     if (path.startsWith("/dashboard/admin") && token?.role !== "admin") {

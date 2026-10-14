@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from '@/app/firebase/firestore';
 import { db } from '../../firebase/config';
 import type { UserProfile } from '../../../types/profile';
-import { updateStudentName } from '../../firebase/services/class';
 
 export default function ProfilePage() {
   const { data: session } = useSession();
@@ -134,18 +133,7 @@ export default function ProfilePage() {
     if (session?.user?.id) {
       setUpdating(true);
       try {
-        if (session.user.role === 'student' && classId) {
-          // For students, update both collections atomically
-          await updateStudentName(session.user.id, classId, name, email, target);
-        } else {
-          // For non-students, just update user document
-          const userRef = doc(db, 'users', session.user.id);
-          await updateDoc(userRef, {
-            name,
-            email,
-            target
-          });
-        }
+        await updateDoc(doc(db, 'users', session.user.id), { name, target });
 
         setMessage({ type: 'success', content: 'Cập nhật thông tin thành công' });
       } catch (error: any) {

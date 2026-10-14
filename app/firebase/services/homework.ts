@@ -1,273 +1,59 @@
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  updateDoc, 
-  addDoc,
-  orderBy,
-  Timestamp,
-  DocumentData
-} from 'firebase/firestore';
+import { learningApi } from '@/lib/learning-api';
+import { collection, getDocs, query, where, orderBy, limit } from '@/app/firebase/firestore';
+import { cachedRequest } from '@/lib/client-cache';
 import { db } from '../config';
 
 import { HomeworkSubmission } from './types';
-import { addNotification } from './notification';
 
-export const getHomeworkSubmissions = async (userId: string, date?: string): Promise<HomeworkSubmission[]> => {
+// Update only the student's link while preserving the latest teacher feedback.
+export async function updateStudentHomeworkLink(userId: string, original: HomeworkSubmission, text: string): Promise<string> {
+  const result = await learningApi<{ link: string }>('homework', { method: 'PATCH', body: JSON.stringify({
+    ...original, originalLink: original.link, link: text,
+  }) });
+  return result.link;
+}
+
+export async function getHomeworkSubmissions(userId: string, date?: string, throwOnError = false): Promise<HomeworkSubmission[]> {
   try {
-    const submissionsRef = collection(db, 'homework');
-    let q = query(
-      submissionsRef, 
-      where('userId', '==', userId),
-      orderBy('date', 'desc')
-    );
-    
-    if (date) {
-      q = query(
-        submissionsRef, 
-        where('userId', '==', userId),
-        where('date', '==', date)
-      );
-    }
-    
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      return [];
-    }
-
-    const submissions = querySnapshot.docs[0].data().submissions || [];
-    return submissions as HomeworkSubmission[];
+    const constraints = [where('userId', '==', userId), ...(date ? [where('date', '==', date)] : [orderBy('date', 'desc')])];
+    return await cachedRequest(`homework:submissions:${userId}:${date || 'latest'}`, 120000, async () => {
+      const snapshot = await getDocs(query(collection(db, 'homework'), ...constraints, limit(1)));
+      return snapshot.docs[0]?.data().submissions || [];
+    });
   } catch (error) {
-    console.error('Error getting homework submissions:', error);
+    if (throwOnError) throw error;
+    console.error('Error getting homework:', error);
     return [];
   }
-};
+}
 
-export const getStudentWeeklyStatus = async (
-  classId: string,
-  weekStart: Date = new Date()
-): Promise<Record<string, Record<string, boolean>>> => {
-  try {
-    // Get week's date range
-    const monday = new Date(weekStart);
-    monday.setDate(monday.getDate() - (monday.getDay() || 7) + 1); // Get Monday
-    monday.setHours(0, 0, 0, 0);
+export async function saveHomeworkSubmission(userId: string, submissions: HomeworkSubmission[], userName: string): Promise<boolean> {
+  await learningApi('homework', { method: 'POST', body: JSON.stringify({ date: submissions[0]?.date, submissions }) });
+  return true;
+}
 
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
+export async function updateHomeworkFeedback(documentId: string, submissionType: string, questionNumber: number, feedback: string, feedbackBy?: string, feedbackByName?: string): Promise<boolean> {
+  await learningApi('feedback', { method: 'POST', body: JSON.stringify({ documentId, type: submissionType, questionNumber, feedback }) });
+  return true;
+}
 
-    
+// Legacy callers must resolve one exact student, never an ambiguous partial-name match.
+export async function updateHomeworkFeedbackByName(studentName: string, date: string, submissionType: string, questionNumber: number, feedback: string, feedbackBy?: string, feedbackByName?: string): Promise<boolean> {
+  const result = await learningApi<{ homework: { id: string; userName: string }[] }>(`homework?date=${encodeURIComponent(date)}`);
+  const matches = result.homework.filter(item => item.userName === studentName);
+  if (matches.length !== 1) throw new Error('Vui lòng mở bài từ danh sách học viên để xác định đúng tài khoản.');
+  return updateHomeworkFeedback(matches[0].id, submissionType, questionNumber, feedback);
+}
 
-    // Query all homework submissions for this week
-    const submissionsRef = collection(db, 'homework');
-    const q = query(
-      submissionsRef,
-      where('date', '>=', monday.toISOString().split('T')[0]),
-      where('date', '<=', sunday.toISOString().split('T')[0])
-    );
-
-    const querySnapshot = await getDocs(q);
-    const submissions: Record<string, Record<string, boolean>> = {};
-
-    // Process submissions
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const userId = data.userId;
-      const date = new Date(data.date + 'T00:00:00');
-      
-      // Calculate days since Monday of the week
-      const daysSinceMonday = Math.floor((date.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // Only process submissions that fall within the current week (0-6 days from Monday)
-      if (daysSinceMonday >= 0 && daysSinceMonday <= 6) {
-        // Initialize user's submissions record if not exists
-        if (!submissions[userId]) {
-          submissions[userId] = {};
-        }
-
-        // Mark this day as submitted using the correct index (0 for Monday, 6 for Sunday)
-        submissions[userId][daysSinceMonday] = true;
-      }
-    });
-
-    return submissions;
-  } catch (error) {
-    console.error('Error getting student weekly status:', error);
-    return {};
-  }
-};
-
-export const saveHomeworkSubmission = async (
-  userId: string, 
-  submissions: HomeworkSubmission[],
-  userName: string
-): Promise<boolean> => {
-  try {
-    const date = submissions[0]?.date;
-    if (!date) {
-      throw new Error('No date provided in submissions');
-    }
-
-    const submissionsRef = collection(db, 'homework');
-    const q = query(
-      submissionsRef, 
-      where('userId', '==', userId),
-      where('date', '==', date)
-    );
-    const querySnapshot = await getDocs(q);
-    
-    const submissionData = {
-      userId,
-      userName,
-      date,
-      submissions,
-      timestamp: Timestamp.now()
-    };
-
-    if (!querySnapshot.empty) {
-      // Update existing submission
-      const docRef = doc(db, 'homework', querySnapshot.docs[0].id);
-      await updateDoc(docRef, submissionData);
-      
-      // Create notification for homework update
-      const message = `${userName} has updated their homework submission for ${date}`;
-      await addNotification(userId, message, 'teacher');
-    } else {
-      // Create new submission
-      await addDoc(submissionsRef, submissionData);
-      
-      // Create notification for new submission
-      const message = `${userName} has submitted homework for ${date}`;
-      await addNotification(userId, message, 'teacher');
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error saving homework submission:', error);
-    return false;
-  }
-};
-
-/**
- * Update feedback for a specific homework submission using documentId
- * This is the preferred method as it's more reliable
- */
-export const updateHomeworkFeedback = async (
-  documentId: string,
-  submissionType: string,
-  questionNumber: number,
-  feedback: string,
-  feedbackBy?: string,
-  feedbackByName?: string
-): Promise<boolean> => {
-  try {
-
-    if (!documentId) {
-      console.error('No document ID provided');
-      return false;
-    }
-
-    // Get the document directly by ID
-    const docRef = doc(db, 'homework', documentId);
-    const docSnapshot = await getDoc(docRef);
-    
-    if (!docSnapshot.exists()) {
-      console.error('Homework document not found:', documentId);
-      return false;
-    }
-
-    // Get the current submissions array
-    const data = docSnapshot.data();
-    const submissions = data.submissions || [];
-
-    // Find and update the specific submission
-    const updatedSubmissions = submissions.map((sub: HomeworkSubmission) => {
-      if (sub.type === submissionType && sub.questionNumber === questionNumber) {
-        return { 
-          ...sub, 
-          feedback,
-          feedbackBy,
-          feedbackByName,
-          feedbackAt: new Date().toISOString()
-        };
-      }
-      return sub;
-    });
-
-    // Update the document
-    await updateDoc(docRef, {
-      submissions: updatedSubmissions,
-      lastUpdated: new Date().toISOString()
-    });
-
-    return true;
-  } catch (error) {
-    console.error('Error updating homework feedback:', error);
-    return false;
-  }
-};
-
-/**
- * Update feedback by searching with student name and date
- * This is a fallback method for components that don't have documentId
- * Less reliable than updateHomeworkFeedback as it depends on name matching
- */
-export const updateHomeworkFeedbackByName = async (
-  studentName: string,
-  date: string,
-  submissionType: string,
-  questionNumber: number,
-  feedback: string,
-  feedbackBy?: string,
-  feedbackByName?: string
-): Promise<boolean> => {
-  try {
-
-    // Find all homework submissions for this date
-    const submissionsRef = collection(db, 'homework');
-    const q = query(
-      submissionsRef,
-      where('date', '==', date)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      console.error('No homework submissions found for date:', date);
-      return false;
-    }
-
-    // Look for a submission that matches the student name
-    let foundDoc = null;
-    for (const docSnapshot of querySnapshot.docs) {
-      const data = docSnapshot.data();
-      
-      // Check if this document belongs to the student we're looking for
-      if (data.userName && data.userName.includes(studentName)) {
-        foundDoc = docSnapshot;
-        break;
-      }
-    }
-
-    if (!foundDoc) {
-      console.error('No matching submission found for student:', studentName);
-      return false;
-    }
-
-    // Use the main function with the found documentId
-    return await updateHomeworkFeedback(
-      foundDoc.id,
-      submissionType,
-      questionNumber,
-      feedback,
-      feedbackBy,
-      feedbackByName
-    );
-  } catch (error) {
-    console.error('Error updating homework feedback by name:', error);
-    return false;
-  }
-};
+export async function getStudentWeeklyStatus(_classId: string, weekStart = new Date()): Promise<Record<string, Record<string, boolean>>> {
+  const monday = new Date(weekStart);
+  monday.setDate(monday.getDate() - (monday.getDay() || 7) + 1);
+  monday.setHours(0, 0, 0, 0);
+  const result = await learningApi<{ homework: { userId: string; date: string }[] }>('homework');
+  const status: Record<string, Record<string, boolean>> = {};
+  result.homework.forEach(item => {
+    const day = Math.floor((new Date(`${item.date}T00:00:00`).getTime() - monday.getTime()) / 86400000);
+    if (day >= 0 && day < 7) { status[item.userId] ||= {}; status[item.userId][day] = true; }
+  });
+  return status;
+}

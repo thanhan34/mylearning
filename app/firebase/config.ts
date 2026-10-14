@@ -2,9 +2,10 @@ import { initializeApp, getApps, FirebaseApp, getApp } from 'firebase/app';
 import { getFirestore, Firestore, initializeFirestore, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
+import { MOCK_ENABLED } from '../../lib/mock/config';
 
 // Initialize Firebase configuration
-const firebaseConfig = {
+const firebaseConfig = MOCK_ENABLED ? { apiKey: 'mock-local-key', projectId: 'demo-learning-local', appId: 'demo-learning-local' } : {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -14,10 +15,11 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const appName = MOCK_ENABLED ? 'learning-mock' : '[DEFAULT]';
+const app = getApps().find(item => item.name === appName) || initializeApp(firebaseConfig, appName);
 
 // Initialize Firestore with optimized settings for real-time updates
-const db = typeof window !== 'undefined' 
+const db = MOCK_ENABLED ? ({ __mock: true } as unknown as Firestore) : typeof window !== 'undefined'
   ? initializeFirestore(app, {
       cacheSizeBytes: CACHE_SIZE_UNLIMITED,
       experimentalForceLongPolling: true,
@@ -26,7 +28,7 @@ const db = typeof window !== 'undefined'
   : getFirestore(app);
 
 // Enable offline persistence with better error handling
-if (typeof window !== 'undefined') {
+if (!MOCK_ENABLED && typeof window !== 'undefined') {
   try {
     const { enableIndexedDbPersistence } = require('firebase/firestore');
     enableIndexedDbPersistence(db)

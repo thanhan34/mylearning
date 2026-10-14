@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, addDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, addDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp } from '@/app/firebase/firestore';
 import { db } from '../config';
 import { Notification } from './types';
 import { getUserByEmail } from './user';

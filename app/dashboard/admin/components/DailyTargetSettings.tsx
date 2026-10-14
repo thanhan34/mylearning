@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from '@/app/firebase/firestore';
 import { db } from '../../../firebase/config';
 
 interface DailyTarget {

@@ -4,7 +4,7 @@ import {
   where, 
   getDocs,
   Timestamp 
-} from 'firebase/firestore';
+} from '@/app/firebase/firestore';
 import { db } from '../config';
 import { HomeworkSubmission } from './types';
 

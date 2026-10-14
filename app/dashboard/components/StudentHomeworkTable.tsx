@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/app/firebase/firestore';
 import { HomeworkSubmission } from '@/app/firebase/services/types';
 import { getStudentHomework, StudentHomeworkData, getHomeworkStats } from '@/app/firebase/services/student-homework';
 import { useSession } from 'next-auth/react';

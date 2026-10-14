@@ -1,0 +1,36 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const ts = require('typescript');
+const React = require('react');
+const { renderToStaticMarkup } = require('react-dom/server');
+const root = path.resolve(__dirname, '..');
+function load(file) {
+  const compiled = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX }, reportDiagnostics: true });
+  assert.equal((compiled.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
+  const module = { exports: {} };
+  new Function('require', 'exports', 'module', compiled.outputText)(name => name === './ui' ? load('components/ui/index.tsx') : name === './StudentMocktests' ? load('components/StudentMocktests.tsx') : require(name), module.exports, module);
+  return module.exports;
+}
+const Page = load('components/TeacherMocktests.tsx').default;
+const props = { records: [], students: [], search: '', onSearch() {}, loading: false, busy: false, error: '', onReload: async () => true };
+const render = extra => renderToStaticMarkup(React.createElement(Page, { ...props, ...extra }));
+assert.match(render({}), /Chưa có dữ liệu Mocktest/);
+assert.match(render({ loading: true }), /Đang tải Mocktest/);
+assert.doesNotMatch(render({ loading: true }), /Chưa có dữ liệu Mocktest/);
+assert.match(render({ error: 'Network error' }), /role="alert"/);
+assert.match(render({ error: 'Network error' }), /Thử lại/);
+const records = [{ id: 'r', studentId: 's', studentName: 'Learner', submittedAt: '2026-10-01T18:00:00Z', link: 'https://example.com', feedback: '<script>unsafe</script>', feedbackByName: 'Admin' }];
+let html = render({ records });
+assert.match(html, /Learner/);
+assert.match(html, /02\/10\/2026/);
+assert.match(html, /teacher-mocktest-reviewed/);
+assert.match(html, /&lt;script&gt;/);
+assert.match(html, /target="_blank" rel="noopener noreferrer"/);
+assert.doesNotMatch(html, /textarea|Lưu feedback/);
+assert.match(render({ records, search: 'missing' }), /Không tìm thấy Mocktest phù hợp/);
+assert.match(render({ records, search: 'missing' }), /Xóa bộ lọc/);
+html = render({ records: [{ ...records[0], feedback: '', link: 'javascript:alert(1)' }] });
+assert.doesNotMatch(html, /href="javascript:/);
+assert.match(html, /Chưa có nhận xét/);
+console.log('PASS: teacher Mocktest read-only UI, dynamic data, search, safe links, dates, loading/error/empty states.');

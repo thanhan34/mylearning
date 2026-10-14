@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/app/firebase/firestore';
 
 export interface HomeworkSubmission {
   id?: string;

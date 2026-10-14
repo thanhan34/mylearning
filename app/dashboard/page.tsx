@@ -2,106 +2,21 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 
 import WelcomeHeader from './components/WelcomeHeader';
 import StudentDashboard from './components/StudentDashboard';
 import AdminDashboardClient from './admin/components/AdminDashboardClient';
-import TeacherStats from './teacher/components/TeacherStats';
-import { getUserByEmail } from '../firebase/services/user';
-import { getHomeworkSubmissions } from '../firebase/services/homework';
-import { getHomeworkProgress } from '../firebase/services/progress';
-
-interface ChartData {
-  labels: string[];
-  datasets: {
-    label: string;
-    data: number[];
-    borderColor: string;
-    tension: number;
-  }[];
-}
+import TeacherStats from '@/components/FeedbackWorkspace';
+import { useLearningAccount } from '@/components/LearningGate';
+import AdminSupportPreview from '@/components/AdminSupportPreview';
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [isDataLoading, setIsDataLoading] = useState(true);
   const { data: session, status } = useSession();
+  const account = useLearningAccount();
   const router = useRouter();
   const [userRole, setUserRole] = useState('student');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [homeworkSubmissions, setHomeworkSubmissions] = useState<any[]>([]);
-  const [homeworkProgressData, setHomeworkProgressData] = useState<ChartData>({
-    labels: [],
-    datasets: [{
-      label: 'Tiến độ bài tập',
-      data: [],
-      borderColor: '#fc5d01',
-      tension: 0.4
-    }]
-  });
-
-  const loadHomeworkProgress = useCallback(async () => {
-    if (!session?.user?.email) return;
-
-    try {
-      setIsDataLoading(true);
-      const user = await getUserByEmail(session.user.email);
-      if (!user) return;
-
-      
-      const progressData = await getHomeworkProgress(user.id);
-      
-
-      if (!progressData.length) {
-        return;
-      }
-
-      // Sort progress data by date
-      const sortedData = [...progressData].sort((a, b) => 
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
-
-      
-
-      const labels = sortedData.map(d => d.date);
-      const data = sortedData.map(d => d.completed);
-      
-      
-
-      setHomeworkProgressData({
-        labels,
-        datasets: [{
-          label: 'Tiến độ bài tập',
-          data,
-          borderColor: '#fc5d01',
-          tension: 0.4
-        }]
-      });
-    } catch (error) {
-      console.error('Error loading homework progress:', error);
-    } finally {
-      setIsDataLoading(false);
-    }
-  }, [session?.user?.email]);
-
-  const loadHomeworkSubmissions = useCallback(async (date: string) => {
-    if (!session?.user?.email) return;
-
-    try {
-      const user = await getUserByEmail(session.user.email);
-      if (!user) return;
-
-      
-      const submissions = await getHomeworkSubmissions(user.id, date);
-     
-
-      if (submissions) {
-        setHomeworkSubmissions(submissions);
-      }
-    } catch (error) {
-      console.error('Error loading homework submissions:', error);
-    }
-  }, [session?.user?.email]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -109,39 +24,12 @@ export default function DashboardPage() {
       return;
     }
     
-    if (session?.user) {
-      const role = (session.user as any)?.role;
+    if (account) {
+      const role = account.role;
       setUserRole(role || 'student');
-      
-      if (role === 'student') {
-        // Initial data load
-        Promise.all([
-          loadHomeworkProgress(),
-          loadHomeworkSubmissions(selectedDate)
-        ]).catch(error => {
-          console.error('Error loading initial data:', error);
-        }).finally(() => {
-          setIsLoading(false);
-        });
-
-        // Set up an interval to refresh data every minute
-        const intervalId = setInterval(() => {
-          loadHomeworkProgress().catch(console.error);
-          loadHomeworkSubmissions(selectedDate).catch(console.error);
-        }, 60000); // Refresh every minute
-
-        return () => clearInterval(intervalId);
-      } else {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
-  }, [status, router, session, loadHomeworkProgress, loadHomeworkSubmissions, selectedDate]);
-
-  useEffect(() => {
-    if (selectedDate) {
-      loadHomeworkSubmissions(selectedDate);
-    }
-  }, [loadHomeworkSubmissions, selectedDate]);
+  }, [status, router, account]);
 
   if (status === 'loading' || isLoading) {
     return (
@@ -163,8 +51,14 @@ export default function DashboardPage() {
     );
   }
 
+  if (userRole === 'admin_support') return <AdminSupportPreview />;
+
   if (userRole === 'admin') {
     return <AdminDashboardClient />;
+  }
+
+  if (userRole === 'teacher' || userRole === 'assistant') {
+    return <TeacherStats />;
   }
 
   return (
@@ -174,17 +68,7 @@ export default function DashboardPage() {
         role={userRole}
       />
       
-      {userRole === 'teacher' || userRole === 'assistant' ? (
-        <TeacherStats />
-      ) : (
-        <StudentDashboard 
-          homeworkProgressData={homeworkProgressData}
-          selectedDate={selectedDate}
-          homeworkSubmissions={homeworkSubmissions}
-          onDateChange={setSelectedDate}
-          userRole={userRole}
-        />
-      )}
+      <StudentDashboard userRole={userRole} />
     </div>
   );
 }

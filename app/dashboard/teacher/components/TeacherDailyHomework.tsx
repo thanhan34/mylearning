@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { db } from '../../../firebase/config';
-import { collection, query, where, getDocs, doc, getDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, Timestamp } from '@/app/firebase/firestore';
 import { SHADOWING_LINKS } from '../../../constants/shadowingLinks';
 import { DAILY_MESSAGES } from '../../../constants/dailyMessages';
 

@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, where, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, setDoc, deleteDoc, writeBatch } from '@/app/firebase/firestore';
 import { db } from '../config';
 
 export interface StudentNickname {

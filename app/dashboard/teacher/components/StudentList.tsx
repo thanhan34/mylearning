@@ -5,7 +5,7 @@ import { User } from '@/app/firebase/services/user';
 import { getHomeworkSubmissions } from '@/app/firebase/services';
 import type { HomeworkSubmission } from '@/app/firebase/services/types';
 import { db } from '../../../../app/firebase/config';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from '@/app/firebase/firestore';
 import { useSession } from 'next-auth/react';
 import HomeworkProgress from '../../../components/HomeworkProgress';
 

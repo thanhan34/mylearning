@@ -5,7 +5,7 @@ import {
   orderBy,
   query,
   where,
-} from 'firebase/firestore';
+} from '@/app/firebase/firestore';
 import { db } from '../config';
 import { Class } from './types';
 

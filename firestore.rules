@@ -3,7 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'teacher', 'assistant'] ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('approvalStatus', '') == 'approved' ||
+        (!('approvalStatus' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data) &&
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classId', '') is string && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classId', '') != '' ||
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('teacherId', '') is string && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('teacherId', '') != '')));
     }
     
     function isAdmin() {
@@ -35,39 +39,28 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-      allow update: if request.auth.uid == userId;
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+      allow update: if isSignedIn() && request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'avatar', 'target', 'updatedAt', 'followingStudentIds', 'missingHomeworkFollowInitialized']);
     }
 
     match /classes/{classId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-      allow update: if isTeacherOfClass(classId);
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     match /homework/{homeworkId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin() || isTeacher() || isAssistant();
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow write: if false; // All mutations go through the authenticated server API.
     }
 
     match /submissions/{submissionId} {
-      allow read: if isSignedIn();
-      allow create: if isStudent();
-      allow update, delete: if request.auth.uid == resource.data.studentId || isTeacherOfClass(resource.data.classId) || isAdmin() || isAssistant();
+      allow read: if isAdmin() || (isSignedIn() && resource.data.studentId == request.auth.uid);
+      allow write: if false;
     }
 
     match /mocktests/{mocktestId} {
-      allow read: if isSignedIn();
-      allow create: if isStudent() && request.resource.data.studentId == request.auth.uid;
-      allow update: if 
-        (isStudent() && resource.data.studentId == request.auth.uid) || 
-        (isTeacherOfClass(resource.data.classId)) || 
-        isAdmin() ||
-        isAssistant();
-      allow delete: if 
-        (isStudent() && resource.data.studentId == request.auth.uid) || 
-        isAdmin();
+      allow read: if isAdmin() || (isSignedIn() && resource.data.studentId == request.auth.uid);
+      allow write: if false;
     }
 
     match /notifications/{notificationId} {
@@ -84,73 +77,19 @@ service cloud.firestore {
       );
     }
 
-    match /exam-tracking/{trackingId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin() || isTeacher() || isAssistant();
-    }
-
     match /voiceFeedback/{voiceFeedbackId} {
       allow read: if isSignedIn() && (
         resource.data.studentId == request.auth.uid ||
-        resource.data.teacherId == request.auth.uid ||
         isAdmin() ||
-        isAssistant()
+        ((isTeacher() || isAssistant()) && resource.data.submissionType in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('assignedFeedbackTypes', []))
       );
-      allow create: if isSignedIn() && (
-        isTeacher() || 
-        isAdmin() || 
-        isAssistant()
-      ) && request.resource.data.teacherId == request.auth.uid;
-      allow update: if isSignedIn() && (
-        resource.data.teacherId == request.auth.uid ||
-        isAdmin()
-      );
-      allow delete: if isSignedIn() && (
-        resource.data.teacherId == request.auth.uid ||
-        isAdmin()
-      );
+      allow write: if false;
     }
 
-    match /schedules/{scheduleId} {
-      allow read: if isSignedIn() && (
-        isAdmin() ||
-        (isTeacher() && (
-          resource.data.teacherIds != null && request.auth.uid in resource.data.teacherIds
-        )) ||
-        (isAssistant() && (
-          resource.data.teacherIds != null && request.auth.uid in resource.data.teacherIds
-        )) ||
-        (isStudent() && (
-          (resource.data.classIds != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.classId in resource.data.classIds) ||
-          (resource.data.studentIds != null && request.auth.uid in resource.data.studentIds)
-        ))
-      );
-      allow create: if isSignedIn() && (
-        isAdmin() ||
-        (isTeacher() && exists(/databases/$(database)/documents/schedule_permissions/$(request.auth.uid))) ||
-        (isAssistant() && exists(/databases/$(database)/documents/schedule_permissions/$(request.auth.uid)))
-      );
-      allow update: if isSignedIn() && (
-        isAdmin() ||
-        (isTeacher() && (
-          resource.data.createdBy == request.auth.uid ||
-          exists(/databases/$(database)/documents/schedule_permissions/$(request.auth.uid))
-        )) ||
-        (isAssistant() && (
-          resource.data.createdBy == request.auth.uid ||
-          exists(/databases/$(database)/documents/schedule_permissions/$(request.auth.uid))
-        ))
-      );
-      allow delete: if isSignedIn() && (
-        isAdmin() ||
-        (isTeacher() && resource.data.createdBy == request.auth.uid) ||
-        (isAssistant() && resource.data.createdBy == request.auth.uid)
-      );
-    }
-
-    match /schedule_permissions/{userId} {
-      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == userId);
+    match /settings/{id} {
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
+
   }
 }

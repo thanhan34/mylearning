@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { db } from '../../../firebase/config';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp } from '@/app/firebase/firestore';
 import { Line } from 'react-chartjs-2';
 import TeacherDailyHomework from './TeacherDailyHomework';
-import MispronouncedWordsTracker from '../../components/MispronouncedWordsTracker';
 
 export default function TeacherStats() {
   const { data: session } = useSession();
@@ -357,9 +356,6 @@ export default function TeacherStats() {
       
       {/* Daily Homework and Targets */}
       <TeacherDailyHomework />
-      
-      {/* Mispronounced Words Tracker */}
-      <MispronouncedWordsTracker userRole="teacher" />
     </div>
   );
 }

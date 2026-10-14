@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getHomeworkProgress } from "../firebase/services";
 import ChartWrapper from "@/app/components/ChartWrapper";
+import { getUserByEmail } from '@/app/firebase/services/user';
 
 interface HomeworkProgressProps {
   email: string;
@@ -34,7 +35,9 @@ const HomeworkProgress = ({ email }: HomeworkProgressProps) => {
     const fetchProgress = async () => {
       try {
         setError(null);
-        const progress = await getHomeworkProgress(email);
+        const user = await getUserByEmail(email);
+        if (!user) return;
+        const progress = await getHomeworkProgress(user.id, 45);
         
         if (progress.length > 0) {
           // Sort by date and get last 7 days
@@ -79,8 +82,6 @@ const HomeworkProgress = ({ email }: HomeworkProgressProps) => {
 
     if (email) {
       fetchProgress();
-      const intervalId = setInterval(fetchProgress, 60000);
-      return () => clearInterval(intervalId);
     }
   }, [email]);
 

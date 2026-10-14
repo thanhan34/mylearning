@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, Timestamp } from '@/app/firebase/firestore';
 import { db } from '@/app/firebase/config';
 import { addNotification } from '@/app/firebase/services/notification';
 import { Class } from '@/app/firebase/services/types';

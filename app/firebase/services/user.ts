@@ -1,17 +1,18 @@
-import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
-import { db } from '../config';
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from '@/app/firebase/firestore';
+import { auth, db } from '../config';
 
 export interface User {
   id: string;
   email: string;
   role: "admin" | "teacher" | "student" | "assistant";
+  approvalStatus?: 'pending' | 'approved';
+  assignedFeedbackTypes?: string[];
   avatar?: string;
   target?: string;
   name?: string;
   classId?: string;
   teacherId?: string;
   passed?: boolean;
-  supportClassId?: string; // ID of the support speaking class if enrolled
   supportingTeacherIds?: string[]; // IDs of teachers being supported (for assistants)
   assignedClassIds?: string[]; // Array of class IDs assigned to assistant
   followingStudentIds?: string[];
@@ -38,6 +39,8 @@ export const createUser = async (userData: {
     const newUser = {
       ...userData,
       role: userData.role || 'student',
+      approvalStatus: 'pending',
+      assignedFeedbackTypes: [],
       createdAt: new Date().toISOString(),
       avatar: null,
       target: null,
@@ -81,6 +84,8 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       const data = userSnap.data();
       return {
         id: userSnap.id,
+        approvalStatus: data.approvalStatus,
+        assignedFeedbackTypes: data.assignedFeedbackTypes || [],
         email: data.email,
         role: data.role as "admin" | "teacher" | "student" | "assistant",
         avatar: data.avatar,
@@ -89,7 +94,6 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         classId: data.classId,
         teacherId: data.teacherId,
         passed: data.passed,
-        supportClassId: data.supportClassId,
         supportingTeacherIds: data.supportingTeacherIds,
         assignedClassIds: data.assignedClassIds,
         followingStudentIds: data.followingStudentIds || [],
@@ -142,6 +146,11 @@ export const markClassAsPassed = async (classId: string): Promise<boolean> => {
 
 export const getUserByEmail = async (email: string): Promise<User | null> => {
   try {
+    // The custom-token UID is the existing Firestore account ID, including legacy random IDs.
+    if (auth.currentUser) {
+      const own = await getUserById(auth.currentUser.uid);
+      if (own?.email === email) return own;
+    }
     
     // Try direct document lookup first using sanitized email
     const sanitizedEmail = email.replace(/[.#$[\]]/g, '_');
@@ -152,6 +161,8 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
       
       return {
         id: userDoc.id,
+        approvalStatus: data.approvalStatus,
+        assignedFeedbackTypes: data.assignedFeedbackTypes || [],
         email: data.email,
         role: data.role as "admin" | "teacher" | "student" | "assistant",
         avatar: data.avatar,
@@ -160,7 +171,6 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
         classId: data.classId,
         teacherId: data.teacherId,
         passed: data.passed,
-        supportClassId: data.supportClassId,
         supportingTeacherIds: data.supportingTeacherIds,
         assignedClassIds: data.assignedClassIds,
         followingStudentIds: data.followingStudentIds || [],
@@ -179,6 +189,8 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
       
       return {
         id: doc.id,
+        approvalStatus: data.approvalStatus,
+        assignedFeedbackTypes: data.assignedFeedbackTypes || [],
         email: data.email,
         role: data.role as "admin" | "teacher" | "student" | "assistant",
         avatar: data.avatar,
@@ -187,7 +199,6 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
         classId: data.classId,
         teacherId: data.teacherId,
         passed: data.passed,
-        supportClassId: data.supportClassId,
         supportingTeacherIds: data.supportingTeacherIds,
         assignedClassIds: data.assignedClassIds,
         followingStudentIds: data.followingStudentIds || [],

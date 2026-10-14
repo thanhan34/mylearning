@@ -3,6 +3,8 @@
 import { signIn } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { MOCK_ENABLED, MOCK_ACCOUNTS } from '@/lib/mock/config';
+import { Button } from '@/components/ui';
 
 export default function LoginButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,11 +16,14 @@ export default function LoginButton() {
     const errorType = searchParams?.get('error');
     if (errorType) {
       switch (errorType) {
+        case 'ServerConfiguration':
+          setError('Sign-in is unavailable because the server cannot access Firebase. Please contact the administrator to check the Firebase service account permissions.');
+          break;
         case 'AccessDenied':
           setError('Unable to sign in. Please try again.');
           break;
         case 'DatabaseError':
-          setError('Error creating user account. Please try again.');
+          setError('The server could not load or create your account. Please try again later or contact the administrator.');
           break;
         case 'Verification':
           setError('Email verification required. Please check your inbox.');
@@ -48,6 +53,24 @@ export default function LoginButton() {
       setIsLoading(false);
     }
   };
+
+  if (MOCK_ENABLED) return (
+    <div className="space-y-4">
+      <p className="text-white/70 text-sm">Chế độ dữ liệu mẫu — đăng nhập local, không dùng Google hoặc Firestore thật.</p>
+      {error && <p role="alert" className="text-white">{error}</p>}
+      {MOCK_ACCOUNTS.map(account => <Button key={account} disabled={isLoading} className="w-full"
+        onClick={async () => {
+          setIsLoading(true); setError(null);
+          try {
+            const result = await signIn('mock', { account, redirect: false, callbackUrl: '/dashboard' });
+            if (result?.error || !result?.ok) throw new Error('Không thể đăng nhập demo.');
+            window.location.assign('/dashboard');
+          } catch { setError('Không thể đăng nhập demo. Hãy kiểm tra server local.'); setIsLoading(false); }
+        }}>
+        Đăng nhập {({ admin: 'Admin', admin_support: 'Hỗ trợ admin', teacher: 'Giáo viên', assistant: 'Trợ giảng', student: 'Học viên', pending: 'Học viên chờ duyệt' })[account]}
+      </Button>)}
+    </div>
+  );
 
   return (
     <>

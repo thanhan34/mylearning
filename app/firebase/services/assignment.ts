@@ -11,7 +11,7 @@ import {
   Timestamp,
   arrayUnion,
   writeBatch
-} from 'firebase/firestore';
+} from '@/app/firebase/firestore';
 import { db } from '../config';
 import { Assignment, AssignmentSubmission, CreateAssignmentData } from '../../../types/assignment';
 import { addNotification } from './notification';

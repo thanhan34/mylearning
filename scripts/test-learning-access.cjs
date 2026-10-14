@@ -1,0 +1,32 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const code = ts.transpileModule(fs.readFileSync(path.join(root, 'lib/learning-access.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+const moduleObject = { exports: {} };
+new Function('exports', 'module', code)(moduleObject.exports, moduleObject);
+const { isApproved, canFeedback, canEditFeedback, EXERCISE_TYPES } = moduleObject.exports;
+const student = { id: 's', email: 's@example.test', role: 'student' };
+assert.equal(isApproved(student), false);
+assert.equal(isApproved({ ...student, classId: 'legacy' }), true);
+assert.equal(isApproved({ ...student, teacherId: 'legacy' }), true);
+assert.equal(isApproved({ ...student, classId: 'legacy', approvalStatus: 'pending' }), false);
+assert.equal(isApproved({ ...student, approvalStatus: 'approved' }), true);
+assert.equal(canFeedback({ ...student, assignedFeedbackTypes: ['Read aloud'] }, 'Read aloud'), false);
+for (const role of ['teacher', 'assistant']) {
+  const staff = { ...student, id: role, role, assignedFeedbackTypes: ['Read aloud', 'Repeat sentence'] };
+  assert.equal(canFeedback(staff, 'Read aloud'), true);
+  assert.equal(canFeedback(staff, 'Describe image'), false);
+  assert.equal(canFeedback({ ...staff, assignedFeedbackTypes: [] }, 'Read aloud'), false);
+  assert.equal(canEditFeedback(staff, { type: 'Read aloud' }), true);
+  assert.equal(canEditFeedback(staff, { type: 'Read aloud', feedback: 'old', feedbackBy: role }), true);
+  assert.equal(canEditFeedback(staff, { type: 'Read aloud', feedback: 'old', feedbackBy: 'other' }), false);
+  assert.equal(canEditFeedback(staff, { type: 'Read aloud', feedback: 'legacy' }), false);
+}
+for (const type of EXERCISE_TYPES) assert.equal(canFeedback({ ...student, role: 'admin' }, type), true);
+assert.equal(canEditFeedback({ ...student, role: 'admin' }, { type: 'Read aloud', feedback: 'old', feedbackBy: 'other' }), true);
+const rules = fs.readFileSync(path.join(root, 'firestore.rules'), 'utf8');
+assert.match(rules, /affectedKeys\(\)\.hasOnly/);
+assert.match(rules, /allow write: if false; \/\/ All mutations/);
+console.log('Learning access: approval, role, assignment, ownership and revocation assertions passed.');

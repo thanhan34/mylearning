@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from '@/app/firebase/firestore';
 import { db } from '@/app/firebase/config';
 import { User } from '@/types/admin';
 

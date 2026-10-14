@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs, where, doc, getDoc } from 'firebase/firestore';
+import { collection, query, getDocs, where, doc, getDoc } from '@/app/firebase/firestore';
 import { db } from '../../../firebase/config';
 import { HomeworkSubmission } from '../../../firebase/services';
 import HomeworkProgress from '../../../components/HomeworkProgress';

@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where } from '@/app/firebase/firestore';
 import { db } from '../config';
 
 export interface AdminStats {

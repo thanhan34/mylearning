@@ -18,11 +18,11 @@ const createDailyMessage = (shadowingLink: string) => {
 
     const baseMessage = (
         <div className="space-y-2">
-            <p>Luyện đọc 5 lần Template Describe Image {Target.T30('Target 30')}, {Target.T42('Target 42')}, {Target.T50('Target 50')}, {Target.T58('Target 58')}, {Target.T65('Target 65')}</p>
-            <p>Làm 1 bài Summarize Spoken Text gửi lên group Zalo {Target.T30('Target 30')}, {Target.T42('Target 42')}, {Target.T50('Target 50')}, {Target.T58('Target 58')}, {Target.T65('Target 65')}</p>
+            <p>Luyện đọc 5 lần Template Describe Image, Retell Lecture {Target.T30('Target 30')}, {Target.T42('Target 42')}, {Target.T50('Target 50')}, {Target.T58('Target 58')}, {Target.T65('Target 65')}</p>
+            <p>Làm 1 bài Summarize Spoken Text, 1 bài Summarize Written Text {Target.T30('Target 30')}, {Target.T42('Target 42')}, {Target.T50('Target 50')}, {Target.T58('Target 58')}, {Target.T65('Target 65')}</p>
             <p>Chép 10 câu Write From Dictation gửi lên group Zalo, kết hợp nghe thụ động {Target.T30('Target 30')}, {Target.T42('Target 42')}, {Target.T50('Target 50')}, {Target.T58('Target 58')}, {Target.T65('Target 65')}</p>
             <p>Ôn 10 câu Fill In The Blanks, 	R&W: Fill in the blanks {Target.T50('Target 50')}, {Target.T58('Target 58')}, {Target.T65('Target 65')}</p>
-            <p>Luyện đọc 20 câu Read Aloud {Target.T50('Target 50')}, {Target.T58('Target 58')}, {Target.T65('Target 65')}</p>
+            <p>Luyện đọc 5 câu Read Aloud {Target.T50('Target 50')}, {Target.T58('Target 58')}, {Target.T65('Target 65')}</p>
             <p>Luyện đọc 20 câu Repeat Sentence {Target.T50('Target 50')}, {Target.T58('Target 58')}, {Target.T65('Target 65')}</p>
             <p>Luyện đọc Shadowing bài: sử dụng đường link này: {Target.T30('Target 30')} {Target.T42('Target 42')}</p>
             <p>

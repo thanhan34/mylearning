@@ -6,9 +6,14 @@ import { useSession, signOut } from "next-auth/react";
 import NotificationBell from "./NotificationBell";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "@/app/firebase/firestore";
 import { db } from "../firebase/config";
 import { UserProfile } from "../../types/profile";
+import { getUserByEmail } from '@/app/firebase/services/user';
+import { useLearningAccount } from '@/components/LearningGate';
+import StudentNavigation from '@/components/StudentNavigation';
+import { signOut as firebaseSignOut } from 'firebase/auth';
+import { auth } from '@/app/firebase/config';
 import { 
   RiDashboardLine, 
   RiProfileLine, 
@@ -16,17 +21,13 @@ import {
   RiLogoutBoxRLine, 
   RiFileList2Line, 
   RiFileTextLine, 
-  RiCalendarCheckLine, 
-  RiChat1Line, 
   RiMenuLine, 
   RiCloseLine, 
-  RiCheckboxLine, 
   RiTaskLine,
   RiArrowDownSLine,
   RiBookOpenLine,
   RiSettings4Line,
   RiUserLine,
-  RiCalendarLine
 } from "react-icons/ri";
 
 interface NavItem {
@@ -44,20 +45,23 @@ interface NavCategory {
 
 const Navigation = () => {
   const { data: session } = useSession();
+  const account = useLearningAccount();
+  const logout = async () => { await firebaseSignOut(auth); await signOut({ callbackUrl: '/login' }); };
   const pathname = usePathname();
+  const isAdminDashboard = (account?.role === 'admin' && (pathname === '/dashboard' || pathname === '/dashboard/admin')) ||
+    (!!account && ['admin', 'teacher', 'assistant'].includes(account.role) && pathname === '/dashboard/teacher/students') ||
+    (!!account && ['teacher', 'assistant'].includes(account.role) && (pathname === '/dashboard' || pathname === '/dashboard/teacher')) ||
+    (!!account && ['admin', 'teacher', 'assistant'].includes(account.role) && pathname === '/dashboard/teacher/attendance-guide') ||
+    (!!account && ['teacher', 'assistant'].includes(account.role) && pathname === '/dashboard/mocktest/teacher');
   const [userData, setUserData] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (session?.user?.email) {
         try {
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('email', '==', session.user.email));
-          const querySnapshot = await getDocs(q);
-          
-          if (!querySnapshot.empty) {
-            const userDoc = querySnapshot.docs[0];
-            const data = userDoc.data() as UserProfile;            
+          const own = await getUserByEmail(session.user.email);
+          if (own) {
+            const data = own as unknown as UserProfile;
             setUserData(data);
             
             // Update session role if it doesn't match
@@ -84,21 +88,10 @@ const Navigation = () => {
       label: "Học tập",
       icon: <RiBookOpenLine className="w-5 h-5" />,
       items: [
+        { href: "/dashboard/teacher/students", label: "Học viên", icon: <RiTeamLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
-        { href: "/dashboard/admin/daily-notes", label: "Nhật ký học tập", icon: <RiFileList2Line className="w-4 h-4" /> },
         { href: "/dashboard/mocktest/admin", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
-        { href: "/dashboard/admin/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
-      ]
-    },
-    {
-      label: "Quản lý",
-      icon: <RiSettings4Line className="w-5 h-5" />,
-      items: [
-        { href: "/dashboard/admin/schedule", label: "Lịch học", icon: <RiCalendarLine className="w-4 h-4" /> },
-        { href: "/dashboard/admin/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-4 h-4" /> },
-        { href: "/dashboard/admin/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-4 h-4" /> },
-        { href: "/dashboard/admin/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
       ]
     }
   ];
@@ -108,22 +101,17 @@ const Navigation = () => {
       label: "Học tập",
       icon: <RiBookOpenLine className="w-5 h-5" />,
       items: [
+        { href: "/dashboard/teacher/students", label: "Học viên", icon: <RiTeamLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
-        { href: "/dashboard/teacher/daily-notes", label: "Nhật ký học tập", icon: <RiFileList2Line className="w-4 h-4" /> },
         { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
-        { href: "/dashboard/teacher/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
       ]
     },
     {
       label: "Quản lý",
       icon: <RiSettings4Line className="w-5 h-5" />,
       items: [
-        { href: "/dashboard/teacher/schedule", label: "Lịch học", icon: <RiCalendarLine className="w-4 h-4" /> },
         { href: "/dashboard/class", label: "Classes", icon: <RiTeamLine className="w-4 h-4" /> },
-        { href: "/dashboard/teacher/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-4 h-4" /> },
-        { href: "/dashboard/teacher/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-4 h-4" /> },
-        { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
       ]
     }
   ];
@@ -136,16 +124,6 @@ const Navigation = () => {
         { href: "/dashboard/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
         { href: "/dashboard/homework-feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
         { href: "/dashboard/mocktest", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
-        { href: "/dashboard/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
-        { href: "/dashboard/practice/wfd", label: "Write From Dictation", icon: <RiFileTextLine className="w-4 h-4" /> },
-      ]
-    },
-    {
-      label: "Tiện ích",
-      icon: <RiSettings4Line className="w-5 h-5" />,
-      items: [
-        { href: "/dashboard/schedule", label: "Lịch học", icon: <RiCalendarLine className="w-4 h-4" /> },
-        { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
       ]
     }
   ];
@@ -155,28 +133,23 @@ const Navigation = () => {
       label: "Học tập",
       icon: <RiBookOpenLine className="w-5 h-5" />,
       items: [
+        { href: "/dashboard/teacher/students", label: "Học viên", icon: <RiTeamLine className="w-4 h-4" /> },
         { href: "/dashboard/teacher/assignments", label: "Bài Tập", icon: <RiTaskLine className="w-4 h-4" /> },
         { href: "/dashboard/assistant/feedback", label: "Feedback", icon: <RiFileTextLine className="w-4 h-4" /> },
-        { href: "/dashboard/assistant/daily-notes", label: "Nhật ký học tập", icon: <RiFileList2Line className="w-4 h-4" /> },
         { href: "/dashboard/mocktest/teacher", label: "Mocktest", icon: <RiFileTextLine className="w-4 h-4" /> },
-        { href: "/dashboard/teacher/pte-checklist", label: "PTE Checklist", icon: <RiCheckboxLine className="w-4 h-4" /> },
       ]
     },
     {
       label: "Quản lý",
       icon: <RiSettings4Line className="w-5 h-5" />,
       items: [
-        { href: "/dashboard/assistant/schedule", label: "Lịch học", icon: <RiCalendarLine className="w-4 h-4" /> },
         { href: "/dashboard/class", label: "Classes", icon: <RiTeamLine className="w-4 h-4" /> },
-        { href: "/dashboard/assistant/attendance", label: "Điểm danh", icon: <RiCalendarCheckLine className="w-4 h-4" /> },
-        { href: "/dashboard/teacher/support-speaking", label: "Support Speaking", icon: <RiChat1Line className="w-4 h-4" /> },
-        { href: "/dashboard/exam-tracking", label: "Exam Tracking", icon: <RiFileList2Line className="w-4 h-4" /> },
       ]
     }
   ];
 
   const getNavData = () => {
-    const role = session?.user?.role;
+    const role = account?.role;
     switch (role) {
       case "admin":
         return { 
@@ -185,29 +158,39 @@ const Navigation = () => {
             { href: "/dashboard/admin", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> }
           ]
         };
+      case "admin_support":
+        return {
+          categories: [],
+          mainItems: [{ href: '/dashboard', label: 'Hỗ trợ admin', icon: <RiDashboardLine className="w-5 h-5" /> }]
+        };
       case "teacher":
         return { 
           categories: teacherNavCategories, 
-          mainItems: []
+          mainItems: [{ href: '/dashboard/teacher/attendance-guide', label: 'Hướng dẫn chấm công', icon: <RiBookOpenLine className="w-5 h-5" /> }]
         };
       case "student":
         return { 
           categories: studentNavCategories, 
           mainItems: [
-            { href: "/dashboard", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> }
+            { href: "/dashboard", label: "Dashboard", icon: <RiDashboardLine className="w-5 h-5" /> },
+            { href: "/dashboard/submissions", label: "Nộp bài tập", icon: <RiTaskLine className="w-5 h-5" /> },
+            { href: "/dashboard/guides", label: "Hướng dẫn", icon: <RiBookOpenLine className="w-5 h-5" /> }
           ]
         };
       case "assistant":
         return { 
           categories: assistantNavCategories, 
-          mainItems: []
+          mainItems: [{ href: '/dashboard/teacher/attendance-guide', label: 'Hướng dẫn chấm công', icon: <RiBookOpenLine className="w-5 h-5" /> }]
         };
       default:
         return { categories: [], mainItems: [] };
     }
   };
 
-  const { categories, mainItems } = getNavData();
+  const { categories: oldCategories, mainItems } = getNavData();
+  const categories = oldCategories.map(category => ({ ...category, items: category.items
+    .filter(item => item.href !== '/dashboard/class' && item.href !== '/dashboard/teacher/assignments')
+  })).filter(category => category.items.length > 0);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDropdowns, setOpenDropdowns] = useState<{ [key: string]: boolean }>({});
@@ -227,12 +210,23 @@ const Navigation = () => {
     return items.some(item => pathname === item.href);
   };
 
+  if (account?.role === 'student') {
+    return <StudentNavigation
+      items={[mainItems[0], ...categories.flatMap(category => category.items), ...mainItems.slice(1)]}
+      pathname={pathname}
+      name={userData?.name || account.name || session?.user?.name || 'Học viên'}
+      email={session?.user?.email}
+      avatar={userData?.avatar}
+      onLogout={logout}
+    />;
+  }
+
   return (
-    <nav className="bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav aria-label="Điều hướng chính" className={`bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-50 ${isAdminDashboard ? 'admin-top-navigation' : ''}`}>
+      <div className="admin-nav-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0 transition-all duration-300 hover:scale-110 hover:rotate-6">
+            <Link href="/" className="admin-nav-logo flex-shrink-0 transition-all duration-300 hover:scale-110 hover:rotate-6">
               <Image
                 src="/orange-logo.png"
                 alt="PTE Intensive Logo"
@@ -242,7 +236,7 @@ const Navigation = () => {
               />
             </Link>
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-2 lg:space-x-4 ml-6 lg:ml-12">
+            <div className="admin-nav-links hidden md:flex items-center space-x-2 lg:space-x-4 ml-6 lg:ml-12">
               {/* Main Items */}
               {mainItems.map((item) => (
                 <Link
@@ -272,8 +266,12 @@ const Navigation = () => {
 
               {/* Category Dropdowns */}
               {categories.map((category) => (
-                <div key={category.label} className="relative group">
+                <div key={category.label} className="relative group" onKeyDown={event => { if (isAdminDashboard && event.key === 'Escape') { setOpenDropdowns(prev => ({ ...prev, [category.label]: false })); (event.currentTarget.querySelector('button') as HTMLButtonElement | null)?.focus(); } }}>
                   <button
+                    type="button"
+                    aria-expanded={isAdminDashboard ? !!openDropdowns[category.label] : undefined}
+                    aria-controls={isAdminDashboard ? `admin-nav-category-${category.label}` : undefined}
+                    onClick={isAdminDashboard ? () => toggleDropdown(category.label) : undefined}
                     className={`inline-flex items-center space-x-2 px-3 py-2 lg:px-4 lg:py-2.5 text-sm lg:text-base font-medium transition-all duration-300 rounded-xl ${
                       isActiveInCategory(category.items)
                         ? "bg-gradient-to-r from-[#fc5d01] to-[#fd7f33] text-white shadow-md"
@@ -294,7 +292,7 @@ const Navigation = () => {
                   </button>
                   
                   {/* Dropdown Menu */}
-                  <div className="absolute top-full left-0 mt-2 w-56 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-[#fedac2]/30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                  <div id={isAdminDashboard ? `admin-nav-category-${category.label}` : undefined} className={`admin-nav-dropdown absolute top-full left-0 mt-2 w-56 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-[#fedac2]/30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 ${isAdminDashboard && openDropdowns[category.label] ? 'admin-nav-dropdown-open' : ''}`}>
                     <div className="py-2">
                       {category.items.map((item) => (
                         <Link
@@ -349,6 +347,8 @@ const Navigation = () => {
           <div className="md:hidden flex items-center">
             <button
               onClick={toggleMobileMenu}
+              aria-expanded={mobileMenuOpen}
+              aria-label={mobileMenuOpen ? 'Đóng menu điều hướng' : 'Mở menu điều hướng'}
               className="inline-flex items-center justify-center p-2 rounded-md text-[#fc5d01] hover:text-white hover:bg-[#fc5d01] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#fedac2] transition-all duration-300"
             >
               <span className="sr-only">Open main menu</span>
@@ -368,7 +368,7 @@ const Navigation = () => {
                 key={`${session.user.email}-${userData.role}`} 
               />
             )}
-            <div className="flex items-center space-x-4 bg-gradient-to-r from-[#fedac2]/30 to-white/30 backdrop-blur-md px-3 py-2 lg:px-5 lg:py-2.5 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border border-white/20">
+            <div className="admin-nav-profile flex items-center space-x-4 bg-gradient-to-r from-[#fedac2]/30 to-white/30 backdrop-blur-md px-3 py-2 lg:px-5 lg:py-2.5 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border border-white/20">
               {userData?.avatar ? (
                 <div className="w-9 h-9 lg:w-11 lg:h-11 rounded-full overflow-hidden ring-2 ring-[#fedac2] transition-all duration-300 hover:ring-[#fc5d01] hover:ring-[3px] transform hover:scale-110 shadow-md">
                   <Image
@@ -388,7 +388,7 @@ const Navigation = () => {
               )}
               <div className="flex flex-col min-w-[100px] lg:min-w-[140px]">
                 <span className="text-xs lg:text-sm font-bold text-[#fc5d01]">
-                  {userData?.name || session?.user?.name || 'User'}
+                    {userData?.name || account?.name || session?.user?.name || 'User'}
                 </span>
                 <span className="text-xs text-[#fd7f33]">
                   {session?.user?.email}
@@ -399,8 +399,8 @@ const Navigation = () => {
               </div>
             </div>
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="inline-flex items-center space-x-2 px-3 py-2 lg:px-5 lg:py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-[#fc5d01] to-[#fd7f33] hover:from-[#fd7f33] hover:to-[#fc5d01] transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fedac2] shadow-md hover:shadow-lg group"
+                    onClick={logout}
+              className="admin-nav-logout inline-flex items-center space-x-2 px-3 py-2 lg:px-5 lg:py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-[#fc5d01] to-[#fd7f33] hover:from-[#fd7f33] hover:to-[#fc5d01] transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fedac2] shadow-md hover:shadow-lg group"
             >
               <span>Đăng xuất</span>
               <RiLogoutBoxRLine className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -546,7 +546,7 @@ const Navigation = () => {
             
             <div className="px-4 py-3">
               <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={logout}
                 className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-[#fc5d01] to-[#fd7f33] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fedac2] shadow-md group"
               >
                 <span>Đăng xuất</span>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs } from '@/app/firebase/firestore';
 import { db } from '@/app/firebase/config';
 
 interface Class {

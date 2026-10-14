@@ -1,154 +1,62 @@
 'use client';
-
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
 import { useState } from 'react';
-import UserManagement from './UserManagement';
-import ClassManagement from './ClassManagement';
+import Link from 'next/link';
+import { RiShieldUserLine, RiTeamLine, RiChatCheckLine, RiFlagLine, RiCalendarCheckLine, RiArrowRightLine, RiArrowRightSLine } from 'react-icons/ri';
+import AccountManagement from '@/components/AccountManagement';
+import FeedbackWorkspace from '@/components/FeedbackWorkspace';
 import DailyTargetSettings from './DailyTargetSettings';
-import SystemStats from './SystemStats';
-import FeedbackMonitoring from './FeedbackMonitoring';
-import HomeworkFeedbackMonitoring from './HomeworkFeedbackMonitoring';
-import WelcomeHeader from './WelcomeHeader';
-import MispronouncedWordsTracker from '../../components/MispronouncedWordsTracker';
-
+import { useLearningAccount } from '@/components/LearningGate';
+import AdminSupportPreview from '@/components/AdminSupportPreview';
+const sections = [
+  { value: 'accounts', label: 'Tài khoản & phân quyền', description: 'Duyệt học viên, quản lý vai trò và phân công.', icon: RiShieldUserLine },
+  { value: 'feedback', label: 'Bài tập & feedback', description: 'Theo dõi bài nộp và kiểm tra nhận xét.', icon: RiChatCheckLine },
+  { value: 'targets', label: 'Mục tiêu hàng ngày', description: 'Cập nhật nguồn và liên kết luyện tập.', icon: RiFlagLine },
+  { value: 'attendance', label: 'Chấm công', description: 'Đối chiếu hoạt động và chi tiết kỳ công.', icon: RiCalendarCheckLine },
+];
 export default function AdminDashboardClient() {
-  const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState('stats');
-
-  if (!session || (session.user as any)?.role !== 'admin') {
-    redirect('/dashboard');
-  }
-
-  const tabs = [
-    {
-      id: 'stats',
-      name: 'Thống kê hệ thống',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+  const [tab, setTab] = useState('accounts');
+  const account = useLearningAccount();
+  const activeSection = sections.find(section => section.value === tab) || sections[0];
+  if (account?.role !== 'admin') return <p role="alert">Không có quyền truy cập.</p>;
+  return <div className="admin-dashboard space-y-6">
+    <header className="admin-dashboard-hero relative overflow-hidden p-6 sm:p-8">
+      <div className="admin-hero-content relative z-10">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-wider text-gray-600">PTE Intensive <span className="mx-2 text-primary" aria-hidden="true">/</span> Admin</p><span className="admin-dashboard-badge"><RiShieldUserLine aria-hidden="true" className="h-4 w-4 text-primary" /> Quản trị hệ thống</span></div>
+      <div className="flex items-center justify-between gap-8"><div className="max-w-2xl min-w-0"><p className="mb-2 text-sm font-medium text-gray-600">Xin chào{account.name ? `, ${account.name}` : ''}.</p><h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Trung tâm quản trị</h1><p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">Quản lý tài khoản, theo dõi chất lượng phản hồi và kiểm tra hoạt động giảng dạy tại một nơi.</p>
+        <div className="admin-hero-actions mt-6 flex flex-col gap-3 sm:flex-row"><button type="button" onClick={() => { setTab('accounts'); document.getElementById('admin-workspace')?.scrollIntoView({ block: 'start' }); }} className="ui-button admin-secondary-action inline-flex items-center justify-center gap-2 text-sm font-semibold"><RiShieldUserLine aria-hidden="true" className="h-5 w-5 text-primary" /> Quản trị hệ thống</button><Link href="/dashboard/teacher/students" className="ui-button admin-primary-action inline-flex items-center justify-center gap-2 text-sm font-semibold"><RiTeamLine aria-hidden="true" className="h-5 w-5" /> Danh sách học viên <RiArrowRightLine aria-hidden="true" className="h-4 w-4" /></Link></div></div>
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 280 200" className="admin-hero-illustration hidden w-64 shrink-0 lg:block">
+          <circle cx="150" cy="100" r="96" fill="var(--admin-peach)" opacity=".45" />
+          <rect x="28" y="30" width="224" height="144" rx="16" fill="white" stroke="var(--admin-border)" />
+          <path d="M28 64h224" stroke="var(--admin-border)" /><circle cx="44" cy="47" r="4" fill="var(--primary-color)" /><rect x="56" y="43" width="64" height="8" rx="4" fill="var(--admin-peach)" />
+          <rect x="44" y="80" width="52" height="76" rx="8" fill="var(--admin-muted-surface)" /><circle cx="70" cy="100" r="10" fill="var(--admin-peach)" /><path d="M56 126q14-20 28 0" fill="var(--primary-color)" /><rect x="56" y="139" width="28" height="5" rx="2" fill="var(--admin-peach)" />
+          <path d="M112 155h122" stroke="var(--admin-border)" /><rect x="122" y="123" width="20" height="32" rx="4" fill="var(--admin-peach)" /><rect x="157" y="104" width="20" height="51" rx="4" fill="var(--admin-peach)" /><rect x="192" y="83" width="20" height="72" rx="4" fill="var(--primary-color)" />
+          <rect x="207" y="148" width="56" height="40" rx="12" fill="var(--admin-surface)" stroke="var(--admin-border)" /><path d="m222 168 8 7 15-16" fill="none" stroke="var(--primary-color)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-      )
-    },
-    {
-      id: 'feedback',
-      name: 'Theo dõi Feedback',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-        </svg>
-      )
-    },
-    {
-      id: 'homework-feedback',
-      name: 'Feedback Bài tập',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      )
-    },
-    {
-      id: 'users',
-      name: 'Quản lý Tài khoản',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      )
-    },
-    {
-      id: 'classes',
-      name: 'Quản lý Lớp học',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-      )
-    },
-    {
-      id: 'daily-targets',
-      name: 'Daily Target Settings',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      )
-    },
-    {
-      id: 'mispronounced-words',
-      name: 'Từ phát âm sai',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2M9 10h6m-6 4h6" />
-        </svg>
-      )
-    }
-  ];
-
-  return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Welcome Header */}
-      <WelcomeHeader />
-
-      {/* Main Content */}
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        {/* Tabs - Mobile View */}
-        <div className="md:hidden border-b border-gray-200 bg-white">
-          <div className="relative">
-            <select 
-              className="w-full py-3 px-4 bg-white border-0 focus:ring-2 focus:ring-[#fc5d01] text-sm text-gray-700 appearance-none"
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
-            >
-              {tabs.map((tab) => (
-                <option key={tab.id} value={tab.id}>
-                  {tab.name}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
-        </div>
-        
-        {/* Tabs - Desktop View */}
-        <div className="hidden md:block border-b border-gray-200">
-          <nav className="-mb-px flex overflow-x-auto scrollbar-hide">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`${
-                  activeTab === tab.id
-                    ? 'border-[#fc5d01] text-[#fc5d01] bg-[#fedac2]/10'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                } flex items-center space-x-2 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors duration-200 flex-1 justify-center`}
-              >
-                <span className="flex-shrink-0">{tab.icon}</span>
-                <span className="truncate">{tab.name}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Content Area */}
-        <div className="p-3 sm:p-6 bg-gradient-to-br from-white to-[#fedac2]/5">
-          <div className="animate-fadeIn">
-            {activeTab === 'stats' && <SystemStats />}
-            {activeTab === 'feedback' && <FeedbackMonitoring />}
-            {activeTab === 'homework-feedback' && <HomeworkFeedbackMonitoring />}
-            {activeTab === 'users' && <UserManagement />}
-            {activeTab === 'classes' && <ClassManagement />}
-            {activeTab === 'daily-targets' && <DailyTargetSettings />}
-            {activeTab === 'mispronounced-words' && <MispronouncedWordsTracker userRole="admin" />}
-          </div>
-        </div>
       </div>
+      </div>
+    </header>
+    <div className="grid items-start gap-6 lg:grid-cols-[256px_minmax(0,1fr)]">
+      <aside className="admin-dashboard-navigation min-w-0" aria-label="Điều hướng quản trị">
+        <div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Không gian quản lý</h2><span className="text-xs tabular-nums text-gray-500">{String(sections.length).padStart(2, '0')} mục</span></div>
+        <details className="admin-management-menu" open><summary className="admin-menu-toggle">Menu quản lý <RiArrowRightSLine aria-hidden="true" className="h-4 w-4" /></summary>
+        <div role="group" aria-label="Quản trị" className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
+          {sections.map(section => <button key={section.value} id={`admin-section-${section.value}`} type="button" aria-pressed={tab === section.value} aria-controls="admin-workspace" onClick={() => setTab(section.value)} className="admin-section-button group">
+            <span className="admin-section-icon"><section.icon aria-hidden="true" className="h-5 w-5" /></span>
+            <span className="min-w-0 flex-1"><span className="block text-sm font-semibold leading-relaxed text-gray-900">{section.label}</span><span className="mt-1 block text-xs leading-relaxed text-gray-600">{section.description}</span>{tab === section.value && <span className="mt-2 block text-xs font-semibold text-gray-700">Đang xem</span>}</span>
+            <RiArrowRightSLine aria-hidden="true" className="mt-2 h-4 w-4 shrink-0 text-gray-400 group-hover:text-primary" />
+          </button>)}
+        </div></details>
+        <p className="admin-sidebar-tip mt-4 hidden p-4 text-xs leading-relaxed text-gray-600 lg:block">Chọn một mục để quản lý. Các thao tác và bộ lọc nằm trong khu vực bên phải.</p>
+      </aside>
+      <section id="admin-workspace" aria-labelledby={`admin-section-${activeSection.value}`} className="admin-workspace min-w-0">
+        <div className="admin-workspace-heading flex items-start gap-3 p-4 sm:p-6">
+          <span className="admin-dashboard-icon"><activeSection.icon aria-hidden="true" className="h-5 w-5" /></span>
+          <div className="min-w-0"><p className="mb-1 text-xs font-medium text-gray-500">Khu vực quản trị</p><h2 className="text-lg font-semibold tracking-tight text-gray-900">{activeSection.label}</h2><p className="mt-1 text-sm leading-relaxed text-gray-600">{activeSection.description}</p></div>
+        </div>
+        <div className="p-4 sm:p-6">
+          {tab === 'accounts' ? <AccountManagement /> : tab === 'feedback' ? <FeedbackWorkspace /> : tab === 'attendance' ? <AdminSupportPreview initialTab="attendance" audience="admin" /> : <DailyTargetSettings />}
+        </div>
+      </section>
     </div>
-  );
+  </div>;
 }

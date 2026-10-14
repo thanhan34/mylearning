@@ -1,10 +1,20 @@
 import { AuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { getUserByEmail, createUser } from "../../firebase/services/user";
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { MOCK_ENABLED, MOCK_ACCOUNTS, mockEmail } from '../../../lib/mock/config';
+import { getUserByEmail, createUser } from '../../firebase/services/user';
 
 export const authOptions: AuthOptions = {
-  debug: true, // Enable debug logs
-  providers: [
+  debug: false,
+  providers: MOCK_ENABLED ? [CredentialsProvider({
+    id: 'mock', name: 'Local demo', credentials: { account: { label: 'Demo account', type: 'text' } },
+    async authorize(credentials) {
+      const key = credentials?.account;
+      if (!MOCK_ENABLED || !MOCK_ACCOUNTS.some(account => account === key)) return null;
+      const user = await getUserByEmail(mockEmail(key!));
+      return user ? { id: user.id, email: user.email, name: user.name, role: user.role } : null;
+    },
+  })] : [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
@@ -40,7 +50,7 @@ export const authOptions: AuthOptions = {
 
         if (existingUser) {
           user.id = existingUser.id;
-          user.role = existingUser.role;
+          user.role = existingUser.role as typeof user.role;
           return true;
         }
 
@@ -75,7 +85,7 @@ export const authOptions: AuthOptions = {
             timestamp: new Date().toISOString()
           });
         }
-        return '/login?error=AccessDenied';
+        return '/login?error=DatabaseError';
       }
     },
     async jwt({ token, user, account }) {
@@ -97,7 +107,7 @@ export const authOptions: AuthOptions = {
       try {
         if (session.user && token) {
           session.user.id = token.id as string;
-          session.user.role = token.role as "admin" | "teacher" | "student" | "assistant";
+          session.user.role = token.role as typeof session.user.role;
           session.accessToken = token.accessToken;
           session.refreshToken = token.refreshToken;
         }

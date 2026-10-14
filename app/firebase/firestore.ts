@@ -1,0 +1,23 @@
+// Keep the installed SDK's public types while selecting the local implementation.
+import * as live from 'firebase/firestore';
+import { MOCK_ENABLED } from '../../lib/mock/config';
+import { mockSdk } from '../../lib/mock/adapter';
+export type { DocumentData, QueryConstraint, QueryDocumentSnapshot, QuerySnapshot, Firestore } from 'firebase/firestore';
+export { Timestamp } from 'firebase/firestore';
+export const collection = (MOCK_ENABLED ? mockSdk.collection : live.collection) as typeof live.collection;
+export const doc = (MOCK_ENABLED ? mockSdk.doc : live.doc) as typeof live.doc;
+export const query = (MOCK_ENABLED ? mockSdk.query : live.query) as typeof live.query;
+export const where = (MOCK_ENABLED ? mockSdk.where : live.where) as typeof live.where;
+export const orderBy = (MOCK_ENABLED ? mockSdk.orderBy : live.orderBy) as typeof live.orderBy;
+export const limit = (MOCK_ENABLED ? mockSdk.limit : live.limit) as typeof live.limit;
+export const getDoc = (MOCK_ENABLED ? mockSdk.getDoc : live.getDoc) as typeof live.getDoc;
+export const getDocs = (MOCK_ENABLED ? mockSdk.getDocs : live.getDocs) as typeof live.getDocs;
+export const addDoc = (MOCK_ENABLED ? mockSdk.addDoc : live.addDoc) as typeof live.addDoc;
+export const setDoc = (MOCK_ENABLED ? mockSdk.setDoc : live.setDoc) as typeof live.setDoc;
+export const updateDoc = (MOCK_ENABLED ? mockSdk.updateDoc : live.updateDoc) as typeof live.updateDoc;
+export const deleteDoc = (MOCK_ENABLED ? mockSdk.deleteDoc : live.deleteDoc) as typeof live.deleteDoc;
+export const arrayUnion = (MOCK_ENABLED ? mockSdk.arrayUnion : live.arrayUnion) as typeof live.arrayUnion;
+export const arrayRemove = (MOCK_ENABLED ? mockSdk.arrayRemove : live.arrayRemove) as typeof live.arrayRemove;
+export const writeBatch = (MOCK_ENABLED ? mockSdk.writeBatch : live.writeBatch) as typeof live.writeBatch;
+export const runTransaction = (MOCK_ENABLED ? mockSdk.runTransaction : live.runTransaction) as typeof live.runTransaction;
+export const onSnapshot = (MOCK_ENABLED ? mockSdk.onSnapshot : live.onSnapshot) as typeof live.onSnapshot;

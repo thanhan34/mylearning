@@ -2,9 +2,10 @@
 
 import { useState, useRef } from 'react';
 import { db, storage } from '../../firebase/config';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc } from '@/app/firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { AssignmentFormData } from '../../../types/assignment';
+import { MOCK_ENABLED } from '@/lib/mock/config';
 
 interface AssignmentFormProps {
   teacherId: string;
@@ -30,6 +31,7 @@ export default function AssignmentForm({ teacherId, targetId, onAssign, onCancel
   };
 
   const uploadFiles = async (files: File[]): Promise<string[]> => {
+    if (MOCK_ENABLED) throw new Error('Upload files is not supported in local mock mode. Submit without attachments.');
     const uploadPromises = files.map(async (file) => {
       const storageRef = ref(storage, `assignments/${Date.now()}_${file.name}`);
       await uploadBytes(storageRef, file);

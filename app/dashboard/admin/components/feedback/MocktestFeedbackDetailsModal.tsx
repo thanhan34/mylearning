@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/app/firebase/firestore';
 import { Mocktest } from '@/types/mocktest';
 
 interface MocktestFeedbackDetailsModalProps {

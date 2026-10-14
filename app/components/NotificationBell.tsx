@@ -9,7 +9,7 @@ import {
   getUserByEmail,
   getUnreadNotifications
 } from '../firebase/services';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/app/firebase/firestore';
 
 interface NotificationBellProps {
   userRole: "teacher" | "admin" | "student" | "assistant";

@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Class, User } from '../../../../types/admin';
 import { db } from '../../../firebase/config';
-import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, where, DocumentData, QueryDocumentSnapshot, onSnapshot, QuerySnapshot } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, updateDoc, query, where, DocumentData, QueryDocumentSnapshot, onSnapshot, QuerySnapshot } from '@/app/firebase/firestore';
 import InlineStudentSubmissions from '../../class/components/InlineStudentSubmissions';
 import UnassignedStudentsList from '../../class/components/UnassignedStudentsList';
 import TeachersList from './TeachersList';

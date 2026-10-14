@@ -10,7 +10,7 @@ import {
   getDocs,
   getDoc,
   Timestamp
-} from "firebase/firestore";
+} from "@/app/firebase/firestore";
 import { db } from "../config";
 import { Mocktest, MocktestFormData, FeedbackFormData } from "../../../types/mocktest";
 import { sendMocktestNotification, sendMocktestFeedbackNotification } from "./discord";
