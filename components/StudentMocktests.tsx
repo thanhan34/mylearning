@@ -13,6 +13,7 @@ export interface MocktestRecord {
   link?: string;
   feedback?: string;
   feedbackByName?: string;
+  recordVersion?: string;
 }
 
 export function mocktestUrl(value?: string) {
