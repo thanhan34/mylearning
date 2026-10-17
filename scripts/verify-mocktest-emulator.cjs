@@ -28,9 +28,9 @@ async function main() {
   const { encode } = req('next-auth/jwt');
   const secret = 'local-fixture-secret-never-for-production-43';
   const cookies = {};
-  for (const role of ['admin', 'student', 'teacher', 'assistant', 'admin_support']) {
+  for (const role of ['admin', 'adminB', 'student', 'studentB', 'teacher', 'assistant', 'admin_support']) {
     const email = role + '@phase43.example.test';
-    await db.collection('users').doc(role).set({ email, name: 'Fixture ' + role, role, approvalStatus: 'approved' });
+    await db.collection('users').doc(role).set({ email, name: 'Fixture ' + role, role: role === 'adminB' ? 'admin' : role === 'studentB' ? 'student' : role, approvalStatus: 'approved' });
     try { await getAuth(app).createUser({ uid: role, email }); } catch (error) { if (error.code !== 'auth/uid-already-exists' && error.code !== 'auth/email-already-exists') throw error; }
     cookies[role] = await encode({ secret, token: { email, name: 'Fixture ' + role, id: role, role } });
   }
@@ -48,6 +48,41 @@ async function main() {
   // Compare with the persisted baseline: the emulator truncates sub-microsecond
   // precision on initial persistence, before the feedback route runs.
   const persistedSeed = (await ref.get()).data();
+  const faultDir = process.env.MOCKTEST_FAULT_DIR;
+  const events = () => fs.existsSync(path.join(faultDir, 'events.jsonl')) ? fs.readFileSync(path.join(faultDir, 'events.jsonl'), 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [];
+  const waitEvent = async (event, from) => {
+    const deadline = Date.now() + 15000;
+    while (!events().slice(from).some(e => e.event === event)) {
+      assert.ok(Date.now() < deadline, 'Missing route event: ' + event);
+      await new Promise(r => setTimeout(r, 25));
+    }
+  };
+  const fault = mode => fs.writeFileSync(path.join(faultDir, 'control.json'), JSON.stringify({ mode }));
+  assert.ok(faultDir && path.isAbsolute(faultDir), 'Use test-process RPC preload with MOCKTEST_FAULT_DIR');
+  await check('Records HTTP route waits for real commit acknowledgement', async () => {
+    const from = events().length; fault('pause'); let settled = false;
+    const response = api('admin', { id: 'fixture', feedback: 'Paused commit' }).then(r => { settled = true; return r; });
+    await waitEvent('fault-pause', from); await new Promise(r => setTimeout(r, 200));
+    assert.equal(settled, false, 'Route must not publish success before commit');
+    fs.writeFileSync(path.join(faultDir, 'release'), '1');
+    assert.equal((await response).status, 200); await waitEvent('emulator-commit-ack', from);
+    assert.equal((await ref.get()).data().feedback, 'Paused commit');
+  });
+  await check('Records HTTP route retries injected ABORTED RPC then commits to emulator', async () => {
+    const from = events().length; fault('abort-once');
+    assert.equal((await api('admin', { id: 'fixture', feedback: 'Route retry committed' })).status, 200);
+    const observed = events().slice(from);
+    assert.ok(observed.some(e => e.event === 'emulator-rollback-ack'));
+    assert.ok(observed.filter(e => e.event === 'route-commit-request').length >= 2);
+    assert.ok(observed.some(e => e.event === 'emulator-commit-ack'));
+    assert.equal((await ref.get()).data().feedback, 'Route retry committed');
+  });
+  await check('Records HTTP route commit failure returns no success and preserves database', async () => {
+    const before = (await ref.get()).data().feedback; fault('deny');
+    const response = await api('admin', { id: 'fixture', feedback: 'Must never commit' });
+    assert.equal(response.status, 503); assert.notEqual(response.data.success, true);
+    assert.equal((await ref.get()).data().feedback, before);
+  });
   console.log('PERSISTED_TIMESTAMP=' + JSON.stringify({ seconds: persistedSeed.submittedAt.seconds, nanoseconds: persistedSeed.submittedAt.nanoseconds, requestedNanoseconds: submittedAt.nanoseconds }));
   await check('Complete embedded names omit directory results', async () => {
     const r = await api('admin'); assert.equal(r.status, 200); assert.deepEqual(r.data.students, []); assert.equal(r.data.records[0].studentName, seed.studentName);
@@ -95,6 +130,13 @@ async function main() {
   });
   await context.addCookies([{ name: 'next-auth.session-token', value: cookies.admin, url: origin }]);
   const page = await context.newPage(); page.setDefaultTimeout(20000);
+  const network = [];
+  page.on('request', r => {
+    if (!r.url().includes('/api/')) return;
+    const cookie = r.headers().cookie || '';
+    const actor = Object.keys(cookies).find(key => cookie.includes(cookies[key])) || 'unavailable';
+    network.push({ event: 'request', method: r.method(), path: new URL(r.url()).pathname, actor });
+  });
   let listGets = 0; page.on('request', r => { if (r.url().includes('/api/learning/records?') && r.method() === 'GET') listGets++; });
   await page.goto(origin + '/dashboard/mocktest/admin');
   const textarea = page.getByRole('textbox', { name: 'Feedback mocktest' });
@@ -127,6 +169,97 @@ async function main() {
     await page.reload(); await textarea.waitFor();
     assert.equal(await textarea.inputValue(), before);
   });
+  await check('Browser real records-route commit failure retains draft and confirmed state', async () => {
+    const before = (await ref.get()).data().feedback;
+    await textarea.fill('Draft after denied commit'); fault('deny');
+    const response = page.waitForResponse(r => r.url().endsWith('/api/learning/records') && r.request().method() === 'POST');
+    await page.getByRole('button', { name: 'Lưu feedback', exact: true }).click();
+    assert.equal((await response).status(), 503);
+    await page.getByRole('button', { name: 'Lưu feedback', exact: true }).waitFor({ state: 'visible' });
+    assert.equal(await textarea.inputValue(), 'Draft after denied commit');
+    assert.equal((await ref.get()).data().feedback, before);
+    assert.equal(await page.getByText('Draft after denied commit', { exact: true }).count(), 0, 'Failed draft must not appear as confirmed feedback');
+  });
+  for (const method of ['GET', 'POST']) {
+    await check(`Browser account switch while ${method} A response is pending`, async () => {
+      await context.addCookies([{ name: 'next-auth.session-token', value: cookies.admin, url: origin }]);
+      await page.reload(); await textarea.waitFor();
+      let release, captured, fulfilled;
+      const gate = new Promise(resolve => { release = resolve; });
+      const gotResponse = new Promise(resolve => { captured = resolve; });
+      const didFulfill = new Promise(resolve => { fulfilled = resolve; });
+      let held = false;
+      const pattern = '**/api/learning/records*';
+      const handler = async route => {
+        if (held || route.request().method() !== method) return route.continue();
+        held = true;
+        const response = await route.fetch();
+        network.push({ event: 'held-A-response', method, status: response.status() });
+        captured(); await gate; await route.fulfill({ response }); fulfilled();
+      };
+      await page.route(pattern, handler);
+      if (method === 'GET') await page.getByRole('button', { name: 'Tải lại', exact: true }).click();
+      else {
+        await textarea.fill('A response must not overwrite B draft');
+        await page.getByRole('button', { name: 'Lưu feedback', exact: true }).click();
+      }
+      await gotResponse;
+      await context.addCookies([{ name: 'next-auth.session-token', value: cookies.adminB, url: origin }]);
+      const bSession = page.waitForResponse(async r => r.url().endsWith('/api/learning/session') && r.status() === 200 && (await r.json()).account?.id === 'adminB');
+      await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', {
+        key: 'nextauth.message', newValue: JSON.stringify({ event: 'session', data: { trigger: 'getSession' }, timestamp: Date.now() }),
+      })));
+      await bSession; await textarea.waitFor();
+      await textarea.fill('B draft must survive late A');
+      release(); await didFulfill; await page.unroute(pattern, handler);
+      await page.waitForTimeout(300);
+      assert.equal(await textarea.inputValue(), 'B draft must survive late A');
+      assert.equal(await page.getByText('Đã lưu thành công.', { exact: true }).count(), 0);
+      const requests = network.filter(e => e.event === 'request' && e.path === '/api/learning/records' && e.method === 'POST');
+      assert.ok(requests.every(r => r.actor !== 'unavailable'), 'Every save must carry a known fixture identity');
+      await page.screenshot({ path: path.join(artifactDir, `switch-${method}.png`), fullPage: true });
+      network.push({ event: 'B-draft-preserved-after-A-release', method });
+    });
+  }
+  await check('Actual JWT session architecture: no custom-token/Firebase sign-in required', async () => {
+    const session = await page.evaluate(async () => (await fetch('/api/auth/session')).json());
+    assert.equal(session.user.email, 'adminB@phase43.example.test');
+    assert.equal(network.filter(e => e.method === 'POST' && e.path === '/api/learning/session').length, 0);
+    assert.equal(network.filter(e => /identitytoolkit|securetoken/.test(e.path)).length, 0);
+  });
+  await check('Student GET switching isolates private records and preserves B submission draft', async () => {
+    await db.collection('mocktests').doc('privateB').set({ studentId: 'studentB', studentName: 'Private B', feedback: 'B PRIVATE RECORD', link: 'https://example.test/b' });
+    await ref.update({ feedback: 'A PRIVATE RECORD' });
+    await context.addCookies([{ name: 'next-auth.session-token', value: cookies.student, url: origin }]);
+    await page.goto(origin + '/dashboard/mocktest');
+    await page.getByText('A PRIVATE RECORD', { exact: true }).waitFor();
+    let release, capture, complete;
+    const gate = new Promise(r => { release = r; });
+    const captured = new Promise(r => { capture = r; });
+    const finished = new Promise(r => { complete = r; });
+    let held = false;
+    const handler = async route => {
+      if (held || route.request().method() !== 'GET') return route.continue();
+      held = true; const response = await route.fetch();
+      assert.ok((await response.json()).records.every(r => r.studentId === 'student'));
+      capture(); await gate; await route.fulfill({ response }); complete();
+    };
+    await page.route('**/api/learning/records*', handler);
+    await page.getByRole('button', { name: /Tải lại/ }).click(); await captured;
+    await context.addCookies([{ name: 'next-auth.session-token', value: cookies.studentB, url: origin }]);
+    const b = page.waitForResponse(async r => r.url().endsWith('/api/learning/session') && r.status() === 200 && (await r.json()).account?.id === 'studentB');
+    await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: 'nextauth.message', newValue: JSON.stringify({ event: 'session', data: { trigger: 'getSession' }, timestamp: Date.now() }) })));
+    await b; await page.getByText('B PRIVATE RECORD', { exact: true }).waitFor();
+    const input = page.locator('input[type="url"]'); await input.fill('https://example.test/b-unsaved');
+    release(); await finished; await page.unroute('**/api/learning/records*', handler);
+    await page.waitForTimeout(300);
+    assert.equal(await input.inputValue(), 'https://example.test/b-unsaved');
+    assert.equal(await page.getByText('A PRIVATE RECORD', { exact: true }).count(), 0);
+    assert.equal(await page.getByText('B PRIVATE RECORD', { exact: true }).count(), 1);
+    await page.screenshot({ path: path.join(artifactDir, 'private-student-switch.png'), fullPage: true });
+    network.push({ event: 'private-student-B-only-after-delayed-A', draftPreserved: true });
+    await db.collection('mocktests').doc('privateB').delete();
+  });
   await check('Browser teacher/student roles have no feedback save; direct request denied', async () => {
     for (const role of ['teacher', 'student']) {
       await context.addCookies([{ name: 'next-auth.session-token', value: cookies[role], url: origin }]);
@@ -141,10 +274,11 @@ async function main() {
     }
   });
   assert.equal(blocked.size, 0, 'Browser attempted unexpected external networking');
+  fs.writeFileSync(path.join(artifactDir, 'session-network.json'), JSON.stringify(network, null, 2));
   fs.writeFileSync(path.join(artifactDir, 'browser-network.json'), JSON.stringify({ blockedExternalHosts: [...blocked], listGets, note: 'External browser networking denied; explicit Web SDK emulator wiring enabled. No external host requests observed.' }, null, 2));
   await page.screenshot({ path: path.join(artifactDir, 'mocktest-browser.png'), fullPage: true });
 }
 main().catch(error => { results.push({ name: 'Execution failure', status: 'FAIL', error: error.message }); console.error(error); process.exitCode = 1; }).finally(async () => {
-  fs.writeFileSync(path.join(artifactDir, 'integration-results.json'), JSON.stringify({ commit, results, limitations: ['Fixture NextAuth JWT, no Google OAuth login exercised', 'Browser SDK configured for loopback emulators; direct browser Auth sign-in not exercised', 'Route-specific retry and account switching during GET/save not yet evidenced'] }, null, 2));
+  fs.writeFileSync(path.join(artifactDir, 'integration-results.json'), JSON.stringify({ commit, results, limitations: ['Fixture NextAuth JWT; external Google OAuth exchange intentionally excluded', 'Route RPC fault injection uses real reads/rollback/commit with one injected gRPC status; not a naturally induced emulator conflict'] }, null, 2));
   if (browser) await browser.close(); if (db) await db.terminate();
 });
