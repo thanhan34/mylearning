@@ -64,11 +64,14 @@ export default function LearningGate({ children }: { children: React.ReactNode }
     await firebaseSignOut(auth);
     await signOut({ callbackUrl: '/login' });
   }
-  if (!ready || !account || !isApproved(account)) return (
+  // Check access silently without mounting protected content before approval.
+  if (!error && (!ready || !account)) return null;
+
+  if (error || !account || !isApproved(account)) return (
     <div className="mx-auto max-w-xl px-4 py-16">
       <Card className="space-y-6">
-        <h1 className="text-2xl font-bold text-primary">{error ? 'Không thể tải tài khoản' : ready ? 'Tài khoản đang chờ duyệt' : 'Đang kiểm tra tài khoản...'}</h1>
-        <p role="status" className="text-gray-600">{error || (ready ? 'Bạn đã đăng nhập thành công. Admin sẽ duyệt quyền học tập của bạn; không cần xếp lớp. Bấm “Kiểm tra lại” sau khi admin duyệt tài khoản.' : 'Vui lòng đợi trong giây lát.')}</p>
+        <h1 className="text-2xl font-bold text-primary">{error ? 'Không thể tải tài khoản' : 'Tài khoản đang chờ duyệt'}</h1>
+        <p role="status" className="text-gray-600">{error || 'Bạn đã đăng nhập thành công. Admin sẽ duyệt quyền học tập của bạn; không cần xếp lớp. Bấm “Kiểm tra lại” sau khi admin duyệt tài khoản.'}</p>
         <div className="flex flex-wrap gap-3">
           <Button onClick={() => setAttempt(value => value + 1)}>Kiểm tra lại</Button>
           <Button variant="secondary" onClick={logout}>Đăng xuất</Button>
