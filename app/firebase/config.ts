@@ -5,12 +5,12 @@ import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { firebaseEmulatorTarget } from '../../lib/firebase-emulator';
 import { MOCK_ENABLED } from '../../lib/mock/config';
 
-const emulator = firebaseEmulatorTarget({
+const emulator = process.env.NEXT_PUBLIC_FIREBASE_EMULATOR_TEST === '1' ? firebaseEmulatorTarget({
   enabled: process.env.NEXT_PUBLIC_FIREBASE_EMULATOR_TEST,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   firestore: process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST,
   auth: process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST,
-});
+}) : null;
 if (emulator && MOCK_ENABLED) throw new Error('Emulator integration must not use mock mode.');
 
 // Initialize Firebase configuration
@@ -37,13 +37,15 @@ const db = MOCK_ENABLED ? ({ __mock: true } as unknown as Firestore) : typeof wi
   : getFirestore(app);
 
 // Connect before persistence, queries or authentication consumers are exported.
-const emulatorApps = globalThis as typeof globalThis & { __learningEmulatorApps?: WeakSet<FirebaseApp> };
-const connected = emulatorApps.__learningEmulatorApps ??= new WeakSet<FirebaseApp>();
 const auth = getAuth(app);
-if (emulator && !connected.has(app)) {
-  connectFirestoreEmulator(db, emulator.host, emulator.firestorePort);
-  connectAuthEmulator(auth, `http://${emulator.host}:${emulator.authPort}`, { disableWarnings: true });
-  connected.add(app);
+if (process.env.NEXT_PUBLIC_FIREBASE_EMULATOR_TEST === '1' && emulator) {
+  const emulatorApps = globalThis as typeof globalThis & { __learningEmulatorApps?: WeakSet<FirebaseApp> };
+  const connected = emulatorApps.__learningEmulatorApps ??= new WeakSet<FirebaseApp>();
+  if (!connected.has(app)) {
+    connectFirestoreEmulator(db, emulator.host, emulator.firestorePort);
+    connectAuthEmulator(auth, `http://${emulator.host}:${emulator.authPort}`, { disableWarnings: true });
+    connected.add(app);
+  }
 }
 
 // Enable offline persistence with better error handling

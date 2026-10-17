@@ -6,12 +6,12 @@ import { mockAdminDb } from '../mock/adapter';
 import { firebaseEmulatorTarget } from '../firebase-emulator';
 
 export function adminApp() {
-  const emulator = firebaseEmulatorTarget({
+  const emulator = process.env.NEXT_PUBLIC_FIREBASE_EMULATOR_TEST === '1' ? firebaseEmulatorTarget({
     enabled: process.env.NEXT_PUBLIC_FIREBASE_EMULATOR_TEST,
     projectId: process.env.FIREBASE_PROJECT_ID,
     firestore: process.env.FIRESTORE_EMULATOR_HOST,
     auth: process.env.FIREBASE_AUTH_EMULATOR_HOST,
-  });
+  }) : null;
   if (emulator) {
     if (MOCK_ENABLED || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== emulator.projectId
       || process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST !== process.env.FIRESTORE_EMULATOR_HOST
