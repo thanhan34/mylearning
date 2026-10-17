@@ -3,8 +3,25 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { MOCK_ENABLED } from '../mock/config';
 import { mockAdminDb } from '../mock/adapter';
+import { firebaseEmulatorTarget } from '../firebase-emulator';
 
 export function adminApp() {
+  const emulator = firebaseEmulatorTarget({
+    enabled: process.env.NEXT_PUBLIC_FIREBASE_EMULATOR_TEST,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    firestore: process.env.FIRESTORE_EMULATOR_HOST,
+    auth: process.env.FIREBASE_AUTH_EMULATOR_HOST,
+  });
+  if (emulator) {
+    if (MOCK_ENABLED || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== emulator.projectId
+      || process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST !== process.env.FIRESTORE_EMULATOR_HOST
+      || process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST !== process.env.FIREBASE_AUTH_EMULATOR_HOST
+      || ['FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GOOGLE_APPLICATION_CREDENTIALS'].some(key => process.env[key])) {
+      throw new Error('Unsafe Firebase local-test environment.');
+    }
+    return getApps().find(app => app.name === 'learning-server')
+      || initializeApp({ projectId: emulator.projectId }, 'learning-server');
+  }
   const existing = getApps().find(app => app.name === 'learning-server');
   if (existing) return existing;
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;

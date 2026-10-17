@@ -17,9 +17,15 @@ const collection = {
   doc: id => ({ update: async data => { calls.push(['update', id, data]); } }),
 };
 const mocks = {
+  'node:crypto': require('node:crypto'),
   'next/server': { NextResponse: { json: (body, options = {}) => ({ body, status: options.status || 200 }) } },
   'firebase-admin/firestore': { Timestamp: { now: () => 'timestamp' } },
-  '@/lib/server/firebase-admin': { adminDb: () => ({ collection: name => { calls.push(['collection', name]); return collection; } }) },
+  '@/lib/server/firebase-admin': { adminDb: () => ({ collection: name => { calls.push(['collection', name]); return collection; },
+    runTransaction: async callback => callback({
+      get: async () => ({ id: 'test', exists: true, data: () => ({ studentId: 'student' }) }),
+      update: (_ref, data) => { calls.push(['update', 'test', data]); },
+    }),
+  }) },
   '@/lib/server/access': {
     currentAccount: async () => actor, checkOrigin: () => {}, AccessError,
     apiError: error => ({ status: error.status || 500 }),
