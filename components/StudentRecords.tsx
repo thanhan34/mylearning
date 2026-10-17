@@ -10,6 +10,11 @@ import { usePathname } from 'next/navigation';
 type RecordItem = MocktestRecord;
 export default function StudentRecords({ kind }: { kind: 'mocktests' }) {
   const account = useLearningAccount()!;
+  // Remount all request/form state on identity or role changes; never share data/drafts.
+  return <AccountStudentRecords key={`${account.id}:${account.role}:${kind}`} kind={kind} />;
+}
+function AccountStudentRecords({ kind }: { kind: 'mocktests' }) {
+  const account = useLearningAccount()!;
   const pathname = usePathname();
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
@@ -21,7 +26,9 @@ export default function StudentRecords({ kind }: { kind: 'mocktests' }) {
   const [error, setError] = useState('');
   const requestVersion = useRef(0);
   const saving = useRef(false);
-  const load = useCallback(async () => {
+  const active = useRef(true);
+  const load = useCallback(async (afterSubmission = false) => {
+    if ((saving.current && afterSubmission !== true) || !active.current) return false;
     const version = ++requestVersion.current;
     setLoading(true); setError('');
     try {
@@ -34,23 +41,34 @@ export default function StudentRecords({ kind }: { kind: 'mocktests' }) {
       return false;
     } finally { if (version === requestVersion.current) setLoading(false); }
   }, [kind, account.id, account.role]);
-  useEffect(() => { setRecords([]); setStudents([]); void load(); return () => { requestVersion.current++; }; }, [load]);
-  async function save(extra: object) {
-    if (saving.current) return;
+  useEffect(() => { active.current = true; setRecords([]); setStudents([]); void load(); return () => { active.current = false; requestVersion.current++; }; }, [load]);
+  async function save(extra: { id?: string; feedback?: FormDataEntryValue | null; expectedVersion?: string; link?: string }) {
+    if (saving.current || !active.current) return;
     saving.current = true;
+    const version = ++requestVersion.current;
+    setLoading(false);
     setBusy(true); setMessage('');
     try {
-      await learningApi('records', { method: 'POST', body: JSON.stringify({ kind, ...extra }) });
+      const result = await learningApi<{ success: boolean; record?: RecordItem }>('records', { method: 'POST', body: JSON.stringify({ kind, ...extra }) });
+      if (!active.current || version !== requestVersion.current) return;
+      if (extra.id) {
+        if (!result.success || !result.record || result.record.id !== extra.id) throw new Error('Chưa nhận được Mocktest đã xác nhận. Bấm Tải lại để kiểm tra.');
+        const record = result.record;
+        setRecords(items => items.map(item => item.id === record.id ? record : item));
+        setMessage('Đã lưu thành công.');
+        return;
+      }
       setText('');
-      const refreshed = await load();
-      setMessage(refreshed ? 'Đã lưu thành công.' : 'Đã lưu bài, nhưng chưa tải lại được danh sách. Bấm Tải lại, không cần gửi lại bài.');
+      // Submission keeps the existing server-selected limit/order by refreshing.
+      const refreshed = await load(true);
+      if (active.current) setMessage(refreshed ? 'Đã lưu thành công.' : 'Đã lưu bài, nhưng chưa tải lại được danh sách. Bấm Tải lại, không cần gửi lại bài.');
     }
-    catch (err) { setMessage((err as Error).message); }
-    finally { saving.current = false; setBusy(false); }
+    catch (err) { if (active.current && version === requestVersion.current) setMessage((err as Error).message); }
+    finally { saving.current = false; if (active.current) setBusy(false); }
   }
   const canCreate = account.role === 'student';
-  if (canCreate) return <StudentMocktests records={records} loading={loading} busy={busy} error={error} message={message} text={text} onTextChange={setText} onSubmit={link => save({ link })} onReload={load} />;
-  if (pathname === '/dashboard/mocktest/teacher' && ['teacher', 'assistant'].includes(account.role)) return <TeacherMocktests records={records} students={students} search={search} onSearch={setSearch} loading={loading} busy={busy} error={error} onReload={load} />;
+  if (canCreate) return <StudentMocktests records={records} loading={loading} busy={busy} error={error} message={message} text={text} onTextChange={setText} onSubmit={link => save({ link })} onReload={() => load()} />;
+  if (pathname === '/dashboard/mocktest/teacher' && ['teacher', 'assistant'].includes(account.role)) return <TeacherMocktests records={records} students={students} search={search} onSearch={setSearch} loading={loading} busy={busy} error={error} onReload={() => load()} />;
   return <div className="space-y-6">
     <h1 className="text-2xl font-bold text-primary">Mocktest theo học viên</h1>
     <p className="text-gray-600">Mocktest tổng hợp không thuộc một dạng bài riêng; admin phụ trách feedback. Dữ liệu cũ được giữ nguyên.</p>
@@ -62,13 +80,13 @@ export default function StudentRecords({ kind }: { kind: 'mocktests' }) {
     <p role="status" className="text-gray-700">{message}</p>
     {error && <p role="alert" className="text-gray-700">{error}</p>}
     {loading && <p role="status" className="text-gray-600">Đang tải Mocktest...</p>}
-    <Button variant="secondary" disabled={busy || loading} onClick={load}>Tải lại</Button>
+    <Button variant="secondary" disabled={busy || loading} onClick={() => load()}>Tải lại</Button>
     {records.filter(r => `${r.studentName || students.find(s => s.id === r.studentId)?.name || ''} ${r.studentId}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => (b.date || b.submittedAt || '').localeCompare(a.date || a.submittedAt || '')).map(record => <Card key={record.id} className="space-y-3">
       <h2 className="font-semibold text-gray-900">{record.studentName || students.find(s => s.id === record.studentId)?.name || record.studentId}</h2>
       <p className="text-sm text-gray-600">{record.date || record.submittedAt?.slice(0, 10)}</p>
       {record.link && /^https?:\/\//i.test(record.link) && <a href={record.link} target="_blank" rel="noopener noreferrer" className="break-all text-primary underline">Mở mocktest</a>}
       <p className="whitespace-pre-wrap text-gray-800">{record.feedback || ''}</p>
-      {account.role === 'admin' && <form onSubmit={e => { e.preventDefault(); void save({ id: record.id, feedback: new FormData(e.currentTarget).get('feedback') }); }} className="space-y-3"><textarea aria-label="Feedback mocktest" name="feedback" maxLength={20000} defaultValue={record.feedback || ''} className="ui-input w-full" /><Button type="submit" disabled={busy}>Lưu feedback</Button></form>}
+      {account.role === 'admin' && <form onSubmit={e => { e.preventDefault(); void save({ id: record.id, expectedVersion: record.recordVersion, feedback: new FormData(e.currentTarget).get('feedback') }); }} className="space-y-3"><textarea key={record.recordVersion || record.feedback} aria-label="Feedback mocktest" name="feedback" maxLength={20000} defaultValue={record.feedback || ''} className="ui-input w-full" /><Button type="submit" disabled={busy}>Lưu feedback</Button></form>}
     </Card>)}
     {!loading && !error && !records.length && <p className="text-gray-600">Chưa có dữ liệu.</p>}
   </div>;

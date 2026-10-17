@@ -64,7 +64,7 @@ async function main() {
       return { empty: false, docs: [{ data: () => ({ date: '2026-09-27', submissions: [{ link: 'https://example.com' }] }) }] };
     },
   };
-  const imports = { 'firebase/firestore': firestore, '../config': { db: {} }, '@/lib/client-cache': cache };
+  const imports = { '@/app/firebase/firestore': firestore, '../config': { db: {} }, '@/lib/client-cache': cache };
   const progress = load('app/firebase/services/progress.ts', imports);
   await progress.getHomeworkProgress('student', 45);
   assert(queries.at(-1).some(c => c.where?.[0] === 'date' && c.where[1] === '>='));

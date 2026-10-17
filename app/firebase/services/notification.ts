@@ -85,13 +85,15 @@ export const subscribeToNotifications = async (
   userEmail: string,
   type: 'teacher' | 'admin' | 'assistant',
   callback: (notifications: Notification[]) => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
+  signal?: AbortSignal
 ): Promise<() => void> => {
   try {
     
     
     const notificationsRef = collection(db, 'notifications');
     const userDoc = await getUserByEmail(userEmail);
+    if (signal?.aborted) return () => {};
     if (!userDoc) {
       throw new Error('User not found');
     }
@@ -108,22 +110,7 @@ export const subscribeToNotifications = async (
       orderBy('created_at', 'desc')
     );
 
-    try {
-      const initialSnapshot = await getDocs(q);
-      
-
-      if (initialSnapshot.size > 0) {
-        const notifications = initialSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Notification));
-        callback(notifications);
-      }
-    } catch (error) {
-      console.error('Error getting initial notifications:', error);
-      if (onError && error instanceof Error) onError(error);
-    }
-
+    // The first realtime snapshot includes the complete unread result (also empty).
     const unsubscribe = onSnapshot(
       q, 
       (snapshot) => {
@@ -134,7 +121,7 @@ export const subscribeToNotifications = async (
           ...doc.data()
         } as Notification));
         
-        callback(notifications);
+        if (!signal?.aborted) callback(notifications);
       },
       (error) => {
         console.error('Error in notifications subscription:', {
@@ -144,13 +131,20 @@ export const subscribeToNotifications = async (
           type,
           timestamp: new Date().toISOString()
         });
-        if (onError) onError(error);
+        if (!signal?.aborted && onError) onError(error);
       }
     );
 
-    return () => {
+    let stopped = false;
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      signal?.removeEventListener('abort', stop);
       unsubscribe();
     };
+    signal?.addEventListener('abort', stop, { once: true });
+    if (signal?.aborted) stop();
+    return stop;
   } catch (error) {
     console.error('Error setting up notification subscription:', {
       error,
@@ -158,7 +152,7 @@ export const subscribeToNotifications = async (
       type,
       timestamp: new Date().toISOString()
     });
-    if (onError && error instanceof Error) onError(error);
+    if (!signal?.aborted && onError && error instanceof Error) onError(error);
     return () => {};
   }
 };

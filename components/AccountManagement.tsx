@@ -16,6 +16,7 @@ export default function AccountManagement() {
   const version = useRef(0);
   const saving = useRef(false);
   const load = useCallback(async () => {
+    if (saving.current) return false;
     const current = ++version.current;
     setLoading(true); setError('');
     try {
@@ -30,12 +31,17 @@ export default function AccountManagement() {
   async function change(id: string, action: string, extra = {}) {
     if (saving.current) return;
     saving.current = true;
+    // Ignore an older list request, without allowing it to overwrite the committed record.
+    const current = ++version.current;
+    setLoading(false);
     setBusy(id); setMessage('');
     try {
-      await learningApi('accounts', { method: 'PATCH', body: JSON.stringify({ id, action, ...extra }) });
-      const refreshed = await load(); setMessage(refreshed ? 'Đã lưu thay đổi.' : 'Đã lưu thay đổi nhưng chưa tải lại được danh sách. Vui lòng tải lại, không cần lưu lại.');
-    } catch (err) { setMessage((err as Error).message); }
-    finally { saving.current = false; setBusy(''); }
+      const result = await learningApi<{ success: boolean; account: LearningAccount }>('accounts', { method: 'PATCH', body: JSON.stringify({ id, action, ...extra }) });
+      if (version.current !== current) return;
+      setAccounts(items => items.map(item => item.id === result.account.id ? result.account : item));
+      setMessage('Đã lưu thay đổi.');
+    } catch (err) { if (version.current === current) setMessage((err as Error).message); }
+    finally { saving.current = false; if (version.current === current) setBusy(''); }
   }
   const visible = accounts.filter(account => {
     const matches = `${account.name} ${account.email}`.toLowerCase().includes(search.toLowerCase());

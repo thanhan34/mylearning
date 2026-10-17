@@ -2,13 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { 
-  Notification, 
-  subscribeToNotifications, 
-  markNotificationAsRead,
-  getUserByEmail,
-  getUnreadNotifications
-} from '../firebase/services';
+import { useNotifications } from '@/components/useNotifications';
 import { Timestamp } from '@/app/firebase/firestore';
 
 interface NotificationBellProps {
@@ -17,12 +11,11 @@ interface NotificationBellProps {
 
 export default function NotificationBell({ userRole }: NotificationBellProps) {
   const { data: session } = useSession();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const eligible = userRole === 'teacher' || userRole === 'admin' || userRole === 'assistant';
+  const { notifications, isLoading, error, markAsRead } = useNotifications(
+    eligible ? session?.user?.email || null : null, eligible ? userRole : 'admin');
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const unsubscribeRef = useRef<(() => void) | undefined>();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,86 +28,9 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const setupNotifications = async () => {
-      // Clear any existing subscription
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = undefined;
-      }
-
-      
-
-      if (!session?.user?.email || (userRole !== 'teacher' && userRole !== 'admin' && userRole !== 'assistant')) {
-        setNotifications([]);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        // Reset state
-        setError(null);
-        setIsLoading(true);
-        setNotifications([]);
-
-        // Get initial notifications
-        const initialNotifications = await getUnreadNotifications(session.user.email, userRole);
-        
-        
-        if (!initialNotifications.length) {
-          setIsLoading(false);
-        }
-
-        setNotifications(initialNotifications);
-
-        // Subscribe to real-time updates
-        
-        const unsubscribe = await subscribeToNotifications(
-          session.user.email,
-          userRole,
-          (newNotifications) => {
-           
-            setNotifications(newNotifications);
-            setIsLoading(false);
-          },
-          (error) => {
-            console.error('Notification error:', {
-              message: error.message,
-              stack: error.stack,
-              email: session.user.email
-            });
-            setError(error.message);
-            setIsLoading(false);
-          }
-        );
-
-        unsubscribeRef.current = unsubscribe;
-      } catch (error) {
-        console.error('Error in setupNotifications:', error);
-        setError('Error setting up notifications');
-        setIsLoading(false);
-      }
-    };
-
-    setupNotifications();
-
-    return () => {
-      
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = undefined;
-      }
-      setNotifications([]);
-      setError(null);
-    };
-  }, [session?.user?.email, userRole]);
-
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      const success = await markNotificationAsRead(notificationId);
-      if (success) {
-        setNotifications(notifications.filter(n => n.id !== notificationId));
-      }
+      await markAsRead(notificationId);
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
