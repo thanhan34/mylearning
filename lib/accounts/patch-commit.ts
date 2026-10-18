@@ -64,7 +64,7 @@ export function createAccountsPatchCommit(deps: PatchCommitDependencies) {
           else if (body.action === 'assign-types' && ['teacher', 'assistant'].includes(target.role as string)) {
             if (!Array.isArray(body.types) || body.types.some(t => !EXERCISE_TYPES.includes(t as typeof EXERCISE_TYPES[number]))) fail('INVALID_TYPES');
             patch = { assignedFeedbackTypes: [...new Set(body.types)], permissionsUpdatedBy: request.actor.id, permissionsUpdatedAt: request.auditTime };
-          } else if (body.action === 'role' && target.role !== 'admin' && ['student', 'teacher', 'assistant'].includes(body.role as string))
+          } else if (body.action === 'role' && target.role !== 'admin' && ['student', 'teacher', 'assistant', 'admin_support'].includes(body.role as string))
             patch = { role: body.role, assignedFeedbackTypes: [], approvalStatus: 'pending' };
           else fail('INVALID_ACTION');
           const intent: AccountMutation = reconstructPatchIntent(request);

@@ -12,7 +12,7 @@ export function reconstructPatchIntent(request: PatchCommitRequest): AccountMuta
   else if (body.action === 'assign-types' && Array.isArray(body.types) &&
     body.types.every(t => EXERCISE_TYPES.includes(t as typeof EXERCISE_TYPES[number])))
     patch = { assignedFeedbackTypes: [...new Set(body.types)], permissionsUpdatedBy: request.actor.id, permissionsUpdatedAt: request.auditTime };
-  else if (body.action === 'role' && ['student', 'teacher', 'assistant'].includes(body.role as string))
+  else if (body.action === 'role' && ['student', 'teacher', 'assistant', 'admin_support'].includes(body.role as string))
     patch = { role: body.role, assignedFeedbackTypes: [], approvalStatus: 'pending' };
   else throw new Error('INVALID_ACTION');
   return { generation: request.fence.generation, id: body.id, kind: 'update', patch,

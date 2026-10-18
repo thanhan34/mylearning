@@ -11,8 +11,9 @@ function accountView(data: LearningAccount) {
 export async function GET() {
   try {
     const actor = await currentAccount();
-    if (actor.role !== 'admin') throw new AccessError('Chỉ admin được quản lý tài khoản.');
-    const snapshot = await adminDb().collection('users').get();
+    if (!['admin', 'admin_support'].includes(actor.role)) throw new AccessError('Chỉ admin và hỗ trợ admin được xem tài khoản.');
+    const users = adminDb().collection('users');
+    const snapshot = await (actor.role === 'admin_support' ? users.where('role', '==', 'student') : users).get();
     return NextResponse.json({ accounts: snapshot.docs.map(doc => {
       const data = { ...doc.data(), id: doc.id } as LearningAccount;
       return accountView(data);
@@ -24,16 +25,21 @@ export async function PATCH(request: Request) {
   try {
     checkOrigin(request);
     const actor = await currentAccount();
-    if (actor.role !== 'admin') throw new AccessError('Chỉ admin được phân quyền.');
+    if (!['admin', 'admin_support'].includes(actor.role)) throw new AccessError('Bạn không có quyền quản lý tài khoản.');
     const body = await request.json();
+    if (actor.role === 'admin_support' && body.action !== 'approve') throw new AccessError('Hỗ trợ admin chỉ được duyệt học viên.');
     if (typeof body.id !== 'string' || !body.id || body.id.includes('/')) throw new AccessError('Tài khoản không hợp lệ.', 400);
     const db = adminDb();
     const account = await db.runTransaction(async tx => {
       const actorDoc = await tx.get(db.collection('users').doc(actor.id));
       const ref = db.collection('users').doc(body.id);
       const target = await tx.get(ref);
-      if (actorDoc.data()?.role !== 'admin') throw new AccessError('Quyền admin đã thay đổi.');
+      const liveRole = actorDoc.data()?.role;
+      if (liveRole !== 'admin' && !(liveRole === 'admin_support' && body.action === 'approve')) {
+        throw new AccessError('Quyền quản lý tài khoản đã thay đổi.');
+      }
       if (!target.exists) throw new AccessError('Không tìm thấy tài khoản.', 404);
+      if (liveRole === 'admin_support' && target.data()?.role !== 'student') throw new AccessError('Hỗ trợ admin chỉ được duyệt học viên.');
       let changes: Record<string, string | string[]>;
       if (body.action === 'approve' && target.data()?.role === 'student') {
         changes = { approvalStatus: 'approved', approvedBy: actor.id, approvedAt: new Date().toISOString() };
@@ -42,7 +48,7 @@ export async function PATCH(request: Request) {
           throw new AccessError('Danh sách dạng bài không hợp lệ.', 400);
         }
         changes = { assignedFeedbackTypes: [...new Set<string>(body.types)], permissionsUpdatedBy: actor.id, permissionsUpdatedAt: new Date().toISOString() };
-      } else if (body.action === 'role' && ['student', 'teacher', 'assistant'].includes(body.role) && target.data()?.role !== 'admin') {
+      } else if (body.action === 'role' && ['student', 'teacher', 'assistant', 'admin_support'].includes(body.role) && target.data()?.role !== 'admin') {
         changes = { role: body.role, assignedFeedbackTypes: [], approvalStatus: 'pending' };
       } else throw new AccessError('Thao tác không hợp lệ.', 400);
       tx.update(ref, changes);

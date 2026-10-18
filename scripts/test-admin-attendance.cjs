@@ -14,6 +14,7 @@ function load(relative, mockEnabled = true) {
     name === '@/components/ui' ? load('components/ui/index.tsx', mockEnabled)
       : name === '@/lib/mock/config' ? { MOCK_ENABLED: mockEnabled }
       : name === '@/components/FeedbackWorkspace' ? { default: () => React.createElement('div', null, 'Shared feedback workspace') }
+      : name === '@/components/AccountManagement' ? { default: props => React.createElement('div', { 'data-approval-only': props.approvalOnly }, 'Live student approval') }
       : name === '@/components/AttendanceAudit' ? { default: () => React.createElement('div', null, 'Shared attendance audit') } : require(name), module.exports, module);
   return module.exports;
 }
@@ -28,9 +29,10 @@ for (const html of [admin, support]) {
 assert.ok(!admin.includes('Không có quyền đổi vai trò'));
 assert.ok(!admin.includes('Xác nhận công mẫu'));
 const defaultView = renderToStaticMarkup(React.createElement(Preview));
-assert.ok(defaultView.includes('pending@mock.local'), 'Support default remains student approval');
+assert.ok(defaultView.includes('Live student approval'), 'Support default uses real student approval');
+assert.ok(defaultView.includes('data-approval-only="true"'));
 const disabled = renderToStaticMarkup(React.createElement(load('components/AdminSupportPreview.tsx', false).default));
-assert.ok(disabled.includes('Bản xem thử duyệt học viên chỉ có trong chế độ mock'));
+assert.ok(disabled.includes('Live student approval'), 'Approval is available outside mock mode');
 assert.ok(!disabled.includes('Xác nhận công mẫu'));
 const productionAudit = renderToStaticMarkup(React.createElement(load('components/AdminSupportPreview.tsx', false).default, { initialTab: 'attendance' }));
 assert.ok(productionAudit.includes('Shared attendance audit'));
@@ -38,4 +40,4 @@ const dashboard = fs.readFileSync(path.join(root, 'app/dashboard/admin/component
 assert.ok(dashboard.includes("account?.role !== 'admin'"));
 assert.ok(dashboard.includes("{ value: 'attendance', label: 'Chấm công',"));
 assert.ok(dashboard.includes('<AdminSupportPreview initialTab="attendance" audience="admin" />'));
-console.log('PASS: shared admin/support audit, admin tab, role guard, mock approval and live audit availability.');
+console.log('PASS: shared admin/support audit, admin tab, role guard, live approval-only workspace in production and mock mode.');

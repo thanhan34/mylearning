@@ -86,7 +86,7 @@ export function createAccountsPatchPreparation(deps: PatchPreparationDependencie
           } else if (body.action === 'assign-types' && ['teacher', 'assistant'].includes(target.role as string)) {
             if (!Array.isArray(body.types) || body.types.some(type => !EXERCISE_TYPES.includes(type as typeof EXERCISE_TYPES[number]))) reject('INVALID_TYPES');
             patch = { assignedFeedbackTypes: [...new Set(body.types)], permissionsUpdatedBy: request.actor.id, permissionsUpdatedAt: request.auditTime };
-          } else if (body.action === 'role' && ['student', 'teacher', 'assistant'].includes(body.role as string) && target.role !== 'admin') {
+          } else if (body.action === 'role' && ['student', 'teacher', 'assistant', 'admin_support'].includes(body.role as string) && target.role !== 'admin') {
             patch = { role: body.role, assignedFeedbackTypes: [], approvalStatus: 'pending' };
           } else reject('INVALID_ACTION');
           const intent: AccountMutation = { generation: request.fence.generation, id: body.id, kind: 'update', patch,

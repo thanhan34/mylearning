@@ -92,7 +92,7 @@ async function main() {
     await run(drift, 'rejected', role === 'teacher' ? 'INVALID_ACTION' : 'TARGET_CHANGED');
     assert.equal(drift.memory.metrics.stagedWrites, 0);
   }
-  for (const role of ['student', 'teacher', 'assistant']) {
+  for (const role of ['student', 'teacher', 'assistant', 'admin_support']) {
     const roleChange = await fixture(); roleChange.request.body = { id, action: 'role', role };
     const response = await run(roleChange); invariant(roleChange);
     assert.deepStrictEqual(response.response.account.assignedFeedbackTypes, []);

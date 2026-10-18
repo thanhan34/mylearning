@@ -41,7 +41,12 @@ function server(source) {
   class AccessError extends Error { constructor(message, status = 403) { super(message); this.status = status; } }
   const snap = id => ({ id, exists: !!data[id], data: () => data[id] && { ...data[id] } });
   const db = { collection: name => { assert.equal(name, 'users'); return {
-    doc: id => ({ id }), get: async () => { metrics.queryCalls++; metrics.fullLists++;
+    doc: id => ({ id }), where: (field, operator, value) => {
+      assert.equal(field, 'role'); assert.equal(operator, '=='); assert.equal(value, 'student');
+      return { get: async () => { metrics.queryCalls++;
+        const docs = Object.keys(data).sort().filter(id => data[id].role === value).map(snap);
+        metrics.documentResults += docs.length; return { docs }; } };
+    }, get: async () => { metrics.queryCalls++; metrics.fullLists++;
       const docs = Object.keys(data).sort().map(snap); metrics.documentResults += docs.length; return { docs }; },
   }; }, runTransaction: async callback => {
     let writes;
@@ -68,7 +73,7 @@ function server(source) {
       ? await api.PATCH({ json: async () => JSON.parse(options.body) }) : await api.GET();
       if (result.error) throw Error(result.error); return result; } };
 }
-function client(source, request) {
+function client(source, request, props = {}) {
   const states = [], refs = [], effects = [];
   let index = 0, refIndex = 0, tree;
   const jsx = (type, props) => ({ type, props });
@@ -82,7 +87,7 @@ function client(source, request) {
     '@/lib/learning-access': access, '@/lib/learning-api': { learningApi: request },
     'react-icons/ri': Object.fromEntries(['RiTeamLine', 'RiTimeLine', 'RiShieldUserLine', 'RiRefreshLine', 'RiSearchLine'].map(name => [name, name])),
   }).default;
-  function render() { index = 0; refIndex = 0; effects.length = 0; tree = Component(); return tree; }
+  function render() { index = 0; refIndex = 0; effects.length = 0; tree = Component(props); return tree; }
   function find(predicate, node) {
     if (!node || typeof node !== 'object') return;
     if (Array.isArray(node)) { for (const child of node) { const found = find(predicate, child); if (found) return found; } return; }
@@ -90,7 +95,7 @@ function client(source, request) {
     return find(predicate, node.props?.children);
   }
   render();
-  return { states, render, async mount() { const cleanup = effects[0](); await flush(); render(); return cleanup; },
+  return { states, render, find: predicate => find(predicate, tree), async mount() { const cleanup = effects[0](); await flush(); render(); return cleanup; },
     approvalHandler() { render(); return find(n => n.type === 'Button' && ['Duyệt học viên', 'Đang lưu...'].includes(n.props.children), tree).props.onClick; },
     approve() { return this.approvalHandler()(); },
     refresh() { render(); return find(n => n.type === 'Button' && Array.isArray(n.props.children) && n.props.children.includes(' Tải lại danh sách'), tree).props.onClick(); } };
@@ -121,14 +126,44 @@ async function main() {
   assert.equal((await patch({ id: 'random-000', action: 'reject' })).status, 400, 'No new rejection business action');
   assert.equal((await patch({ id: 'missing', action: 'approve' })).status, 404);
   assert.equal((await patch({ id: 'users/id', action: 'approve' })).status, 400);
-  for (const role of ['student', 'teacher', 'assistant', 'admin_support']) {
+  const granted = await patch({ id: 'teacher', action: 'role', role: 'admin_support' });
+  assert.equal(granted.account.role, 'admin_support');
+  assert.deepEqual(Array.from(granted.account.assignedFeedbackTypes), []);
+  const revoked = await patch({ id: 'teacher', action: 'role', role: 'teacher' });
+  assert.equal(revoked.account.role, 'teacher');
+  assert.equal((await patch({ id: 'support', action: 'role', role: 'admin' })).status, 400);
+  assert.equal((await patch({ id: 'admin', action: 'role', role: 'admin_support' })).status, 400);
+  s.actor({ id: 'support', role: 'admin_support' });
+  const supportList = await s.api.GET();
+  assert.equal(supportList.accounts.length, 102);
+  assert.ok(supportList.accounts.every(account => account.role === 'student'));
+  const supportApproval = await patch({ id: 'random-000', action: 'approve', role: 'admin', types: ['Read aloud'] });
+  assert.equal(supportApproval.account.approvalStatus, 'approved');
+  assert.equal(s.data['random-000'].approvedBy, 'support');
+  assert.ok(Number.isFinite(Date.parse(s.data['random-000'].approvedAt)));
+  assert.equal(s.data['random-000'].role, 'student', 'Extra fields must not grant roles');
+  for (const body of [
+    { id: 'random-000', action: 'role', role: 'admin_support' },
+    { id: 'support', action: 'role', role: 'admin' },
+    { id: 'teacher', action: 'assign-types', types: ['Read aloud'] },
+    { id: 'teacher', action: 'approve' },
+    { id: 'admin', action: 'approve' },
+    { id: 'support', action: 'approve' },
+  ]) assert.equal((await patch(body)).status, 403);
+  s.data.support.role = 'teacher';
+  assert.equal((await patch({ id: 'random-003', action: 'approve' })).status, 403, 'Recheck support permissions inside transaction');
+  s.data.support.role = 'admin_support';
+  s.actor({ id: 'admin', role: 'admin' }); s.data.admin.role = 'admin_support';
+  assert.equal((await patch({ id: 'teacher', action: 'role', role: 'admin_support' })).status, 403, 'Demoted admin cannot change roles');
+  s.data.admin.role = 'admin';
+  for (const role of ['student', 'teacher', 'assistant']) {
     s.actor({ id: 'other', role }); assert.equal((await s.api.GET()).status, 403);
     assert.equal((await patch({ id: 'random-000', action: 'approve' })).status, 403);
   }
   s.actor(null); assert.equal((await s.api.GET()).status, 401);
   s.actor({ id: 'admin', role: 'admin' }); s.data.admin.role = 'teacher';
   assert.equal((await patch({ id: 'random-000', action: 'approve' })).status, 403);
-  s.data.admin.role = 'admin'; s.fail();
+  s.data.admin.role = 'admin'; s.data['random-000'].approvalStatus = 'pending'; s.fail();
   assert.equal((await patch({ id: 'random-000', action: 'approve' })).status, 500);
   assert.equal(s.data['random-000'].approvalStatus, 'pending', 'Failure must not approve locally/server-side');
 
@@ -162,6 +197,19 @@ async function main() {
   resolveMutation({ success: true, account: { ...unchanged, approvalStatus: 'approved' } }); await second;
   assert.equal(JSON.stringify(c.states), stateBeforeCleanup, 'Old/unmounted account screen cannot accept late mutation');
   assert.equal(results.after.approval.fullLists, 0);
+  const adminClient = client(read(componentPath), server(read(routePath)).request);
+  await adminClient.mount();
+  assert.ok(adminClient.find(n => n.type === 'option' && n.props.value === 'admin_support'));
+  adminClient.states[1] = 'staff'; adminClient.render();
+  assert.ok(adminClient.find(n => n.type === 'p' && n.props.children === 'support@example.com'), 'Support appears in staff list');
+  const supportBackend = server(read(routePath)); supportBackend.actor({ id: 'support', role: 'admin_support' });
+  const supportClient = client(read(componentPath), supportBackend.request, { approvalOnly: true });
+  await supportClient.mount();
+  assert.equal(supportClient.find(n => n.type === 'select'), undefined);
+  assert.equal(supportClient.find(n => typeof n.type === 'function'), undefined, 'No staff assignment component');
+  assert.ok(!supportClient.find(n => n.type === 'Tabs').props.items.some(item => item.value === 'staff'));
+  await supportClient.approve(); await flush();
+  assert.equal(supportClient.states[0].find(a => a.id === 'random-000').approvalStatus, 'approved');
   console.log('PASS: explicit/legacy approval, existing rejected semantics, roles/identity, authoritative transaction retry, authorization, commit failure, global search/count parity, no optimistic approval/refetch, stale GET and unmount guards.');
   console.log(JSON.stringify({ fixtureAccounts: 106, baseline, results,
     limitation: 'Pagination/search/count optimization deferred. documentResults are mock results, not billed reads; authorization modeled as one lookup.' }, null, 2));

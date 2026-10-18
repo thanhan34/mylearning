@@ -1,6 +1,12 @@
 # Attendance audit (read only)
 
-Admin and admin_support share the AttendanceAudit screen. The attendance and feedback tabs read the current environment's homework data; they no longer show a hardcoded workday or a simulated close-period button. Student approval in AdminSupportPreview remains mock-only.
+Admin and admin_support share the AttendanceAudit screen. The attendance and feedback tabs read the current environment's homework data; they no longer show a hardcoded workday or a simulated close-period button. Student approval in AdminSupportPreview uses the live accounts API in the current environment.
+
+## Support admin account permissions
+
+- Only admin may grant/revoke `admin_support` using the role selector in the staff directory. Role changes clear feedback assignments; conversion to student requires approval again. Admin accounts cannot be changed by this endpoint.
+- `admin_support` may list student accounts only and approve students through `/api/learning/accounts`. The support UI hides staff, role selectors and feedback assignments. API authorization enforces the same restrictions independently of the UI.
+- Approval rechecks the actor's current stored role and the target's student role within the transaction, and records `approvedBy` and `approvedAt`. Support cannot change roles or assign feedback types, including through manually crafted requests.
 
 ## Limits and reads
 
