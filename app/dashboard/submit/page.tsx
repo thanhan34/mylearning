@@ -8,6 +8,7 @@ import { sendHomeworkNotification } from '../../firebase/services/discord';
 import { isApproved } from '@/lib/learning-access';
 import { Button, Card, Input } from '@/components/ui';
 import { homeworkLinkKey, parseHomeworkLinks } from '@/lib/homework-links';
+import { useHomeworkDraft } from '@/lib/use-homework-draft';
 import type { HomeworkSubmission } from '../../firebase/services/types';
 import type { User } from '../../firebase/services/user';
 
@@ -19,8 +20,8 @@ function today() {
 export default function SubmitPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [text, setText] = useState('');
+  const draftOwner = status === 'authenticated' ? session?.user?.email?.trim().toLowerCase() || null : null;
+  const { selectedDate, text, ready: draftReady, storageError, updateDraft, clearDraft } = useHomeworkDraft(draftOwner, today());
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [message, setMessage] = useState('');
@@ -44,7 +45,7 @@ export default function SubmitPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (savingRef.current || invalid || !unique.length || !session?.user?.email) return;
+    if (savingRef.current || !draftReady || invalid || !unique.length || !session?.user?.email) return;
     savingRef.current = true;
     setSaving(true);
     setMessage('');
@@ -74,7 +75,7 @@ export default function SubmitPage() {
       const name = session.user.name || user.name || session.user.email;
       const success = await saveHomeworkSubmission(user.id, additions, name);
       if (!success) throw new Error('Failed to save submissions');
-      setText('');
+      clearDraft();
       setMessage(`Đã nộp ${additions.length} bài. Các bài cũ và feedback được giữ nguyên.${unique.length > additions.length ? ` Bỏ qua ${unique.length - additions.length} link đã nộp.` : ''}`);
       await Promise.allSettled(Array.from(new Set(additions.map(item => item.type))).map(type => {
         const links = additions.filter(item => item.type === type).map(item => item.link);
@@ -90,7 +91,7 @@ export default function SubmitPage() {
     }
   }
 
-  if (status !== 'authenticated') return <p className="p-6 text-gray-600">Đang tải...</p>;
+  if (status !== 'authenticated' || (draftOwner && !draftReady)) return <p className="p-6 text-gray-600">Đang tải...</p>;
 
   return (
     <div className="min-h-screen bg-white px-4 py-6 sm:px-6">
@@ -102,18 +103,23 @@ export default function SubmitPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="submission-date" className="mb-2 block font-medium text-gray-700">Ngày nộp bài</label>
-            <Input id="submission-date" type="date" required value={selectedDate} disabled={saving}
-              onChange={event => { setSelectedDate(event.target.value); setMessage(''); }} />
+            <Input id="submission-date" type="date" required value={selectedDate} disabled={saving || !draftReady}
+              onChange={event => { updateDraft({ selectedDate: event.target.value }); setMessage(''); }} />
           </div>
           <div>
             <label htmlFor="homework-links" className="mb-2 block font-medium text-gray-700">Dán link bài tập</label>
             <p id="homework-help" className="mb-3 text-sm text-gray-600">
               Copy link hoặc toàn bộ nội dung chia sẻ từ APEUni rồi dán vào đây. Có thể dán nhiều dạng bài cùng lúc, mỗi link là một bài riêng. Hệ thống tự nhận diện, không cần chọn dạng bài.
             </p>
-            <textarea id="homework-links" rows={8} className="ui-input w-full resize-y" disabled={saving}
+            <textarea id="homework-links" rows={8} className="ui-input w-full resize-y" disabled={saving || !draftReady}
               aria-describedby="homework-help" aria-invalid={invalid} value={text}
               placeholder={'Dán link APEUni tại đây, mỗi link một dòng.\nBạn cũng có thể dán nội dung chia sẻ RA#..., RS#..., DI#... kèm link.'}
-              onChange={event => { setText(event.target.value); setMessage(''); }} />
+              onChange={event => { updateDraft({ text: event.target.value }); setMessage(''); }} />
+            <p role={storageError ? 'alert' : undefined} className="mt-2 text-sm text-gray-600">
+              {storageError
+                ? 'Không thể lưu bản nháp trên trình duyệt này. Hãy sao chép nội dung trước khi rời trang để tránh mất dữ liệu.'
+                : 'Bản nháp được tự động lưu trên trình duyệt này. Bạn có thể quay lại để tiếp tục; bản nháp chưa phải bài đã nộp.'}
+            </p>
           </div>
           {parsed.length > 0 && (
             <section aria-label="Kết quả nhận diện" className="space-y-3">
@@ -142,7 +148,7 @@ export default function SubmitPage() {
           <p role="status" aria-live="polite" className="text-sm text-gray-700">{message}</p>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="text-sm text-gray-600">Bài nộp thêm không thay thế bài và feedback cũ.</p>
-            <Button type="submit" disabled={saving || invalid || !unique.length}>{saving ? 'Đang nộp...' : `Nộp ${unique.length || ''} bài`}</Button>
+            <Button type="submit" disabled={saving || !draftReady || invalid || !unique.length}>{saving ? 'Đang nộp...' : `Nộp ${unique.length || ''} bài`}</Button>
           </div>
         </form>
       </Card>
