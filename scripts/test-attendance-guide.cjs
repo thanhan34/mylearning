@@ -20,7 +20,7 @@ function load(relative) {
 const Page = load('app/dashboard/teacher/attendance-guide/page.tsx').default;
 const html = renderToStaticMarkup(React.createElement(Page));
 assert.equal((html.match(/<h1[ >]/g) || []).length, 1);
-assert.equal((html.match(/<section /g) || []).length, 6);
+assert.equal((html.match(/<section /g) || []).length, 7);
 assert.equal((html.match(/<article /g) || []).length, 4);
 assert.match(html, /Các mốc quan trọng/);
 assert.match(html, /Nội dung hướng dẫn/);
@@ -36,7 +36,7 @@ assert.match(html, /aria-label="Bảng hạn feedback bù" tabindex="0"/);
 const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
 assert.equal(new Set(ids).size, ids.length, 'Heading IDs must remain unique');
 for (const match of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(match[1]), `Missing anchor ${match[1]}`);
-for (const id of ['feedback-rules', 'workday-rules', 'makeup-feedback', 'attendance-period', 'feedback-deadlines', 'examples']) {
+for (const id of ['feedback-rules', 'workday-rules', 'makeup-feedback', 'attendance-period', 'feedback-deadlines', 'examples', 'feedback-quality']) {
   assert.ok(html.includes(`href="#${id}"`));
   assert.ok(html.includes(`id="${id}"`));
   assert.ok(html.includes(`aria-labelledby="${id}-title"`));
@@ -46,6 +46,10 @@ for (const text of ['Dành cho giảng viên và trợ giảng', '30% số bài 
   'không tự động phát sinh ngày công', 'từ ngày 21 tháng trước đến hết ngày 20 tháng hiện tại',
   '23:59, giờ Việt Nam', 'ngày học viên nộp bài, không phải ngày feedback bù', 'Read Aloud – Repeat Sentence – Write From Dictation',
   'A: 9 bài, B: 0 bài', 'không được hồi tố công cho kỳ 21/08–20/09']) assert.ok(html.includes(text), text);
+for (const text of ['Specific – Cụ thể', 'Objective – Khách quan', 'Constructive – Mang tính xây dựng',
+  'Actionable – Có hướng cải thiện', 'Timely – Đúng thời điểm', 'Bad Feedback', 'Good Feedback',
+  'Em nói chưa tốt, phát âm sai nhiều, cần luyện tập thêm.', 'Trong bài Read Aloud, em phát âm tương đối rõ',
+  'Good Feedback = Điểm mạnh + Vấn đề cụ thể + Tác động + Hướng cải thiện']) assert.ok(html.includes(text), text);
 const table = html.match(/<tbody>(.*?)<\/tbody>/s)[1];
 assert.equal((table.match(/<tr /g) || []).length, 6);
 assert.ok(!html.includes('7 ngày'), 'The guide must not retain the old makeup deadline');
@@ -62,4 +66,4 @@ for (const role of ['teacher', 'assistant']) {
 }
 const workspace = fs.readFileSync(path.join(root, 'components/FeedbackWorkspace.tsx'), 'utf8');
 assert.ok(workspace.includes("['teacher', 'assistant'].includes(account.role) && <Link href=\"/dashboard/teacher/attendance-guide\""));
-console.log('PASS: attendance guide render, six sections, deadline table, four cases and both staff navigation links.');
+console.log('PASS: attendance guide render, seven sections, feedback quality, deadline table, four cases and both staff navigation links.');

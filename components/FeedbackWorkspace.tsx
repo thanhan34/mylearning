@@ -6,7 +6,7 @@ import { useLearningAccount } from '@/components/LearningGate';
 import { canEditFeedback, EXERCISE_TYPES } from '@/lib/learning-access';
 import { learningApi } from '@/lib/learning-api';
 import { parseHomeworkLinks } from '@/lib/homework-links';
-import { vietnamDate } from '@/lib/attendance-audit';
+import { staffFeedbackDefaultRange, vietnamDate } from '@/lib/attendance-audit';
 import type { HomeworkSubmission } from '@/app/firebase/services/types';
 import { RiArrowRightUpLine, RiChatCheckLine, RiFileTextLine, RiTimeLine, RiRefreshLine, RiFilterLine, RiTeamLine, RiBookOpenLine, RiArrowRightLine, RiInformationLine } from 'react-icons/ri';
 
@@ -22,15 +22,21 @@ function FeedbackWorkspaceContent() {
   const canViewAllTypes = ['admin', 'admin_support', 'student'].includes(account.role);
   const types = canViewAllTypes ? [...EXERCISE_TYPES] : account.assignedFeedbackTypes || [];
   const [homework, setHomework] = useState<Homework[]>([]);
-  const [date, setDate] = useState(() => account.role === 'student' ? '1970-01-01' : vietnamDate());
-  const [endDate, setEndDate] = useState(vietnamDate);
+  const [defaults] = useState(() => {
+    const today = vietnamDate();
+    return ['teacher', 'assistant'].includes(account.role)
+      ? staffFeedbackDefaultRange(today)
+      : { start: account.role === 'student' ? '1970-01-01' : today, end: today };
+  });
+  const [date, setDate] = useState(defaults.start);
+  const [endDate, setEndDate] = useState(defaults.end);
   const canFilterDateRange = ['admin', 'admin_support', 'teacher', 'assistant', 'student'].includes(account.role);
   const invalidRange = canFilterDateRange && (!date || !endDate || date > endDate);
   const [cursor, setCursor] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [previousCursors, setPreviousCursors] = useState<(string | null)[]>([]);
   const [search, setSearch] = useState('');
-  const [type, setType] = useState(() => account.role === 'student' ? '' :
+  const [type, setType] = useState(() => ['student', 'teacher', 'assistant'].includes(account.role) ? '' :
     account.assignedFeedbackTypes?.find(value => types.includes(value)) || types[0] || '');
   const [status, setStatus] = useState(account.role === 'student' ? '' : 'pending');
   const [error, setError] = useState('');

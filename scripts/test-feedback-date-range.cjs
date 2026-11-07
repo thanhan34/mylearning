@@ -101,7 +101,7 @@ const get = params => loaded.exports.GET(new Request(`http://localhost/api/learn
       Input: props => React.createElement('input', props),
     },
     '@/lib/learning-access': { EXERCISE_TYPES: ['RA', 'WFD'], canEditFeedback: user => user.role === 'admin' },
-    '@/lib/attendance-audit': { vietnamDate: () => '2026-10-02' },
+    '@/lib/attendance-audit': { vietnamDate: () => '2026-10-02', staffFeedbackDefaultRange: () => ({ start: '2026-09-21', end: '2026-10-02' }) },
     '@/lib/learning-api': {}, '@/lib/homework-links': {
       parseHomeworkLinks: link => /^https:\/\//.test(link) ? [{ url: link }] : [{ error: 'Invalid link' }],
     },
@@ -113,9 +113,9 @@ const get = params => loaded.exports.GET(new Request(`http://localhost/api/learn
   for (const role of ['admin', 'admin_support', 'teacher', 'assistant', 'student']) {
     actor = { id: role, role, assignedFeedbackTypes: ['WFD', 'RA'] };
     const html = renderToStaticMarkup(React.createElement(uiLoaded.exports.default));
-    assert.equal((html.match(/type="date"/g) || []).length, role === 'student' ? 1 : 2);
+    assert.equal((html.match(/type="date"/g) || []).length, 2);
     if (role !== 'student') { assert.match(html, /Ngày nộp từ ngày/); assert.match(html, /Đến ngày/); }
-    assert.equal((html.match(/value="2026-10-02"/g) || []).length, role === 'student' ? 1 : 2);
+    assert.equal((html.match(/value="2026-10-02"/g) || []).length, ['admin', 'admin_support'].includes(role) ? 2 : 1);
     if (role !== 'student') {
       assert.match(html, /Thống kê bài tập trong trang hiện tại/);
       assert.match(html, /Không phải tổng toàn hệ thống hay kết quả chấm công/);
@@ -125,10 +125,12 @@ const get = params => loaded.exports.GET(new Request(`http://localhost/api/learn
       if (['teacher', 'assistant'].includes(role)) {
         assert.match(html, /Tổng quan giảng dạy/);
         assert.match(html, /Dạng bài được phân công/);
+        assert.match(html, /value="2026-09-21"/);
+        assert.match(html, /<option value="" selected="">Tất cả dạng được giao<\/option>/);
         assert.match(html, /href="\/dashboard\/teacher\/students"/);
         assert.match(html, /href="\/dashboard\/teacher\/attendance-guide"/);
       }
-      assert.match(html, /<option selected="">WFD<\/option>/);
+      if (['admin', 'admin_support'].includes(role)) assert.match(html, /<option selected="">WFD<\/option>/);
       assert.match(html, /<option value="pending" selected="">Chưa có<\/option>/);
     } else {
       assert.doesNotMatch(html, /value="pending" selected/);

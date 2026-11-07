@@ -9,6 +9,13 @@ export interface AuditRangePage { rows: AuditRangeRow[]; dailyRows: AuditDailyRo
 export function vietnamDate(now = new Date()): string {
   return new Date(now.getTime() + 7 * 3600000).toISOString().slice(0, 10);
 }
+// The dashboard defaults to the previous month's 21st through today or this month's 20th.
+export function staffFeedbackDefaultRange(today = vietnamDate()) {
+  const [year, month] = today.split('-').map(Number);
+  const start = new Date(Date.UTC(year, month - 2, 21)).toISOString().slice(0, 10);
+  const close = `${today.slice(0, 7)}-20`;
+  return { start, end: today < close ? today : close };
+}
 export function validAuditDate(value: unknown): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
     Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;

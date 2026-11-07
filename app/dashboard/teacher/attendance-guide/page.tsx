@@ -9,6 +9,7 @@ const topics = [
   ['attendance-period', 'Kỳ chấm công'],
   ['feedback-deadlines', 'Quy tắc 3 ngày và ngày chốt công'],
   ['examples', 'Một số trường hợp cụ thể'],
+  ['feedback-quality', 'Chất lượng feedback'],
 ] as const;
 
 const deadlines = [
@@ -57,7 +58,7 @@ export default function AttendanceGuidePage() {
       <aside className="space-y-4 lg:sticky lg:top-24">
         <Card className="attendance-guide-directory"><details open className="attendance-guide-menu"><summary>Nội dung hướng dẫn <RiBookOpenLine aria-hidden="true" className="h-5 w-5 text-primary" /></summary><div>
           <h2 className="text-base font-semibold text-gray-900">Nội dung hướng dẫn</h2>
-          <p className="mb-4 mt-1 text-xs text-gray-500">6 chủ đề · Chọn để xem nhanh</p>
+          <p className="mb-4 mt-1 text-xs text-gray-500">{topics.length} chủ đề · Chọn để xem nhanh</p>
           <nav aria-label="Mục lục hướng dẫn chấm công">
             <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">{topics.map(([id, title], index) => <li key={id}>
               <a href={`#${id}`} className="attendance-guide-topic"><span aria-hidden="true" className="attendance-guide-number">{String(index + 1).padStart(2, '0')}</span><span>{title}</span></a>
@@ -157,6 +158,39 @@ export default function AttendanceGuidePage() {
           <article className="homework-guide-step"><h3 className="font-semibold text-gray-900">Trường hợp 2 – Không đủ 30%</h3><p>Học viên nộp 10 bài nhưng giáo viên chỉ feedback 2 bài → chưa đạt yêu cầu.</p><p>Giáo viên có thể tiếp tục feedback bù trong thời hạn cho phép.</p></article>
           <article className="homework-guide-step"><h3 className="font-semibold text-gray-900">Trường hợp 3 – Nhiều học viên</h3><p>Học viên A: 10 bài → tối thiểu 3 bài. Học viên B: 20 bài → tối thiểu 6 bài.</p><p>Giáo viên feedback A: 9 bài, B: 0 bài → không đạt, mặc dù tổng số bài feedback bằng 30% tổng bài. Lý do: 30% được tính theo từng học viên.</p></article>
           <article className="homework-guide-step"><h3 className="font-semibold text-gray-900">Trường hợp 4 – Feedback sau ngày chốt công</h3><p>Học viên nộp bài ngày 18/09. Ngày 22/09 giáo viên mới feedback.</p><p>Giáo viên vẫn có thể feedback để hỗ trợ học viên, nhưng không được hồi tố công cho kỳ 21/08–20/09.</p></article>
+        </div>
+      </Card>
+    </section>
+    <section id="feedback-quality" aria-labelledby="feedback-quality-title" className="scroll-mt-24">
+      <Card className="space-y-6 text-gray-700">
+        <div className="space-y-2">
+          <h2 id="feedback-quality-title" className="text-xl font-semibold text-gray-900">7. Chất lượng feedback</h2>
+          <p className="leading-relaxed">Một feedback tốt cần đáp ứng 5 tiêu chí quan trọng để giúp học viên hiểu và cải thiện bài làm.</p>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {[
+            ['Specific – Cụ thể', 'Chỉ rõ vấn đề, tránh nhận xét chung chung như “chưa tốt”, “cần cố gắng thêm”.'],
+            ['Objective – Khách quan', 'Đánh giá dựa trên những gì quan sát được, có dẫn chứng cụ thể, không dựa vào cảm tính.'],
+            ['Constructive – Mang tính xây dựng', 'Mục đích là giúp người nhận tiến bộ, không phải chỉ trích hay tập trung vào lỗi sai.'],
+            ['Actionable – Có hướng cải thiện', 'Đưa ra giải pháp hoặc hành động cụ thể để người nhận biết mình cần làm gì tiếp theo.'],
+            ['Timely – Đúng thời điểm', 'Phản hồi kịp thời để người nhận có thể điều chỉnh và cải thiện hiệu quả.'],
+          ].map(([title, description]) => <li key={title} className="homework-guide-step"><h3 className="font-semibold text-gray-900">{title}</h3><p className="text-sm leading-relaxed">{description}</p></li>)}
+        </ul>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="homework-guide-step space-y-2">
+            <h3 className="font-semibold text-gray-900">❌ Bad Feedback</h3>
+            <blockquote className="leading-relaxed">“Em nói chưa tốt, phát âm sai nhiều, cần luyện tập thêm.”</blockquote>
+            <p className="text-sm leading-relaxed">Đây là feedback chung chung. Học viên không biết mình sai ở đâu, nguyên nhân là gì và phải luyện tập như thế nào.</p>
+          </div>
+          <div className="homework-guide-step space-y-2">
+            <h3 className="font-semibold text-gray-900">✅ Good Feedback</h3>
+            <blockquote className="leading-relaxed">“Trong bài Read Aloud, em phát âm tương đối rõ nhưng thường ngắt nghỉ giữa các từ trong cùng một cụm, khiến bài nói thiếu trôi chảy. Em nên luyện chia cụm theo ý nghĩa và tập đọc liền mạch từng cụm, thay vì cố gắng phát âm từng từ thật hoàn hảo. Trong các buổi luyện tiếp theo, em cần tập trung cải thiện Fluency trước.”</blockquote>
+            <p className="text-sm leading-relaxed">Feedback này giúp học viên hiểu được điểm mạnh, lỗi cần khắc phục, ảnh hưởng của lỗi và phương pháp cải thiện.</p>
+          </div>
+        </div>
+        <div className="attendance-guide-summary space-y-2 rounded-xl p-4">
+          <h3 className="font-semibold text-gray-900">Công thức áp dụng</h3>
+          <p className="font-semibold leading-relaxed text-gray-900">Good Feedback = Điểm mạnh + Vấn đề cụ thể + Tác động + Hướng cải thiện</p>
         </div>
       </Card>
     </section>
