@@ -22,9 +22,9 @@ function FeedbackWorkspaceContent() {
   const canViewAllTypes = ['admin', 'admin_support', 'student'].includes(account.role);
   const types = canViewAllTypes ? [...EXERCISE_TYPES] : account.assignedFeedbackTypes || [];
   const [homework, setHomework] = useState<Homework[]>([]);
-  const [date, setDate] = useState(vietnamDate);
-  const [endDate, setEndDate] = useState(date);
-  const canFilterDateRange = ['admin', 'admin_support', 'teacher', 'assistant'].includes(account.role);
+  const [date, setDate] = useState(() => account.role === 'student' ? '1970-01-01' : vietnamDate());
+  const [endDate, setEndDate] = useState(vietnamDate);
+  const canFilterDateRange = ['admin', 'admin_support', 'teacher', 'assistant', 'student'].includes(account.role);
   const invalidRange = canFilterDateRange && (!date || !endDate || date > endDate);
   const [cursor, setCursor] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -76,7 +76,7 @@ function FeedbackWorkspaceContent() {
     const stats = [
       { label: 'Bài đã nộp', value: submissions.length, icon: RiFileTextLine, detail: 'Bài luyện tập trong trang này', emphasis: false },
       { label: 'Đã có nhận xét', value: reviewed, icon: RiChatCheckLine, detail: 'Sẵn sàng để đọc và luyện lại', emphasis: true },
-      { label: 'Chờ phản hồi', value: submissions.length - reviewed, icon: RiTimeLine, detail: 'Bài chưa có nhận xét từ giáo viên', emphasis: false },
+      { label: 'Chờ phản hồi', value: submissions.length - reviewed, icon: RiTimeLine, detail: 'Bài chưa có nhận xét từ giáo viên hoặc trợ giảng', emphasis: false },
     ];
     return <div className="student-feedback space-y-6 py-4 sm:py-6">
       <header className="feedback-hero grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-center">
@@ -99,21 +99,22 @@ function FeedbackWorkspaceContent() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           {stats.map(stat => <Card key={stat.label} className="feedback-surface feedback-stat flex flex-col gap-4" data-emphasis={stat.emphasis ? 'true' : undefined}>
             <div className="flex w-full items-center justify-between gap-3"><p className="text-sm font-medium text-gray-600">{stat.label}</p><span className="feedback-icon"><stat.icon aria-hidden="true" className="h-5 w-5" /></span></div>
-            <div><p className="feedback-stat-number text-3xl font-bold tabular-nums tracking-tight text-gray-900 sm:text-4xl">{loading || error || !date ? '—' : stat.value}</p><p className="mt-2 text-xs leading-relaxed text-gray-500">{stat.detail}</p></div>
+            <div><p className="feedback-stat-number text-3xl font-bold tabular-nums tracking-tight text-gray-900 sm:text-4xl">{loading || error || invalidRange ? '—' : stat.value}</p><p className="mt-2 text-xs leading-relaxed text-gray-500">{stat.detail}</p></div>
           </Card>)}
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-gray-500">Thống kê theo ngày nộp trên trang hiện tại, trước khi lọc dạng bài và trạng thái. Mỗi trang tối đa 20 hồ sơ.</p>
+        <p className="mt-3 text-xs leading-relaxed text-gray-500">Thống kê theo khoảng ngày nộp trên trang hiện tại, trước khi lọc dạng bài và trạng thái. Mỗi trang tối đa 20 hồ sơ.</p>
       </section>
 
       <div className="feedback-content-grid">
        <Card className="feedback-surface feedback-filters">
         <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-gray-900"><RiFilterLine aria-hidden="true" className="h-5 w-5 text-primary" /> Tìm nhận xét của bạn</h2>
-        <p className="mb-6 text-xs leading-6 text-gray-500">Chọn ngày và dạng bài để tập trung vào những nhận xét bạn cần.</p>
+        <p className="mb-6 text-xs leading-6 text-gray-500">Chọn khoảng ngày và dạng bài để tìm nhận xét từ giáo viên hoặc trợ giảng.</p>
         <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1.3fr_1fr_auto]">
-          <label className="min-w-0 text-sm font-medium text-gray-700">Ngày nộp<Input type="date" required className="mt-2 block w-full min-w-0" value={date} onChange={e => changeDate(e.target.value)} /></label>
+          <label className="min-w-0 text-sm font-medium text-gray-700">Từ ngày<Input type="date" required className="mt-2 block w-full min-w-0" value={date} onChange={e => changeDate(e.target.value)} /></label>
+          <label className="min-w-0 text-sm font-medium text-gray-700">Đến ngày<Input type="date" required className="mt-2 block w-full min-w-0" value={endDate} onChange={e => changeDate(e.target.value, true)} /></label>
           <label className="min-w-0 text-sm font-medium text-gray-700">Dạng bài<select className="ui-input mt-2 block w-full" value={type} onChange={e => setType(e.target.value)}><option value="">Tất cả dạng bài</option>{types.map(t => <option key={t}>{t}</option>)}</select></label>
           <label className="min-w-0 text-sm font-medium text-gray-700">Trạng thái<select className="ui-input mt-2 block w-full" value={status} onChange={e => setStatus(e.target.value)}><option value="">Tất cả trạng thái</option><option value="pending">Chờ phản hồi</option><option value="done">Đã có nhận xét</option></select></label>
-          <Button variant="secondary" disabled={loading || !date} onClick={load} className="inline-flex items-center justify-center gap-2"><RiRefreshLine aria-hidden="true" className="h-4 w-4" /> Tải lại</Button>
+          <Button variant="secondary" disabled={loading || invalidRange} onClick={load} className="inline-flex items-center justify-center gap-2"><RiRefreshLine aria-hidden="true" className="h-4 w-4" /> Tải lại</Button>
         </div>
         {(type || status) && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4"><p className="text-xs text-gray-500">Bộ lọc áp dụng cho các bài trên trang hiện tại.</p><Button variant="secondary" onClick={() => { setType(''); setStatus(''); }} className="text-sm">Xóa bộ lọc</Button></div>}
         {(type || status) && <Button variant="secondary" className="mt-4 w-full text-sm" onClick={() => { setType(''); setStatus(''); }}>Xóa bộ lọc dạng bài & trạng thái</Button>}
@@ -122,10 +123,10 @@ function FeedbackWorkspaceContent() {
       <section aria-labelledby="student-feedback-results" aria-busy={loading} className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="student-feedback-results" className="text-lg font-semibold text-gray-900">Nhận xét bài tập</h2>
-          <p role="status" className="text-sm text-gray-500">{loading ? 'Đang tải bài tập...' : error || !date ? 'Chưa có kết quả' : `${rows.length} bài tập phù hợp`}</p>
+          <p role="status" className="text-sm text-gray-500">{loading ? 'Đang tải bài tập...' : error || invalidRange ? 'Chưa có kết quả' : `${rows.length} bài tập phù hợp`}</p>
         </div>
         {error ? <Card className="feedback-surface"><p role="alert" className="text-sm text-gray-700">{error}</p><Button variant="secondary" className="mt-4" onClick={load} disabled={loading}>Thử lại</Button></Card>
-          : !date ? <Card className="feedback-surface text-center"><p className="font-semibold text-gray-900">Chọn ngày nộp bài</p><p className="mt-2 text-sm text-gray-600">Chọn một ngày để xem bài tập và nhận xét tương ứng.</p></Card>
+          : invalidRange ? <Card className="feedback-surface text-center"><p className="font-semibold text-gray-900">Khoảng ngày không hợp lệ</p><p className="mt-2 text-sm text-gray-600">Chọn đầy đủ ngày bắt đầu và kết thúc, trong đó ngày bắt đầu không sau ngày kết thúc.</p></Card>
           : loading ? <div aria-hidden="true" className="space-y-4">{[0, 1].map(key => <Card key={key} className="feedback-surface space-y-4 motion-safe:animate-pulse"><div className="h-5 w-1/3 rounded bg-gray-100" /><div className="h-20 rounded-xl bg-gray-50" /><div className="h-4 w-1/2 rounded bg-gray-100" /></Card>)}</div>
           : !rows.length ? <Card className="feedback-surface flex flex-col items-center py-8 text-center"><span className="feedback-icon mb-4"><RiFileTextLine aria-hidden="true" className="h-6 w-6" /></span><h3 className="font-semibold text-gray-900">{submissions.length ? 'Không có bài phù hợp với bộ lọc' : 'Chưa có bài tập trên trang này'}</h3><p className="mt-2 max-w-md text-sm leading-relaxed text-gray-600">{submissions.length ? 'Thử chọn dạng bài hoặc trạng thái khác để xem thêm nhận xét.' : 'Hãy kiểm tra ngày nộp bài hoặc chuyển sang trang tiếp theo nếu có.'}</p><Link href="/dashboard/submissions" className="ui-button mt-4 border border-primary-light text-gray-700 hover:bg-primary-light/30">Đi đến bài nộp</Link></Card>
           : rows.map(({ item, sub }) => <FeedbackEditor key={`${item.id}:${sub.id || `${sub.type}:${sub.questionNumber}`}:${sub.feedbackAt || ''}`} homework={item} submission={sub} onSaved={saved => onSaved(item.id, sub, saved)} />)}
@@ -133,7 +134,7 @@ function FeedbackWorkspaceContent() {
       </div>
       <footer className="feedback-pagination flex flex-col gap-4 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div><p className="text-sm font-medium text-gray-700">Trang {previousCursors.length + 1}</p>{truncated && !error && <p className="mt-1 text-xs text-gray-500">Còn bài nộp ở trang tiếp theo.</p>}</div>
-        <nav aria-label="Phân trang feedback" className="flex gap-3"><Button variant="secondary" disabled={loading || !date || !previousCursors.length} onClick={() => { setCursor(previousCursors[previousCursors.length - 1]); setPreviousCursors(values => values.slice(0, -1)); }}>Trang trước</Button><Button variant="secondary" disabled={loading || !date || !!error || !nextCursor} onClick={() => { setPreviousCursors(values => [...values, cursor]); setCursor(nextCursor); }}>Trang sau</Button></nav>
+        <nav aria-label="Phân trang feedback" className="flex gap-3"><Button variant="secondary" disabled={loading || invalidRange || !previousCursors.length} onClick={() => { setCursor(previousCursors[previousCursors.length - 1]); setPreviousCursors(values => values.slice(0, -1)); }}>Trang trước</Button><Button variant="secondary" disabled={loading || invalidRange || !!error || !nextCursor} onClick={() => { setPreviousCursors(values => [...values, cursor]); setCursor(nextCursor); }}>Trang sau</Button></nav>
       </footer>
     </div>;
   }
@@ -241,8 +242,8 @@ export function FeedbackEditor({ homework, submission, onSaved }: { homework: Ho
           <span className={`feedback-status ${hasFeedback ? 'feedback-status-done' : ''}`}>{hasFeedback ? <RiChatCheckLine aria-hidden="true" /> : <RiTimeLine aria-hidden="true" />}{hasFeedback ? 'Đã có nhận xét' : 'Chờ phản hồi'}</span>
         </header>
         <div className={`feedback-comment ${hasFeedback ? '' : 'feedback-comment-pending'}`}>
-          <h4 className="text-sm font-semibold text-gray-900">{hasFeedback ? 'Nhận xét từ giáo viên' : 'Bài nộp đang chờ nhận xét'}</h4>
-          <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-gray-700">{hasFeedback ? submission.feedback : 'Bạn có thể quay lại trang này để xem nhận xét khi giáo viên phản hồi.'}</p>
+          <h4 className="text-sm font-semibold text-gray-900">{hasFeedback ? 'Nhận xét từ giáo viên hoặc trợ giảng' : 'Bài nộp đang chờ nhận xét'}</h4>
+          <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-gray-700">{hasFeedback ? submission.feedback : 'Bạn có thể quay lại trang này để xem nhận xét khi giáo viên hoặc trợ giảng phản hồi.'}</p>
         </div>
         <footer className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="min-w-0 break-words text-xs text-gray-500">{hasFeedback ? submission.feedbackByName ? `Người nhận xét: ${submission.feedbackByName}` : 'Nhận xét cho bài tập của bạn' : 'Luyện tập đều đặn để tiến bộ mỗi ngày.'}</p>
