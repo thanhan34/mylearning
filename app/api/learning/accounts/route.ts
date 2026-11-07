@@ -6,6 +6,7 @@ import { EXERCISE_TYPES, isApproved, LearningAccount } from '@/lib/learning-acce
 export const dynamic = 'force-dynamic';
 function accountView(data: LearningAccount) {
   return { id: data.id, email: data.email, name: data.name || '', role: data.role,
+    createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
     approvalStatus: isApproved(data) ? 'approved' : 'pending', assignedFeedbackTypes: data.assignedFeedbackTypes || [] };
 }
 export async function GET() {

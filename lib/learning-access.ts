@@ -8,11 +8,20 @@ export interface LearningAccount {
   id: string;
   email: string;
   name?: string;
+  createdAt?: string;
   role: string;
   approvalStatus?: 'pending' | 'approved';
   assignedFeedbackTypes?: string[];
   classId?: string;
   teacherId?: string;
+}
+
+export function sortPendingAccounts(accounts: LearningAccount[]): LearningAccount[] {
+  const timestamp = (account: LearningAccount) => {
+    const value = account.createdAt ? Date.parse(account.createdAt) : NaN;
+    return Number.isFinite(value) ? value : -Infinity;
+  };
+  return [...accounts].sort((a, b) => timestamp(b) - timestamp(a) || a.id.localeCompare(b.id));
 }
 
 // Explicit status always wins; preserve access for existing enrolled students.

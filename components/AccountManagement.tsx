@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Card, Input, Tabs } from '@/components/ui';
-import { EXERCISE_TYPES, LearningAccount } from '@/lib/learning-access';
+import { EXERCISE_TYPES, LearningAccount, sortPendingAccounts } from '@/lib/learning-access';
 import { learningApi } from '@/lib/learning-api';
 import { RiTeamLine, RiTimeLine, RiShieldUserLine, RiRefreshLine, RiSearchLine } from 'react-icons/ri';
 
@@ -43,11 +43,12 @@ export default function AccountManagement({ approvalOnly = false }: { approvalOn
     } catch (err) { if (version.current === current) setMessage((err as Error).message); }
     finally { saving.current = false; if (version.current === current) setBusy(''); }
   }
-  const visible = accounts.filter(account => {
+  const filtered = accounts.filter(account => {
     const matches = `${account.name} ${account.email}`.toLowerCase().includes(search.toLowerCase());
     return matches && (tab === 'pending' ? account.role === 'student' && account.approvalStatus !== 'approved'
       : tab === 'students' ? account.role === 'student' : !approvalOnly && ['teacher', 'assistant', 'admin_support'].includes(account.role));
   });
+  const visible = tab === 'pending' ? sortPendingAccounts(filtered) : filtered;
   const pending = accounts.filter(a => a.role === 'student' && a.approvalStatus !== 'approved').length;
   const stats = [
     { label: 'Học viên chờ duyệt', value: pending, icon: RiTimeLine },
