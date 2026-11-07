@@ -58,6 +58,8 @@ function Directory() {
   const [type, setType] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pageInput, setPageInput] = useState('');
+  const [pageError, setPageError] = useState('');
   const version = useRef(0);
   const load = useCallback(async () => {
     const current = ++version.current;
@@ -65,22 +67,67 @@ function Directory() {
     try {
       const params = new URLSearchParams();
       if (student) params.set('studentId', student.id);
+      else if (search.trim()) params.set('search', search.trim());
       if (cursor) params.set('after', cursor);
       const result = await learningApi<Page>(`students?${params}`);
       if (version.current === current) setPage(result);
     } catch (err) { if (version.current === current) setError((err as Error).message); }
     finally { if (version.current === current) setLoading(false); }
-  }, [student?.id, cursor]);
-  useEffect(() => { void load(); return () => { version.current++; }; }, [load]);
+  }, [student?.id, cursor, search]);
+  useEffect(() => {
+    const timer = setTimeout(() => { void load(); }, !student && search.trim() ? 300 : 0);
+    return () => { clearTimeout(timer); version.current++; };
+  }, [load, student, search]);
 
   function navigate(next: Student | null) {
     version.current++; setPage(null); setLoading(true); setError('');
+    setPageInput(''); setPageError('');
     setStudent(next); setCursor(null); setPrevious([]); setSearch(''); setType('');
   }
   function changePage(next: string | null) {
     version.current++; setPage(null); setLoading(true); setCursor(next);
   }
-  const students = (page?.students || []).filter(item => `${item.name} ${item.email}`.toLocaleLowerCase().includes(search.toLocaleLowerCase()));
+  function changeSearch(value: string) {
+    version.current++; setPage(null); setLoading(true); setError('');
+    setPageInput(''); setPageError('');
+    setCursor(null); setPrevious([]); setSearch(value);
+  }
+  async function jumpToPage() {
+    const target = Number(pageInput);
+    if (!/^\d+$/.test(pageInput) || !Number.isSafeInteger(target) || target < 1) {
+      setPageError('Vui lòng nhập số trang nguyên lớn hơn 0.'); return;
+    }
+    setPageError('');
+    const currentPage = previous.length + 1;
+    if (target === currentPage) return;
+    if (target < currentPage) {
+      const next = previous[target - 1];
+      setPrevious(previous.slice(0, target - 1)); changePage(next); return;
+    }
+    const request = ++version.current;
+    setLoading(true);
+    const history = [...previous];
+    let position = cursor;
+    let nextCursor = page?.nextCursor || null;
+    try {
+      for (let number = currentPage; number < target; number++) {
+        if (!nextCursor) { if (version.current === request) setPageError('Trang này không tồn tại.'); return; }
+        history.push(position); position = nextCursor;
+        if (number + 1 < target) {
+          const params = new URLSearchParams();
+          if (student) params.set('studentId', student.id);
+          else if (search.trim()) params.set('search', search.trim());
+          params.set('after', position);
+          const result = await learningApi<Page>(`students?${params}`);
+          if (version.current !== request) return;
+          nextCursor = result.nextCursor;
+        }
+      }
+      if (version.current === request) { setPrevious(history); changePage(position); }
+    } catch (err) { if (version.current === request) setPageError((err as Error).message); }
+    finally { if (version.current === request) setLoading(false); }
+  }
+  const students = page?.students || [];
   const rows = (page?.homework || []).flatMap(item => item.submissions.map(sub => ({ item, sub }))).filter(({ sub }) => !type || sub.type === type);
   const submissions = (page?.homework || []).flatMap(item => item.submissions);
   const stats = student ? [
@@ -107,17 +154,17 @@ function Directory() {
     <Card className="directory-surface directory-search-panel">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
         {student ? <label className="min-w-0 flex-1 text-sm font-medium text-gray-700">Dạng bài trong trang<select className="ui-input mt-2 block w-full" value={type} onChange={event => setType(event.target.value)}><option value="">Tất cả dạng bài</option>{EXERCISE_TYPES.map(value => <option key={value}>{value}</option>)}</select></label>
-          : <label className="min-w-0 flex-1 text-sm font-medium text-gray-700">Tìm học viên trong trang<span className="relative mt-2 block"><RiSearchLine aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" /><Input type="search" className="block w-full pl-10 pr-12" value={search} onChange={event => setSearch(event.target.value)} placeholder="Nhập tên hoặc email học viên..." aria-describedby="directory-filter-help" />{search && <button type="button" aria-label="Xóa tìm kiếm" onClick={() => setSearch('')} className="directory-clear-search absolute right-0 top-0 flex h-11 w-11 items-center justify-center"><RiCloseLine aria-hidden="true" className="h-5 w-5" /></button>}</span></label>}
+          : <label className="min-w-0 flex-1 text-sm font-medium text-gray-700">Tìm học viên<span className="relative mt-2 block"><RiSearchLine aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" /><Input type="search" maxLength={200} className="block w-full pl-10 pr-12" value={search} onChange={event => changeSearch(event.target.value)} placeholder="Nhập tên hoặc email học viên..." aria-describedby="directory-filter-help" />{search && <button type="button" aria-label="Xóa tìm kiếm" onClick={() => changeSearch('')} className="directory-clear-search absolute right-0 top-0 flex h-11 w-11 items-center justify-center"><RiCloseLine aria-hidden="true" className="h-5 w-5" /></button>}</span></label>}
         {type && <Button variant="secondary" onClick={() => setType('')} className="text-sm">Xóa bộ lọc</Button>}
         <Button variant="secondary" disabled={loading} onClick={load} className="inline-flex items-center justify-center gap-2 text-sm"><RiRefreshLine aria-hidden="true" className={`h-4 w-4 ${loading ? 'motion-safe:animate-spin' : ''}`} />Tải lại trang</Button>
       </div>
-      <p id="directory-filter-help" className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-gray-500"><RiInformationLine aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><span>{student ? 'Tối đa 20 hồ sơ ngày mỗi trang. Thống kê tính trước bộ lọc. Xem được tất cả dạng bài; quyền sửa feedback vẫn theo phân công.' : '20 học viên mỗi trang. Chỉ tải bài tập khi bạn chọn học viên. Tìm kiếm theo tên hoặc email chỉ áp dụng trong trang hiện tại.'}</span></p>
+      <p id="directory-filter-help" className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-gray-500"><RiInformationLine aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><span>{student ? 'Tối đa 20 hồ sơ ngày mỗi trang. Thống kê tính trước bộ lọc. Xem được tất cả dạng bài; quyền sửa feedback vẫn theo phân công.' : '20 học viên mỗi trang. Chỉ tải bài tập khi bạn chọn học viên. Tìm kiếm theo tên hoặc email trên toàn bộ danh sách học viên.'}</span></p>
     </Card>
     <section aria-labelledby="directory-results-title" aria-busy={loading} className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="directory-results-title" className="text-lg font-semibold text-gray-900">{student ? 'Lịch sử bài tập' : 'Học viên'}</h2><p role="status" className="text-sm text-gray-500">{loading ? `Đang tải ${student ? 'bài tập' : 'học viên'}...` : error ? 'Chưa thể tải dữ liệu' : `${student ? rows.length : students.length} ${student ? 'bài tập' : 'học viên'} phù hợp trong trang`}</p></div>
       {error && <Card className="directory-surface"><h3 className="font-semibold text-gray-900">Không thể tải dữ liệu</h3><p role="alert" className="mt-2 break-words text-sm text-gray-600">{error}</p><Button variant="secondary" onClick={load} disabled={loading} className="mt-4">Thử lại</Button></Card>}
       {loading && <div aria-hidden="true" className="directory-loading directory-surface">{[0, 1, 2, 3, 4].map(key => <div key={key} className="flex items-center gap-4 border-b border-gray-100 p-4 motion-safe:animate-pulse"><div className="h-12 w-12 shrink-0 rounded-full bg-gray-100" /><div className="h-4 w-1/3 rounded bg-gray-100" /><div className="ml-auto h-10 w-28 rounded-xl bg-gray-50" /></div>)}</div>}
-      {!loading && !error && !(student ? rows.length : students.length) && <Card className="directory-surface flex flex-col items-center py-8 text-center"><span className="directory-avatar mb-4"><RiSearchLine aria-hidden="true" className="h-6 w-6" /></span><h3 className="font-semibold text-gray-900">{student ? 'Không có bài tập phù hợp trong trang này.' : 'Không tìm thấy học viên phù hợp.'}</h3><p className="mt-2 max-w-md text-sm leading-relaxed text-gray-600">{search || type ? 'Thử xóa bộ lọc để xem lại dữ liệu trong trang.' : 'Bạn có thể tải lại hoặc chuyển trang nếu còn dữ liệu.'}</p>{(search || type) && <Button variant="secondary" onClick={() => { setSearch(''); setType(''); }} className="mt-4">Xóa bộ lọc</Button>}</Card>}
+      {!loading && !error && !(student ? rows.length : students.length) && <Card className="directory-surface flex flex-col items-center py-8 text-center"><span className="directory-avatar mb-4"><RiSearchLine aria-hidden="true" className="h-6 w-6" /></span><h3 className="font-semibold text-gray-900">{student ? 'Không có bài tập phù hợp trong trang này.' : 'Không tìm thấy học viên phù hợp.'}</h3><p className="mt-2 max-w-md text-sm leading-relaxed text-gray-600">{search || type ? 'Thử xóa bộ lọc để xem lại dữ liệu.' : 'Bạn có thể tải lại hoặc chuyển trang nếu còn dữ liệu.'}</p>{(search || type) && <Button variant="secondary" onClick={() => { if (search) changeSearch(''); setType(''); }} className="mt-4">Xóa bộ lọc</Button>}</Card>}
     {!loading && !error && !student && students.length > 0 && <div className="directory-table-container directory-surface">
       <table className="directory-table"><caption className="sr-only">Danh sách học viên trong trang hiện tại</caption><thead><tr><th scope="col">Học viên</th><th scope="col">Email</th><th scope="col" className="text-right">Thao tác</th></tr></thead><tbody>{students.map(item => <StudentTableRow key={item.id} student={item} onSelect={navigate} />)}</tbody></table>
     </div>}
@@ -131,6 +178,6 @@ function Directory() {
       <Button variant="secondary" disabled={loading || !previous.length} onClick={() => { changePage(previous[previous.length - 1]); setPrevious(values => values.slice(0, -1)); }}>Trang trước</Button>
       <span aria-current="page" aria-label={`Trang hiện tại: ${previous.length + 1}`} className="directory-page-number">{previous.length + 1}</span>
       <Button variant="secondary" disabled={loading || !!error || !page?.nextCursor} onClick={() => { setPrevious(values => [...values, cursor]); changePage(page!.nextCursor); }}>Trang sau</Button>
-    </nav></footer>
+    </nav><form className="flex flex-wrap items-center gap-2" onSubmit={event => { event.preventDefault(); void jumpToPage(); }}><label htmlFor="directory-page-input" className="text-sm text-gray-700">Đến trang</label><Input id="directory-page-input" type="number" min={1} step={1} value={pageInput || ''} onChange={event => { setPageInput(event.target.value); setPageError(''); }} className="w-24" disabled={loading} aria-describedby={pageError ? 'directory-page-error' : undefined} /><Button type="submit" variant="secondary" disabled={loading || !!error}>Đi</Button>{pageError && <p id="directory-page-error" role="alert" className="w-full text-sm text-gray-700">{pageError}</p>}</form></footer>
   </div></div>;
 }

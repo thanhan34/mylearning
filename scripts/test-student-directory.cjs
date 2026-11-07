@@ -42,6 +42,29 @@ function docs(count) { return Array.from({ length: count }, (_, i) => ({ id: `id
   }
   await get('?after=id-19');
   assert.ok(calls.some(call => call[0] === 'startAfter' && call[1] === 'id-19'));
+  documents = docs(25).map((doc, index) => ({ ...doc, data: () => ({ name: index === 24 ? 'Nguyễn An' : 'Other', email: index === 24 ? 'an@example.com' : 'other@example.com' }) }));
+  const search = await get('?search=nguy%E1%BB%85n');
+  assert.deepEqual(search.body.students.map(student => student.id), ['id-24']);
+  assert.equal(search.body.nextCursor, null);
+  assert.ok(!calls.some(call => call[0] === 'limit'));
+  documents = ['ngọc vũ', 'Ngọc Vũ', 'Ngoc Vu', 'NGỌC VŨ', 'Ngọc  Vũ', 'Đặng Đức', 'Đoàn', 'Khác'].map((name, index) => ({
+    id: `id-${String(index).padStart(2, '0')}`, data: () => ({ name, email: `user${index}@example.com` }),
+  }));
+  for (const term of ['ngoc vu', 'NGỌC VŨ', '  NgOc   Vu  ']) {
+    const result = await get(`?search=${encodeURIComponent(term)}`);
+    assert.deepEqual(result.body.students.map(student => student.id), ['id-00', 'id-01', 'id-02', 'id-03', 'id-04']);
+  }
+  assert.deepEqual((await get('?search=dang%20duc')).body.students.map(student => student.id), ['id-05']);
+  assert.deepEqual((await get('?search=DOAN')).body.students.map(student => student.id), ['id-06']);
+  assert.deepEqual((await get('?search=USER0%40EXAMPLE.COM')).body.students.map(student => student.id), ['id-00']);
+  documents = docs(25);
+  const searchPage = await get('?search=learner');
+  assert.equal(searchPage.body.students.length, 20);
+  assert.equal(searchPage.body.nextCursor, 'id-19');
+  const searchNext = await get('?search=learner&after=id-19');
+  assert.equal(searchNext.body.students.length, 5);
+  assert.equal(searchNext.body.students[0].id, 'id-20');
+  documents = docs(21);
   const first = await get('?studentId=learner');
   assert.equal(first.body.homework.length, 20);
   assert.equal(first.body.homework[0].submissions[0].type, 'Describe image');

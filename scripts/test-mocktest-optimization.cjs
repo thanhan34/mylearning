@@ -112,6 +112,7 @@ function client(source, request, initialActor = { id: 'admin', role: 'admin' }) 
       useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx }, './ui': { Button: 'Button', Card: 'Card', Input: 'Input' },
     './LearningGate': { useLearningAccount: () => actor }, '@/lib/learning-api': { learningApi: request },
+    '@/lib/search': load(read('lib/search.ts'), {}),
     './StudentMocktests': { default: 'StudentMocktests' }, './TeacherMocktests': { default: 'TeacherMocktests' },
     'next/navigation': { usePathname: () => actor.role === 'admin' ? '/dashboard/mocktest/admin' : '/dashboard/mocktest/teacher' },
   }).default;

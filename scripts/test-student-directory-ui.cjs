@@ -54,7 +54,9 @@ assert.doesNotMatch(html, /Ngày tham gia|Tạm dừng|Đang học|Chờ duyệt
 assert.match(html, /20 học viên mỗi trang/);
 assert.match(html, /Chỉ tải bài tập khi bạn chọn học viên/);
 assert.match(html, /aria-label="Trang hiện tại: 1"/);
-html = render([null, null, [], { students: [learner], nextCursor: null }, 'not found', '', false, '']);
+assert.match(html, /Đến trang/);
+assert.match(html, /id="directory-page-input"/);
+html = render([null, null, [], { students: [], nextCursor: null }, 'not found', '', false, '']);
 assert.match(html, /Không tìm thấy học viên phù hợp/);
 assert.match(html, /aria-label="Xóa tìm kiếm"/);
 assert.match(html, /Xóa bộ lọc/);
@@ -67,6 +69,7 @@ assert.match(html, /Bài tập của Nguyễn Minh An/);
 assert.match(html, /Lịch sử bài tập/);
 assert.match(html, /data-testid="feedback-editor"/);
 assert.match(html, /Dạng bài trong trang/);
+assert.match(html, /Đến trang/);
 for (const role of ['student', 'admin_support', 'unknown']) {
   actor = { id: role, role };
   assert.match(render(), /Chỉ giáo viên, trợ giảng và admin/);

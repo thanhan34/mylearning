@@ -6,6 +6,8 @@ import { currentAccount, apiError, AccessError } from '@/lib/server/access';
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 20;
 const validId = (value: unknown): value is string => typeof value === 'string' && !!value && value !== '.' && value !== '..' && !value.includes('/') && Buffer.byteLength(value, 'utf8') <= 1500;
+const normalizeSearch = (value: string) => value.toLowerCase().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\s+/g, ' ').trim();
 
 // Read-only student history is available to staff. Feedback writes retain their
 // separate exercise-type and authorship checks in the feedback endpoint.
@@ -47,6 +49,21 @@ export async function GET(request: Request) {
       }, { headers: { 'Cache-Control': 'private, no-store' } });
     }
     if (after !== null && !validId(after)) throw new AccessError('Tham số phân trang không hợp lệ.', 400);
+    const rawSearch = params.get('search') || '';
+    if (rawSearch.length > 200) throw new AccessError('Từ khóa tìm kiếm quá dài.', 400);
+    const search = normalizeSearch(rawSearch);
+    if (search) {
+      // Firestore cannot perform case-insensitive substring searches. Read only
+      // directory fields, filter the complete student set, then paginate matches.
+      const snapshot = await db.collection('users').where('role', '==', 'student')
+        .orderBy(FieldPath.documentId()).select('name', 'email').get();
+      const matches = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name || doc.data().email || doc.id, email: doc.data().email || '' }))
+        .filter(item => normalizeSearch(`${item.name} ${item.email}`).includes(search));
+      const remaining = after ? matches.filter(item => item.id > after) : matches;
+      const students = remaining.slice(0, PAGE_SIZE);
+      return NextResponse.json({ students, nextCursor: remaining.length > PAGE_SIZE ? students[students.length - 1].id : null },
+        { headers: { 'Cache-Control': 'private, no-store' } });
+    }
     let query = db.collection('users').where('role', '==', 'student').orderBy(FieldPath.documentId()).limit(PAGE_SIZE + 1)
       .select('name', 'email');
     if (after) query = query.startAfter(after);

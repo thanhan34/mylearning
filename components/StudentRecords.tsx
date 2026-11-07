@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Card, Input } from './ui';
 import { useLearningAccount } from './LearningGate';
 import { learningApi } from '@/lib/learning-api';
+import { normalizeSearch } from '@/lib/search';
 import StudentMocktests, { type MocktestRecord } from './StudentMocktests';
 import TeacherMocktests from './TeacherMocktests';
 import { usePathname } from 'next/navigation';
@@ -81,7 +82,7 @@ function AccountStudentRecords({ kind }: { kind: 'mocktests' }) {
     {error && <p role="alert" className="text-gray-700">{error}</p>}
     {loading && <p role="status" className="text-gray-600">Đang tải Mocktest...</p>}
     <Button variant="secondary" disabled={busy || loading} onClick={() => load()}>Tải lại</Button>
-    {records.filter(r => `${r.studentName || students.find(s => s.id === r.studentId)?.name || ''} ${r.studentId}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => (b.date || b.submittedAt || '').localeCompare(a.date || a.submittedAt || '')).map(record => <Card key={record.id} className="space-y-3">
+    {records.filter(r => normalizeSearch(`${r.studentName || students.find(s => s.id === r.studentId)?.name || ''} ${r.studentId}`).includes(normalizeSearch(search))).sort((a, b) => (b.date || b.submittedAt || '').localeCompare(a.date || a.submittedAt || '')).map(record => <Card key={record.id} className="space-y-3">
       <h2 className="font-semibold text-gray-900">{record.studentName || students.find(s => s.id === record.studentId)?.name || record.studentId}</h2>
       <p className="text-sm text-gray-600">{record.date || record.submittedAt?.slice(0, 10)}</p>
       {record.link && /^https?:\/\//i.test(record.link) && <a href={record.link} target="_blank" rel="noopener noreferrer" className="break-all text-primary underline">Mở mocktest</a>}
